@@ -50,6 +50,22 @@
             </a>
         </nav>
 
+        <div class="section-label">PAYMENT</div>
+        <nav>
+            <a href="{% url 'payment_advance' %}" class="{% if active == 'advance' %}active{% endif %}">
+                <span class="left"><span class="icon">$</span> Advance</span>
+                <span class="badge badge-red">{{ sidebar_counts.payment_advance }}</span>
+            </a>
+            <a href="{% url 'payment_full' %}" class="{% if active == 'full' %}active{% endif %}">
+                <span class="left"><span class="icon">$</span> Full</span>
+                <span class="badge badge-green">{{ sidebar_counts.payment_full }}</span>
+            </a>
+            <a href="{% url 'scheduled_payment_list' %}" class="{% if active == 'scheduled' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128197;</span> Scheduled</span>
+                <span class="badge badge-blue">{{ sidebar_counts.payment_scheduled }}</span>
+            </a>
+        </nav>
+
         <div class="section-label">FOLLOWUP</div>
         <nav>
             <a href="{% url 'followup_list' 'pending' %}" class="{% if active == 'pending' %}active{% endif %}">

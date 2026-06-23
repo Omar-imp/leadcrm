@@ -5,8 +5,8 @@ from django.utils import timezone
 from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
 
-from .models import Lead, FollowUp, SalesPerson
-from .forms import LeadForm, FollowUpForm
+from .models import Lead, FollowUp, SalesPerson, Payment, ScheduledPayment, Installment
+from .forms import LeadForm, FollowUpForm, PaymentForm, ScheduledPaymentForm, InstallmentForm
 
 
 def login_view(request):
@@ -171,3 +171,79 @@ def followup_list(request, scope):
 
     context = {'followups': followups, 'title': title, 'active': scope}
     return render(request, 'leads/followup_list.html', context)
+
+@login_required
+def payment_list(request, ptype):
+    payments = Payment.objects.select_related('lead').filter(payment_type=ptype)
+    title = 'Advance Payments' if ptype == 'advance' else 'Full Payments'
+    context = {'payments': payments, 'title': title, 'active': ptype}
+    return render(request, 'leads/payment_list.html', context)
+
+
+@login_required
+def add_payment(request, pk):
+    lead = get_object_or_404(Lead, pk=pk)
+    if request.method == 'POST':
+        form = PaymentForm(request.POST)
+        if form.is_valid():
+            payment = form.save(commit=False)
+            payment.lead = lead
+            payment.save()
+            messages.success(request, 'Payment recorded.')
+    return redirect('lead_detail', pk=pk)
+
+
+@login_required
+def scheduled_payment_list(request):
+    schedules = ScheduledPayment.objects.select_related('lead').all()
+    context = {'schedules': schedules, 'title': 'Scheduled Payments', 'active': 'scheduled'}
+    return render(request, 'leads/scheduled_payment_list.html', context)
+
+
+@login_required
+def scheduled_payment_create(request):
+    if request.method == 'POST':
+        form = ScheduledPaymentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Payment plan created.')
+            return redirect('scheduled_payment_list')
+    else:
+        form = ScheduledPaymentForm()
+    context = {'form': form, 'title': 'Create Payment Plan', 'active': 'scheduled'}
+    return render(request, 'leads/scheduled_payment_form.html', context)
+
+
+@login_required
+def scheduled_payment_detail(request, pk):
+    schedule = get_object_or_404(ScheduledPayment, pk=pk)
+    installment_form = InstallmentForm()
+
+    if request.method == 'POST':
+        if 'add_installment' in request.POST:
+            installment_form = InstallmentForm(request.POST)
+            if installment_form.is_valid():
+                installment = installment_form.save(commit=False)
+                installment.schedule = schedule
+                installment.save()
+                messages.success(request, 'Installment added.')
+                return redirect('scheduled_payment_detail', pk=pk)
+        elif 'mark_paid' in request.POST:
+            installment_id = request.POST.get('installment_id')
+            installment = get_object_or_404(Installment, pk=installment_id, schedule=schedule)
+            installment.is_paid = True
+            installment.paid_date = timezone.localdate()
+            installment.save()
+            messages.success(request, 'Installment marked as paid.')
+            return redirect('scheduled_payment_detail', pk=pk)
+
+    context = {
+        'schedule': schedule,
+        'installments': schedule.installments.all(),
+        'installment_form': installment_form,
+        'active': 'scheduled',
+    }
+    return render(request, 'leads/scheduled_payment_detail.html', context)
+            
+        
+    

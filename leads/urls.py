@@ -11,7 +11,14 @@ urlpatterns = [
     path('leads/status/<str:status>/', views.lead_list, name='lead_status_list'),
     path('leads/<int:pk>/', views.lead_detail, name='lead_detail'),
     path('leads/<int:pk>/status/<str:status>/', views.update_lead_status, name='update_lead_status'),
+    path('leads/<int:pk>/payment/add/', views.add_payment, name='add_payment'),
 
     path('followups/<str:scope>/', views.followup_list, name='followup_list'),
     path('followups/<int:pk>/done/', views.followup_done, name='followup_done'),
+
+    path('payments/advance/', views.payment_list, {'ptype': 'advance'}, name='payment_advance'),
+    path('payments/full/', views.payment_list, {'ptype': 'full'}, name='payment_full'),
+    path('payments/scheduled/', views.scheduled_payment_list, name='scheduled_payment_list'),
+    path('payments/scheduled/create/', views.scheduled_payment_create, name='scheduled_payment_create'),
+    path('payments/scheduled/<int:pk>/', views.scheduled_payment_detail, name='scheduled_payment_detail'),
 ]

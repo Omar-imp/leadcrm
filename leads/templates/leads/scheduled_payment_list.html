@@ -1,0 +1,51 @@
+{% extends 'leads/base.html' %}
+{% block title %}Scheduled Payments - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Scheduled Payments</h1>
+    <a href="{% url 'scheduled_payment_create' %}" class="btn">+ New Payment Plan</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Lead</th>
+                <th>Total Amount</th>
+                <th>Paid So Far</th>
+                <th>Remaining</th>
+                <th>Next Due</th>
+                <th>Notes</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in schedules %}
+            <tr>
+                <td><a href="{% url 'lead_detail' s.lead.pk %}">{{ s.lead.name }}</a></td>
+                <td>{{ s.total_amount }}</td>
+                <td>{{ s.amount_paid }}</td>
+                <td>
+                    {% if s.amount_remaining > 0 %}
+                        <span style="color:#e2574c; font-weight:700;">{{ s.amount_remaining }}</span>
+                    {% else %}
+                        <span style="color:#3f9142; font-weight:700;">Fully Paid</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if s.next_due %}
+                        {{ s.next_due.due_date|date:"d M Y" }} — {{ s.next_due.amount }}
+                    {% else %}
+                        <span style="color:#3f9142;">All done</span>
+                    {% endif %}
+                </td>
+                <td>{{ s.notes|default:"-" }}</td>
+                <td><div class="action-links"><a href="{% url 'scheduled_payment_detail' s.pk %}">View / Manage</a></div></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="empty-state">No payment plans yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
