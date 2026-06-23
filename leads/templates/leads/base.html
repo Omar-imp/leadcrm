@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Lead CRM{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <div class="brand">Lead CRM</div>
+
+        <div class="section-label">MENU</div>
+        <nav>
+            <a href="{% url 'dashboard' %}" class="{% if active == 'dashboard' %}active{% endif %}">
+                <span class="left"><span class="icon">&#9632;</span> Dashboard</span>
+            </a>
+        </nav>
+
+        <div class="section-label">LEAD</div>
+        <nav>
+            <a href="{% url 'create_lead' %}" class="{% if active == 'create_lead' %}active{% endif %}">
+                <span class="left"><span class="icon">&#43;</span> Create Lead</span>
+            </a>
+            <a href="{% url 'all_leads' %}" class="{% if active == 'all_leads' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128276;</span> All Leads</span>
+                <span class="badge badge-blue">{{ sidebar_counts.total }}</span>
+            </a>
+            <a href="{% url 'lead_status_list' 'new' %}" class="{% if active == 'new' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128276;</span> New</span>
+                <span class="badge badge-blue">{{ sidebar_counts.new }}</span>
+            </a>
+            <a href="{% url 'lead_status_list' 'positive' %}" class="{% if active == 'positive' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128077;</span> Positive</span>
+                <span class="badge badge-purple">{{ sidebar_counts.positive }}</span>
+            </a>
+            <a href="{% url 'lead_status_list' 'lost' %}" class="{% if active == 'lost' %}active{% endif %}">
+                <span class="left"><span class="icon">&#10006;</span> Lost</span>
+                <span class="badge badge-red">{{ sidebar_counts.lost }}</span>
+            </a>
+            <a href="{% url 'lead_status_list' 'quotation' %}" class="{% if active == 'quotation' %}active{% endif %}">
+                <span class="left"><span class="icon">$</span> Quotation</span>
+                <span class="badge badge-orange">{{ sidebar_counts.quotation }}</span>
+            </a>
+            <a href="{% url 'lead_status_list' 'converted' %}" class="{% if active == 'converted' %}active{% endif %}">
+                <span class="left"><span class="icon">$</span> Converted</span>
+                <span class="badge badge-green">{{ sidebar_counts.convert }}</span>
+            </a>
+        </nav>
+
+        <div class="section-label">FOLLOWUP</div>
+        <nav>
+            <a href="{% url 'followup_list' 'pending' %}" class="{% if active == 'pending' %}active{% endif %}">
+                <span class="left"><span class="icon">&#9742;</span> Pending</span>
+                <span class="badge badge-orange">{{ sidebar_counts.followup_pending }}</span>
+            </a>
+            <a href="{% url 'followup_list' 'today' %}" class="{% if active == 'today' %}active{% endif %}">
+                <span class="left"><span class="icon">&#9742;</span> Today</span>
+                <span class="badge badge-orange">{{ sidebar_counts.followup_today }}</span>
+            </a>
+            <a href="{% url 'followup_list' 'next' %}" class="{% if active == 'next' %}active{% endif %}">
+                <span class="left"><span class="icon">&#9742;</span> Next</span>
+                <span class="badge badge-orange">{{ sidebar_counts.followup_next }}</span>
+            </a>
+            <a href="{% url 'followup_list' 'done' %}" class="{% if active == 'done' %}active{% endif %}">
+                <span class="left"><span class="icon">&#9742;</span> Done</span>
+                <span class="badge badge-orange">{{ sidebar_counts.followup_done }}</span>
+            </a>
+        </nav>
+
+        {% if user.is_authenticated %}
+        <div class="section-label">ACCOUNT</div>
+        <nav>
+            <a href="{% url 'logout' %}">
+                <span class="left"><span class="icon">&#10148;</span> Logout ({{ user.username }})</span>
+            </a>
+        </nav>
+        {% endif %}
+    </aside>
+
+    <main class="main">
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</div>
+</body>
+</html>

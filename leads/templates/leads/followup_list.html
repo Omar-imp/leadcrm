@@ -1,0 +1,25 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ title }} - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Lead</th><th>Contact</th><th>Follow Up Date</th><th>Status</th><th>Notes</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for f in followups %}
+            <tr>
+                <td><a href="{% url 'lead_detail' f.lead.pk %}">{{ f.lead.name }}</a></td>
+                <td>{{ f.lead.contact_number }}</td>
+                <td>{{ f.follow_up_date|date:"d M Y, h:i A" }}</td>
+                <td><span class="pill {% if f.status == 'done' %}pill-converted{% else %}pill-quotation{% endif %}">{{ f.get_status_display }}</span></td>
+                <td>{{ f.notes|default:"-" }}</td>
+                <td>{% if f.status == 'pending' %}<div class="action-links"><a href="{% url 'followup_done' f.pk %}">Mark Done</a></div>{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No follow ups found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ title }} - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div class="card">
+    <form method="get" class="search-bar">
+        <input type="text" name="q" class="form-control" placeholder="Search by name, phone or email" value="{{ request.GET.q }}">
+        <button type="submit" class="btn btn-small">Search</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr><th>Name</th><th>Contact</th><th>Source</th><th>City</th><th>SPO</th><th>Status</th><th>Quotation</th><th>Created</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for lead in leads %}
+            <tr>
+                <td><a href="{% url 'lead_detail' lead.pk %}">{{ lead.name }}</a></td>
+                <td>{{ lead.contact_number }}</td>
+                <td>{{ lead.get_lead_source_display }}</td>
+                <td>{{ lead.city|default:"-" }}</td>
+                <td>{{ lead.spo.name|default:"Unassigned" }}</td>
+                <td><span class="pill pill-{{ lead.status }}">{{ lead.get_status_display }}</span></td>
+                <td>{{ lead.quotation }}</td>
+                <td>{{ lead.created_at|date:"d M Y" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'lead_detail' lead.pk %}">View</a>
+                        <a href="{% url 'update_lead_status' lead.pk 'positive' %}">Positive</a>
+                        <a href="{% url 'update_lead_status' lead.pk 'lost' %}">Lost</a>
+                        <a href="{% url 'update_lead_status' lead.pk 'quotation' %}">Quotation</a>
+                        <a href="{% url 'update_lead_status' lead.pk 'converted' %}">Convert</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" class="empty-state">No leads found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

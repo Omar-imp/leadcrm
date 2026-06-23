@@ -1,0 +1,68 @@
+{% extends 'leads/base.html' %}
+{% block title %}Create Lead - Lead CRM{% endblock %}
+{% block content %}
+<div class="form-card">
+    <div class="form-card-header">
+        <h2>Lead Form</h2>
+        <span class="spo-badge">SPO Name : {{ spo_name|default:"Null" }}</span>
+    </div>
+    <div class="form-card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <label class="field-label">Lead Source <span class="required">*</span></label>
+            <div class="radio-group">
+                {% for radio in form.lead_source %}
+                    <label>{{ radio.tag }} {{ radio.choice_label }}</label>
+                {% endfor %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Name <span class="required">*</span></label>
+                    {{ form.name }}
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Contact Number <span class="required">*</span></label>
+                    {{ form.contact_number }}
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Email</label>
+                    {{ form.email }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Country:</label>
+                    {{ form.country }}
+                </div>
+                <div class="form-group">
+                    <label class="field-label">City:</label>
+                    {{ form.city }}
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Address</label>
+                    {{ form.address }}
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Quotation</label>
+                {{ form.quotation }}
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Detail</label>
+                {{ form.detail }}
+            </div>
+
+            {% if form.errors %}<div class="alert alert-error">Please correct the errors below.</div>{% endif %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

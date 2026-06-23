@@ -1,0 +1,60 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ lead.name }} - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ lead.name }} <span class="pill pill-{{ lead.status }}">{{ lead.get_status_display }}</span></h1>
+
+<div class="card">
+    <h2 class="section-heading">Lead Details</h2>
+    <table>
+        <tr><td><strong>Contact Number</strong></td><td>{{ lead.contact_number }}</td></tr>
+        <tr><td><strong>Email</strong></td><td>{{ lead.email|default:"-" }}</td></tr>
+        <tr><td><strong>Source</strong></td><td>{{ lead.get_lead_source_display }}</td></tr>
+        <tr><td><strong>Country / City</strong></td><td>{{ lead.country|default:"-" }} / {{ lead.city|default:"-" }}</td></tr>
+        <tr><td><strong>Address</strong></td><td>{{ lead.address|default:"-" }}</td></tr>
+        <tr><td><strong>Quotation</strong></td><td>{{ lead.quotation }}</td></tr>
+        <tr><td><strong>Detail</strong></td><td>{{ lead.detail|default:"-" }}</td></tr>
+        <tr><td><strong>SPO</strong></td><td>{{ lead.spo.name|default:"Unassigned" }}</td></tr>
+    </table>
+    <div class="action-links" style="margin-top:16px;">
+        <a href="{% url 'update_lead_status' lead.pk 'positive' %}">Mark Positive</a>
+        <a href="{% url 'update_lead_status' lead.pk 'lost' %}">Mark Lost</a>
+        <a href="{% url 'update_lead_status' lead.pk 'quotation' %}">Mark Quotation</a>
+        <a href="{% url 'update_lead_status' lead.pk 'converted' %}">Mark Converted</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Follow Ups</h2>
+    <table>
+        <thead><tr><th>Date</th><th>Status</th><th>Notes</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for f in followups %}
+            <tr>
+                <td>{{ f.follow_up_date|date:"d M Y, h:i A" }}</td>
+                <td><span class="pill {% if f.status == 'done' %}pill-converted{% else %}pill-quotation{% endif %}">{{ f.get_status_display }}</span></td>
+                <td>{{ f.notes|default:"-" }}</td>
+                <td>{% if f.status == 'pending' %}<div class="action-links"><a href="{% url 'followup_done' f.pk %}">Mark Done</a></div>{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="empty-state">No follow ups scheduled.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3 style="margin-top:24px;">Schedule a Follow Up</h3>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+            <div class="form-group">
+                <label class="field-label">Date &amp; Time</label>
+                {{ followup_form.follow_up_date }}
+            </div>
+            <div class="form-group">
+                <label class="field-label">Notes</label>
+                {{ followup_form.notes }}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-small">Add Follow Up</button>
+    </form>
+</div>
+{% endblock %}
