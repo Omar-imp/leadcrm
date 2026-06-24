@@ -1,0 +1,65 @@
+{% extends 'leads/base.html' %}
+{% block title %}Users - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Users</h1>
+    <a href="{% url 'user_create' %}" class="btn">+ Add User</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Phone</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in users %}
+            {% with u=item.user p=item.profile %}
+            <tr>
+                <td>{{ u.username }}</td>
+                <td>{{ u.get_full_name|default:"-" }}</td>
+                <td>{{ u.email|default:"-" }}</td>
+                <td>
+                    <span class="pill
+                        {% if p and p.role == 'admin' %}pill-lost
+                        {% elif p and p.role == 'sales_manager' %}pill-positive
+                        {% elif p and p.role == 'sales_executive' %}pill-new
+                        {% elif p and p.role == 'project_manager' %}pill-quotation
+                        {% elif p and p.role == 'ceo' %}pill-converted
+                        {% else %}pill-new{% endif %}">
+                        {% if p %}
+                            {{ p.get_role_display }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </td>
+                {% if p %}
+                    <td>{{ p.phone|default:"-" }}</td>
+                {% else %}
+                    <td>-</td>
+                {% endif %}
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'user_edit' u.pk %}">Edit</a>
+                        {% if u != request.user %}
+                        <a href="{% url 'user_delete' u.pk %}"
+                           onclick="return confirm('Delete user {{ u.username }}?')">Delete</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No users found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

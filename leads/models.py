@@ -10,7 +10,78 @@ class SalesPerson(models.Model):
 
     def __str__(self):
         return self.name
+
+INDUSTRY_CHOICES = [
+    ('technology', 'Technology'),
+    ('finance', 'Finance'),
+    ('healthcare', 'Healthcare')
+    ('education', 'Education'),
+    ('retail', 'Retail')
+    ('manufacturing', 'Manufacturing'),
+    ('real_estate', 'Real Estate'),
+    ('construction', 'Construction'),
+    ('marketing', 'Marketing'),
+    ('other', 'Other'),
+]
+
+class Company(models.Model):
+    name       = models.CharField(max_length=200)
+    industry   = models.CharField(max_length=30, choices=INDUSTRY_CHOICES, blank=True, null=True)
+    website    = models.URLField(blank=True, null=True)
+    email      = models.EmailField(blank=True, null=True)
+    phone      = models.CharField(max_length=30, blank=True, null=True)
+    address    = models.CharField(max_length=255, blank=True, null=True)
+    city       = models.CharField(max_length=100, blank=True, null=True)
+    country    = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
     
+    class Meta:
+        ordering = ['name']
+        verbose_name_plural = 'Companies'
+
+class Contact(models.Model):
+    first_name = models.CharField(max_length=100)
+    last_name  = models.CharField(max_lenght=100, blank=True, null=True)
+    email      = models.EmailField(blank=True, null=True)
+    phone      = models.CharField(max_length=30, blank=True, null=True)
+    job_title  = models.CharField(max_length=100, blank=True, null=True)
+    company    = models.ForeignKey(lead, on_delete=models.SET_NULL, null=True, blank=True, related_name='contacts')
+    lead       = models.ForeignKey(Lead, on_delete=models.SET_NULL, null=True, blank=True, related_name='contacts')
+    notes      = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name or ''}".strip()
+    
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name or ''}".strip()
+    
+    class Meta:
+        ordering = ['first_name']
+
+
+ROLE_CHOICES = [
+    ('admin', 'Admin'),
+    ('sales_manager', 'Sales Manager'),
+    ('sales_executive', 'Sales Executive'),
+    ('project_manager', 'Project Manager'),
+    ('finance', 'Finance'),
+    ('support_agent', 'Support Agent'),
+    ('ceo', 'CEO'),
+]
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(max_length=30, choices=ROLE_CHOICES, default='sales_executive')
+    phone = models.CharField(max_length=30, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_role_display()}"    
 
 LEAD_SOURCE_CHOICES = [
     ('advertisement', 'Advertisement'),
@@ -128,3 +199,18 @@ class Installment(models.Model):
     
     class Meta:
         ordering = ['due_date']
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.get_or_create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'profile'):
+        instance.profile.save()

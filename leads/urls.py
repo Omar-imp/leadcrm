@@ -21,4 +21,9 @@ urlpatterns = [
     path('payments/scheduled/', views.scheduled_payment_list, name='scheduled_payment_list'),
     path('payments/scheduled/create/', views.scheduled_payment_create, name='scheduled_payment_create'),
     path('payments/scheduled/<int:pk>/', views.scheduled_payment_detail, name='scheduled_payment_detail'),
+
+    path('users/', views.user_list, name='user_list'),
+    path('users/create/', views.user_create, name='user_create'),
+    path('users/<int:pk>/edit/', views.user_edit, name='user_edit'),
+    path('users/<int:pk>/delete/', views.user_delete, name='user_delete'),
 ]

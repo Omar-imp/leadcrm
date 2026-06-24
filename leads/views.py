@@ -7,7 +7,8 @@ from django.contrib.auth import authenticate, login, logout
 
 from .models import Lead, FollowUp, SalesPerson, Payment, ScheduledPayment, Installment
 from .forms import LeadForm, FollowUpForm, PaymentForm, ScheduledPaymentForm, InstallmentForm
-
+from django.contrib.auth.models import User
+from .decorators import role_required
 
 def login_view(request):
     if request.method == 'POST':
@@ -244,6 +245,85 @@ def scheduled_payment_detail(request, pk):
         'active': 'scheduled',
     }
     return render(request, 'leads/scheduled_payment_detail.html', context)
-            
-        
-    
+
+@login_required
+@role_required('admin')
+def user_list(request):
+    # Build a safe list of users and their profiles (profile may be missing)
+    users_qs = User.objects.all().order_by('username')
+    users_safe = []
+    for u in users_qs:
+        try:
+            profile = u.profile
+        except Exception:
+            profile = None
+        users_safe.append({'user': u, 'profile': profile})
+
+    context = {'users': users_safe, 'active': 'users', 'title': 'Users'}
+    return render(request, 'leads/user_list.html', context)
+
+
+@login_required
+@role_required('admin')
+def user_create(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        role = request.POST.get('role')
+        phone = request.POST.get('phone')
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, 'Username already exists.')
+        else:
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.profile.role = role
+            user.profile.phone = phone
+            user.profile.save()
+            messages.success(request, f'User {username} created successfully.')
+            return redirect('user_list')
+
+    from .models import ROLE_CHOICES
+    return render(request, 'leads/user_form.html', {
+        'active': 'users',
+        'title': 'Create User',
+        'role_choices': ROLE_CHOICES,
+    })
+
+
+@login_required
+@role_required('admin')
+def user_edit(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        user.email = request.POST.get('email')
+        user.first_name = request.POST.get('first_name')
+        user.last_name = request.POST.get('last_name')
+        user.save()
+        user.profile.role = request.POST.get('role')
+        user.profile.phone = request.POST.get('phone')
+        user.profile.save()
+        messages.success(request, 'User updated.')
+        return redirect('user_list')
+
+    from .models import ROLE_CHOICES
+    return render(request, 'leads/user_form.html', {
+        'active': 'users',
+        'title': 'Edit User',
+        'edit_user': user,
+        'role_choices': ROLE_CHOICES,
+    })
+
+
+@login_required
+@role_required('admin')
+def user_delete(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if user == request.user:
+        messages.error(request, "You can't delete your own account.")
+    else:
+        user.delete()
+        messages.success(request, 'User deleted.')
+    return redirect('user_list')
+
+

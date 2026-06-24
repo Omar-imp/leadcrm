@@ -17,6 +17,12 @@
             <a href="{% url 'dashboard' %}" class="{% if active == 'dashboard' %}active{% endif %}">
                 <span class="left"><span class="icon">&#9632;</span> Dashboard</span>
             </a>
+            {% if user.is_superuser or user.profile.role == 'admin' %}
+            <a href="{% url 'user_list' %}" class="{% if active == 'users' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128100;</span> Users</span>
+            </a>
+            {% endif %}
+        </nav>
         </nav>
 
         <div class="section-label">LEAD</div>
