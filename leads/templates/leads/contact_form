@@ -1,0 +1,76 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ title }} - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+<div class="form-card">
+    <div class="form-card-header"><h2>{{ title }}</h2></div>
+    <div class="form-card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">First Name <span class="required">*</span></label>
+                    <input type="text" name="first_name" class="form-control" required
+                           value="{{ contact.first_name|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Last Name</label>
+                    <input type="text" name="last_name" class="form-control"
+                           value="{{ contact.last_name|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Job Title</label>
+                    <input type="text" name="job_title" class="form-control"
+                           value="{{ contact.job_title|default:'' }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Email</label>
+                    <input type="email" name="email" class="form-control"
+                           value="{{ contact.email|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Phone</label>
+                    <input type="text" name="phone" class="form-control"
+                           value="{{ contact.phone|default:'' }}">
+                </div>
+            </div>
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Company</label>
+                    <select name="company" class="form-control">
+                        <option value="">-- No Company --</option>
+                        {% for comp in companies %}
+                        <option value="{{ comp.pk }}"
+                            {% if contact.company_id == comp.pk %}selected{% endif %}>
+                            {{ comp.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Linked Lead</label>
+                    <select name="lead" class="form-control">
+                        <option value="">-- No Lead --</option>
+                        {% for lead in leads %}
+                        <option value="{{ lead.pk }}"
+                            {% if contact.lead_id == lead.pk %}selected{% endif %}>
+                            {{ lead.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="3">{{ contact.notes|default:'' }}</textarea>
+            </div>
+            <div class="form-actions">
+                <a href="{% url 'contact_list' %}" style="margin-right:12px; padding:12px 20px; color:#666;">Cancel</a>
+                <button type="submit" class="btn">{% if contact %}Save Changes{% else %}Add Contact{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

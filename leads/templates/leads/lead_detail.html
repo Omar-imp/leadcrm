@@ -57,4 +57,46 @@
         <button type="submit" class="btn btn-small">Add Follow Up</button>
     </form>
 </div>
+
+<div class="card">
+    <h2 class="section-heading">Payments</h2>
+    <table>
+        <thead><tr><th>Type</th><th>Amount</th><th>Date</th><th>Notes</th></tr></thead>
+        <tbody>
+            {% for p in lead.payments.all %}
+            <tr>
+                <td><span class="pill {% if p.payment_type == 'full' %}pill-converted{% else %}pill-lost{% endif %}">{{ p.get_payment_type_display }}</span></td>
+                <td>{{ p.amount }}</td>
+                <td>{{ p.date|date:"d M Y" }}</td>
+                <td>{{ p.notes|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="empty-state">No payments recorded.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3 style="margin-top:24px;">Record a Payment</h3>
+    <form method="post" action="{% url 'add_payment' lead.pk %}">
+        {% csrf_token %}
+        <div class="form-row">
+            <div class="form-group">
+                <label class="field-label">Type</label>
+                <select name="payment_type" class="form-control">
+                    <option value="advance">Advance</option>
+                    <option value="full">Full</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Amount</label>
+                <input type="number" name="amount" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Notes</label>
+                <input type="text" name="notes" class="form-control" placeholder="Optional">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-small">Add Payment</button>
+    </form>
+</div>
 {% endblock %}

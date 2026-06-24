@@ -1,0 +1,53 @@
+{% extends 'leads/base.html' %}
+{% block title %}Contacts - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Contacts</h1>
+    <a href="{% url 'contact_create' %}" class="btn">+ Add Contact</a>
+</div>
+
+<div class="card">
+    <form method="get" class="search-bar">
+        <input type="text" name="q" class="form-control"
+               placeholder="Search by name, email or phone" value="{{ request.GET.q }}">
+        <button type="submit" class="btn btn-small">Search</button>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th><th>Job Title</th><th>Company</th>
+                <th>Email</th><th>Phone</th><th>Linked Lead</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in contacts %}
+            <tr>
+                <td>{{ c.get_full_name }}</td>
+                <td>{{ c.job_title|default:"-" }}</td>
+                <td>
+                    {% if c.company %}
+                    <a href="{% url 'company_detail' c.company.pk %}">{{ c.company.name }}</a>
+                    {% else %}-{% endif %}
+                </td>
+                <td>{{ c.email|default:"-" }}</td>
+                <td>{{ c.phone|default:"-" }}</td>
+                <td>
+                    {% if c.lead %}
+                    <a href="{% url 'lead_detail' c.lead.pk %}">{{ c.lead.name }}</a>
+                    {% else %}-{% endif %}
+                </td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'contact_edit' c.pk %}">Edit</a>
+                        <a href="{% url 'contact_delete' c.pk %}"
+                           onclick="return confirm('Delete this contact?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="empty-state">No contacts yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -5,7 +5,9 @@ from django.utils import timezone
 from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
 
-from .models import Lead, FollowUp, SalesPerson, Payment, ScheduledPayment, Installment
+from .models import (Lead, FollowUp, SalesPerson, Payment, 
+                    ScheduledPayment, Installment, UserProfile,
+                    Company, Contact, ROLE_CHOICES)
 from .forms import LeadForm, FollowUpForm, PaymentForm, ScheduledPaymentForm, InstallmentForm
 from django.contrib.auth.models import User
 from .decorators import role_required
@@ -326,4 +328,147 @@ def user_delete(request, pk):
         messages.success(request, 'User deleted.')
     return redirect('user_list')
 
+# ── COMPANY VIEWS ──────────────────────────────────────────
+
+@login_required
+def company_list(request):
+    q = request.GET.get('q')
+    companies = Company.objects.all()
+    if q:
+        companies = companies.filter(
+            Q(name__icontains=q) | Q(email__icontains=q) | Q(city__icontains=q)
+        )
+    context = {'companies': companies, 'active': 'companies', 'title': 'Companies'}
+    return render(request, 'leads/company_list.html', context)
+
+@login_required
+def company_create(request):
+    if request.method == 'POST':
+        company = Company(
+            name     = request.POST.get('name'),
+            industry = request.POST.get('industry'),
+            website  = request.POST.get('website') or None,
+            email    = request.POST.get('email') or None,
+            phone    = request.POST.get('phone'),
+            address  = request.POST.get('address'),
+            city     = request.POST.get('city'),
+            country  = request.POST.get('country'),
+            notes    = request.POST.get('notes'),
+        )
+        company.save()
+        messages.success(request, f'Company "{company.name}" created.')
+        return redirect('company_list')
+    from .models import INDUSTRY_CHOICES
+    return render(request, 'leads/company_form.html', {
+        'active'          : 'companies',
+        'title'           : 'Add Company',
+        'industry_choices': INDUSTRY_CHOICES,
+    })
+
+@login_required
+def company_edit(request, pk):
+    company = get_object_or_404(Company, pk=pk)
+    if request.method == 'POST':
+        company.name     = request.POST.get('name')
+        company.industry = request.POST.get('industry')
+        company.website  = request.POST.get('website') or None
+        company.email    = request.POST.get('email') or None
+        company.phone    = request.POST.get('phone')
+        company.address  = request.POST.get('address')
+        company.city     = request.POST.get('city')
+        company.country  = request.POST.get('country')
+        company.notes    = request.POST.get('notes')
+        company.save()
+        messages.success(request, 'Company updated.')
+        return redirect('company_list')
+    from .models import INDUSTRY_CHOICES
+    return render(request, 'leads/company_form.html', {
+        'active' : 'companies',
+        'title'  : 'Edit Company',
+        'company': company,
+        'industry_choices': INDUSTRY_CHOICES,
+    })
+
+@login_required
+def company_delete(request, pk):
+    company = get_object_or_404(Company, pk=pk)
+    company.delete()
+    messages.success(request, 'Company deleted.')
+    return redirect('company_list')
+
+@login_required
+def company_detail(request, pk):
+    company  = get_object_or_404(Company, pk=pk)
+    contacts = company.contacts.all()
+    context  = {'company': company, 'contacts': contacts, 'active': 'companies'}
+    return render(request, 'leads/company_detail.html', context)
+
+# ── CONTACT VIEWS ──────────────────────────────────────────
+
+def contact_list(request):
+    q = request.GET.get('q')
+    contacts = Contact.objects.select_related('company').all()
+    if q:
+        contacts = contacts.filter(
+            Q(first_name__icontains=q) | Q(last_name__icontains=q) |
+            Q(email__icontains=q) | Q(phone__icontains=q)
+        )
+    context = {'contacts': contacts, 'active': 'contacts', 'title': 'Contacts'}
+    return render(request, 'leads/contact_list.html', context)
+
+@login_required
+def contact_create(request):
+    if request.method == 'POST':
+        company_id = request.POST.get('company')
+        lead_id    = request.POST.get('lead')
+        contact    = Contact(
+            first_name = request.POST.get('first_name'),
+            last_name  = request.POST.get('last_name') or None,
+            email      = request.POST.get('email') or None,
+            phone      = request.POST.get('phone'),
+            job_title  = request.POST.get('job_title'),
+            company_id = company_id if company_id else None,
+            lead_id    = lead_id if lead_id else None,
+            notes      = request.POST.get('notes'),
+        )
+        contact.save()
+        messages.success(request, 'COntact created.')
+        return redirect('contact_list')
+    return render(request, 'leads/contact_form.html', {
+        'active'   : 'contacts',
+        'title'    : 'Add Contacts',
+        'companies': Company.objects.all(),
+        'leads'    : Lead.objects.all(),
+    })
+
+@login_required
+def contact_edit(request, pk):
+    contact = get_object_or_404(Contact, pk=pk)
+    if request.method == 'POST':
+        company_id         = request.POST.get('company')
+        lead_id            = request.POST.get('lead')
+        contact.first_name = request.POST.get('first_name')
+        contact.last_name  = request.POST.get('last_name') or None
+        contact.email      = request.POST.get('email') or None
+        contact.phone      = request.POST.get('phone')
+        contact.company_id = company_id if company_id else None
+        contact.lead_id    = lead_id if lead_id else None
+        contact.notes      = request.POST.get('notes')
+        contact.save()
+        messages.success(request, 'Contact updated.')
+        return redirect('contact_list')
+    return render(request, 'leads/contact_form.html', {
+        'active'   : 'contacts',
+        'title'    : 'Edit Contact',
+        'contact'  : contact,
+        'companies': Company.objects.all(),
+        'leads'    : Lead.objects.all(),
+    })
+
+@login_required
+def contact_delete(request, pk):
+    contact = get_object_or_404(Contact, pk=pk)
+    contact.delete()
+    messages.success(request, 'Contact deleted.')
+    return redirect('contact_list')
 

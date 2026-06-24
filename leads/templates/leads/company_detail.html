@@ -1,0 +1,56 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ company.name }} - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">{{ company.name }}</h1>
+    <a href="{% url 'company_edit' company.pk %}" class="btn">Edit Company</a>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Company Details</h2>
+    <table>
+        <tr><td><strong>Industry</strong></td><td>{{ company.get_industry_display|default:"-" }}</td></tr>
+        <tr><td><strong>Website</strong></td><td>
+            {% if company.website %}<a href="{{ company.website }}" target="_blank">{{ company.website }}</a>
+            {% else %}-{% endif %}
+        </td></tr>
+        <tr><td><strong>Email</strong></td><td>{{ company.email|default:"-" }}</td></tr>
+        <tr><td><strong>Phone</strong></td><td>{{ company.phone|default:"-" }}</td></tr>
+        <tr><td><strong>City</strong></td><td>{{ company.city|default:"-" }}</td></tr>
+        <tr><td><strong>Country</strong></td><td>{{ company.country|default:"-" }}</td></tr>
+        <tr><td><strong>Address</strong></td><td>{{ company.address|default:"-" }}</td></tr>
+        <tr><td><strong>Notes</strong></td><td>{{ company.notes|default:"-" }}</td></tr>
+    </table>
+</div>
+
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 class="section-heading" style="margin:0;">Contacts ({{ contacts.count }})</h2>
+        <a href="{% url 'contact_create' %}" class="btn btn-small">+ Add Contact</a>
+    </div>
+    <table>
+        <thead>
+            <tr><th>Name</th><th>Job Title</th><th>Email</th><th>Phone</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for c in contacts %}
+            <tr>
+                <td>{{ c.get_full_name }}</td>
+                <td>{{ c.job_title|default:"-" }}</td>
+                <td>{{ c.email|default:"-" }}</td>
+                <td>{{ c.phone|default:"-" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'contact_edit' c.pk %}">Edit</a>
+                        <a href="{% url 'contact_delete' c.pk %}"
+                           onclick="return confirm('Delete this contact?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="empty-state">No contacts for this company yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -26,4 +26,17 @@ urlpatterns = [
     path('users/create/', views.user_create, name='user_create'),
     path('users/<int:pk>/edit/', views.user_edit, name='user_edit'),
     path('users/<int:pk>/delete/', views.user_delete, name='user_delete'),
+
+    # Companies
+    path('companies/', views.company_list, name='company_list'),
+    path('companies/create/', views.company_create, name='company_create'),
+    path('companies/<int:pk>/', views.company_detail, name='company_detail'),
+    path('companies/<int:pk>/edit/', views.company_edit, name='company_edit'),
+    path('companies/<int:pk>/delete/', views.company_delete, name='company_delete'),
+
+    # Contacts
+    path('contacts/', views.contact_list, name='contact_list'),
+    path('contacts/create/', views.contact_create, name='contact_create'),
+    path('contacts/<int:pk>/edit/', views.contact_edit, name='contact_edit'),
+    path('contacts/<int:pk>/delete/', views.contact_delete, name='contact_delete'),
 ]

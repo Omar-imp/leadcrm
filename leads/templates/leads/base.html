@@ -23,6 +23,17 @@
             </a>
             {% endif %}
         </nav>
+        <div class="section-label">CONTACTS</div>
+        <nav>
+            <a href="{% url 'company_list' %}" class="{% if active == 'companies' %}active{% endif %}">
+                <span class="left"><span class="icon">&#127970;</span> Companies</span>
+                <span class="badge badge-blue">{{ sidebar_counts.companies }}</span>
+            </a>
+            <a href="{% url 'contact_list' %}" class="{% if active == 'contacts' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128101;</span> Contacts</span>
+                <span class="badge badge-purple">{{ sidebar_counts.contacts }}</span>
+            </a>
+        </nav>
         </nav>
 
         <div class="section-label">LEAD</div>
