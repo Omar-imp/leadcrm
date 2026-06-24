@@ -1,0 +1,190 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ title }} - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+<div class="form-card">
+    <div class="form-card-header"><h2>{{ title }}</h2></div>
+    <div class="form-card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Title <span class="required">*</span></label>
+                    <input type="text" name="title" class="form-control" required
+                           value="{{ quotation.title|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Status</label>
+                    <select name="status" class="form-control">
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}"
+                            {% if quotation.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Opportunity</label>
+                    <select name="opportunity" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for o in opportunities %}
+                        <option value="{{ o.pk }}"
+                            {% if quotation.opportunity_id == o.pk %}selected{% endif %}>
+                            {{ o.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Company</label>
+                    <select name="company" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for c in companies %}
+                        <option value="{{ c.pk }}"
+                            {% if quotation.company_id == c.pk %}selected{% endif %}>
+                            {{ c.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Contact</label>
+                    <select name="contact" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for c in contacts %}
+                        <option value="{{ c.pk }}"
+                            {% if quotation.contact_id == c.pk %}selected{% endif %}>
+                            {{ c.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Valid Until</label>
+                    <input type="date" name="valid_until" class="form-control"
+                           value="{{ quotation.valid_until|date:'Y-m-d'|default:'' }}">
+                </div>
+            </div>
+
+            <!-- Line Items -->
+            <h3 style="margin: 24px 0 16px;">Line Items</h3>
+            <table class="items-table" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width:50%">Description</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body">
+                    {% if items %}
+                        {% for item in items %}
+                        <tr>
+                            <td><input type="text" name="description" class="form-control"
+                                       value="{{ item.description }}" required></td>
+                            <td><input type="number" name="quantity" class="form-control item-qty"
+                                       value="{{ item.quantity }}" step="0.01" min="0"></td>
+                            <td><input type="number" name="unit_price" class="form-control item-price"
+                                       value="{{ item.unit_price }}" step="0.01" min="0"></td>
+                            <td class="item-total">{{ item.total_price }}</td>
+                            <td><button type="button" onclick="removeRow(this)"
+                                        style="background:#e2574c; color:#fff; border:none;
+                                               border-radius:4px; padding:4px 10px; cursor:pointer;">✕</button></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td><input type="text" name="description" class="form-control" placeholder="Service or item" required></td>
+                            <td><input type="number" name="quantity" class="form-control item-qty" value="1" step="0.01" min="0"></td>
+                            <td><input type="number" name="unit_price" class="form-control item-price" value="0" step="0.01" min="0"></td>
+                            <td class="item-total">0</td>
+                            <td><button type="button" onclick="removeRow(this)"
+                                        style="background:#e2574c; color:#fff; border:none;
+                                               border-radius:4px; padding:4px 10px; cursor:pointer;">✕</button></td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            <div style="margin: 12px 0 24px; display:flex; justify-content:space-between; align-items:center;">
+                <button type="button" onclick="addRow()" class="btn btn-small">+ Add Line</button>
+                <div style="font-size:18px; font-weight:700; color:var(--teal-dark);">
+                    Grand Total: <span id="grand-total">0</span>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="3">{{ quotation.notes|default:'' }}</textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Terms & Conditions</label>
+                <textarea name="terms" class="form-control" rows="3">{{ quotation.terms|default:'' }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'quotation_list' %}"
+                   style="margin-right:12px; padding:12px 20px; color:#666;">Cancel</a>
+                <button type="submit" class="btn">
+                    {% if quotation %}Save Changes{% else %}Create Quotation{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function addRow() {
+    const tbody = document.getElementById('items-body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td><input type="text" name="description" class="form-control" placeholder="Service or item" required></td>
+        <td><input type="number" name="quantity" class="form-control item-qty" value="1" step="0.01" min="0"></td>
+        <td><input type="number" name="unit_price" class="form-control item-price" value="0" step="0.01" min="0"></td>
+        <td class="item-total">0</td>
+        <td><button type="button" onclick="removeRow(this)"
+                    style="background:#e2574c;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+    attachListeners(tr);
+    updateTotal();
+}
+
+function removeRow(btn) {
+    btn.closest('tr').remove();
+    updateTotal();
+}
+
+function updateTotal() {
+    let grand = 0;
+    document.querySelectorAll('#items-body tr').forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+        const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
+        const total = qty * price;
+        const cell = row.querySelector('.item-total');
+        if (cell) cell.textContent = total.toFixed(2);
+        grand += total;
+    });
+    document.getElementById('grand-total').textContent = grand.toFixed(2);
+}
+
+function attachListeners(row) {
+    row.querySelectorAll('.item-qty, .item-price').forEach(input => {
+        input.addEventListener('input', updateTotal);
+    });
+}
+
+document.querySelectorAll('#items-body tr').forEach(attachListeners);
+updateTotal();
+</script>
+{% endblock %}

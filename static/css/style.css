@@ -349,3 +349,34 @@ textarea.form-control { resize: vertical; }
 .priority-high { color: var(--red); font-weight: 700; }
 .priority-medium { color: var(--orange); font-weight: 700; }
 .priority-low { color: var(--green); font-weight: 700; }
+
+/* QUOTATION */
+.quotation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.quotation-meta {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.quotation-total {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--teal-dark);
+    margin: 8px 0;
+}
+
+.items-table th { background: #f3f4f8; }
+
+@media print {
+    .sidebar, .action-links, .btn, .messages { display: none !important; }
+    .main { padding: 0 !important; }
+    .card { box-shadow: none !important; border: 1px solid #ddd; }
+}

@@ -50,6 +50,23 @@
             </a>
         </nav>
 
+        <div class="section-label">QUOTATIONS</div>
+        <nav>
+            <a href="{% url 'quotation_list' %}" class="{% if active == 'quotations' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128203;</span> All Quotations</span>
+                <span class="badge badge-blue">{{ sidebar_counts.quotations }}</span>
+            </a>
+            <a href="{% url 'quotation_list' %}?status=draft" class="">
+                <span class="left"><span class="icon">&#9998;</span> Draft</span>
+            </a>
+            <a href="{% url 'quotation_list' %}?status=approved" class="">
+                <span class="left"><span class="icon">&#10003;</span> Approved</span>
+            </a>
+            <a href="{% url 'quotation_create' %}" class="">
+                <span class="left"><span class="icon">&#43;</span> New Quotation</span>
+            </a>
+        </nav>
+
         <div class="section-label">LEAD</div>
         <nav>
             <a href="{% url 'create_lead' %}" class="{% if active == 'create_lead' %}active{% endif %}">

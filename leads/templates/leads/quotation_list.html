@@ -1,0 +1,64 @@
+{% extends 'leads/base.html' %}
+{% block title %}Quotations - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Quotations</h1>
+    <a href="{% url 'quotation_create' %}" class="btn">+ New Quotation</a>
+</div>
+
+<div class="card">
+    <form method="get" class="search-bar">
+        <input type="text" name="q" class="form-control"
+               placeholder="Search by title or company" value="{{ request.GET.q }}">
+        <select name="status" class="form-control" style="max-width:180px;">
+            <option value="">All Statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}"
+                {% if selected_status == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-small">Filter</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th><th>Company</th><th>Status</th>
+                <th>Total</th><th>Valid Until</th><th>Created By</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for q in quotations %}
+            <tr>
+                <td><a href="{% url 'quotation_detail' q.pk %}">{{ q.title }}</a></td>
+                <td>{{ q.company.name|default:"-" }}</td>
+                <td>
+                    <span class="pill
+                        {% if q.status == 'approved' %}pill-converted
+                        {% elif q.status == 'rejected' %}pill-lost
+                        {% elif q.status == 'sent' %}pill-positive
+                        {% else %}pill-new{% endif %}">
+                        {{ q.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ q.total_amount }}</td>
+                <td>{{ q.valid_until|date:"d M Y"|default:"-" }}</td>
+                <td>{{ q.created_by.username|default:"-" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'quotation_detail' q.pk %}">View</a>
+                        <a href="{% url 'quotation_edit' q.pk %}">Edit</a>
+                        <a href="{% url 'quotation_delete' q.pk %}"
+                           onclick="return confirm('Delete this quotation?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="empty-state">No quotations found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

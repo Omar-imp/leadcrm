@@ -4,14 +4,16 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
-
-from .models import (Lead, FollowUp, SalesPerson, Payment, 
-                    ScheduledPayment, Installment, UserProfile,
-                    Company, Contact, Opportunity,
-                    OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES, ROLE_CHOICES)
 from .forms import LeadForm, FollowUpForm, PaymentForm, ScheduledPaymentForm, InstallmentForm
 from django.contrib.auth.models import User
 from .decorators import role_required
+from .models import (Lead, FollowUp, SalesPerson, Payment,
+                     ScheduledPayment, Installment, UserProfile,
+                     Company, Contact, Opportunity,
+                     Quotation, QuotationItem,
+                     OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES,
+                     QUOTATION_STATUS_CHOICES, ROLE_CHOICES)
+
 
 def login_view(request):
     if request.method == 'POST':
@@ -630,3 +632,161 @@ def opportunity_move(request, pk, stage):
         opp.save()
         messages.success(request, f'Moved to {valid[stage]}.')
     return redirect(request.META.get('HTTP_REFERER', 'opportunity_pipeline'))
+
+# ── QUOTATION VIEWS ────────────────────────────────────────
+
+@login_required
+def quotation_list(request):
+    quotations = Quotation.objects.select_related(
+        'opportunity', 'company', 'contact', 'created_by'
+    ).all()
+    q = request.GET.get('q')
+    if q:
+        quotations = quotations.filter(
+            Q(title__icontains=q) | Q(company__name__icontains=q)
+        )
+    status = request.GET.get('status')
+    if status:
+        quotations = quotations.filter(status=status)
+    context = {
+        'quotations': quotations,
+        'active': 'quotations',
+        'title': 'Quotations',
+        'status_choices': QUOTATION_STATUS_CHOICES,
+        'selected_status': status,
+    }
+    return render(request, 'leads/quotation_list.html', context)
+
+
+@login_required
+def quotation_create(request):
+    if request.method == 'POST':
+        quotation = Quotation(
+            title=request.POST.get('title'),
+            status=request.POST.get('status', 'draft'),
+            valid_until=request.POST.get('valid_until') or None,
+            notes=request.POST.get('notes'),
+            terms=request.POST.get('terms'),
+            created_by=request.user,
+        )
+        opp_id = request.POST.get('opportunity')
+        lead_id = request.POST.get('lead')
+        company_id = request.POST.get('company')
+        contact_id = request.POST.get('contact')
+        if opp_id:
+            quotation.opportunity_id = opp_id
+        if lead_id:
+            quotation.lead_id = lead_id
+        if company_id:
+            quotation.company_id = company_id
+        if contact_id:
+            quotation.contact_id = contact_id
+        quotation.save()
+
+        # save line items
+        descriptions = request.POST.getlist('description')
+        quantities = request.POST.getlist('quantity')
+        unit_prices = request.POST.getlist('unit_price')
+        for desc, qty, price in zip(descriptions, quantities, unit_prices):
+            if desc.strip():
+                QuotationItem.objects.create(
+                    quotation=quotation,
+                    description=desc,
+                    quantity=qty or 1,
+                    unit_price=price or 0,
+                )
+
+        messages.success(request, f'Quotation "{quotation.title}" created.')
+        return redirect('quotation_detail', pk=quotation.pk)
+
+    context = {
+        'active': 'quotations',
+        'title': 'Create Quotation',
+        'status_choices': QUOTATION_STATUS_CHOICES,
+        'opportunities': Opportunity.objects.all(),
+        'leads': Lead.objects.all(),
+        'companies': Company.objects.all(),
+        'contacts': Contact.objects.all(),
+    }
+    return render(request, 'leads/quotation_form.html', context)
+
+
+@login_required
+def quotation_detail(request, pk):
+    quotation = get_object_or_404(Quotation, pk=pk)
+    context = {
+        'quotation': quotation,
+        'items': quotation.items.all(),
+        'active': 'quotations',
+        'status_choices': QUOTATION_STATUS_CHOICES,
+    }
+    return render(request, 'leads/quotation_detail.html', context)
+
+
+@login_required
+def quotation_edit(request, pk):
+    quotation = get_object_or_404(Quotation, pk=pk)
+    if request.method == 'POST':
+        quotation.title = request.POST.get('title')
+        quotation.status = request.POST.get('status', 'draft')
+        quotation.valid_until = request.POST.get('valid_until') or None
+        quotation.notes = request.POST.get('notes')
+        quotation.terms = request.POST.get('terms')
+        opp_id = request.POST.get('opportunity')
+        lead_id = request.POST.get('lead')
+        company_id = request.POST.get('company')
+        contact_id = request.POST.get('contact')
+        quotation.opportunity_id = opp_id if opp_id else None
+        quotation.lead_id = lead_id if lead_id else None
+        quotation.company_id = company_id if company_id else None
+        quotation.contact_id = contact_id if contact_id else None
+        quotation.save()
+
+        # replace line items
+        quotation.items.all().delete()
+        descriptions = request.POST.getlist('description')
+        quantities = request.POST.getlist('quantity')
+        unit_prices = request.POST.getlist('unit_price')
+        for desc, qty, price in zip(descriptions, quantities, unit_prices):
+            if desc.strip():
+                QuotationItem.objects.create(
+                    quotation=quotation,
+                    description=desc,
+                    quantity=qty or 1,
+                    unit_price=price or 0,
+                )
+
+        messages.success(request, 'Quotation updated.')
+        return redirect('quotation_detail', pk=quotation.pk)
+
+    context = {
+        'active': 'quotations',
+        'title': 'Edit Quotation',
+        'quotation': quotation,
+        'items': quotation.items.all(),
+        'status_choices': QUOTATION_STATUS_CHOICES,
+        'opportunities': Opportunity.objects.all(),
+        'leads': Lead.objects.all(),
+        'companies': Company.objects.all(),
+        'contacts': Contact.objects.all(),
+    }
+    return render(request, 'leads/quotation_form.html', context)
+
+
+@login_required
+def quotation_delete(request, pk):
+    quotation = get_object_or_404(Quotation, pk=pk)
+    quotation.delete()
+    messages.success(request, 'Quotation deleted.')
+    return redirect('quotation_list')
+
+
+@login_required
+def quotation_status(request, pk, status):
+    quotation = get_object_or_404(Quotation, pk=pk)
+    valid = dict(QUOTATION_STATUS_CHOICES)
+    if status in valid:
+        quotation.status = status
+        quotation.save()
+        messages.success(request, f'Quotation marked as {valid[status]}.')
+    return redirect('quotation_detail', pk=pk)

@@ -6,22 +6,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
 
-    path('leads/create/', views.create_lead, name='create_lead'),
-    path('leads/', views.lead_list, name='all_leads'),
-    path('leads/status/<str:status>/', views.lead_list, name='lead_status_list'),
-    path('leads/<int:pk>/', views.lead_detail, name='lead_detail'),
-    path('leads/<int:pk>/status/<str:status>/', views.update_lead_status, name='update_lead_status'),
-    path('leads/<int:pk>/payment/add/', views.add_payment, name='add_payment'),
-
-    path('followups/<str:scope>/', views.followup_list, name='followup_list'),
-    path('followups/<int:pk>/done/', views.followup_done, name='followup_done'),
-
-    path('payments/advance/', views.payment_list, {'ptype': 'advance'}, name='payment_advance'),
-    path('payments/full/', views.payment_list, {'ptype': 'full'}, name='payment_full'),
-    path('payments/scheduled/', views.scheduled_payment_list, name='scheduled_payment_list'),
-    path('payments/scheduled/create/', views.scheduled_payment_create, name='scheduled_payment_create'),
-    path('payments/scheduled/<int:pk>/', views.scheduled_payment_detail, name='scheduled_payment_detail'),
-
+    # Users
     path('users/', views.user_list, name='user_list'),
     path('users/create/', views.user_create, name='user_create'),
     path('users/<int:pk>/edit/', views.user_edit, name='user_edit'),
@@ -40,7 +25,26 @@ urlpatterns = [
     path('contacts/<int:pk>/edit/', views.contact_edit, name='contact_edit'),
     path('contacts/<int:pk>/delete/', views.contact_delete, name='contact_delete'),
 
-    # Opportunities / Pipeline
+    # Leads
+    path('leads/create/', views.create_lead, name='create_lead'),
+    path('leads/', views.lead_list, name='all_leads'),
+    path('leads/status/<str:status>/', views.lead_list, name='lead_status_list'),
+    path('leads/<int:pk>/', views.lead_detail, name='lead_detail'),
+    path('leads/<int:pk>/status/<str:status>/', views.update_lead_status, name='update_lead_status'),
+    path('leads/<int:pk>/payment/add/', views.add_payment, name='add_payment'),
+
+    # Followups
+    path('followups/<str:scope>/', views.followup_list, name='followup_list'),
+    path('followups/<int:pk>/done/', views.followup_done, name='followup_done'),
+
+    # Payments
+    path('payments/advance/', views.payment_list, {'ptype': 'advance'}, name='payment_advance'),
+    path('payments/full/', views.payment_list, {'ptype': 'full'}, name='payment_full'),
+    path('payments/scheduled/', views.scheduled_payment_list, name='scheduled_payment_list'),
+    path('payments/scheduled/create/', views.scheduled_payment_create, name='scheduled_payment_create'),
+    path('payments/scheduled/<int:pk>/', views.scheduled_payment_detail, name='scheduled_payment_detail'),
+
+    # Pipeline / Opportunities
     path('pipeline/', views.opportunity_pipeline, name='opportunity_pipeline'),
     path('opportunities/', views.opportunity_list, name='opportunity_list'),
     path('opportunities/create/', views.opportunity_create, name='opportunity_create'),
@@ -48,4 +52,12 @@ urlpatterns = [
     path('opportunities/<int:pk>/edit/', views.opportunity_edit, name='opportunity_edit'),
     path('opportunities/<int:pk>/delete/', views.opportunity_delete, name='opportunity_delete'),
     path('opportunities/<int:pk>/move/<str:stage>/', views.opportunity_move, name='opportunity_move'),
+
+    # Quotations
+    path('quotations/', views.quotation_list, name='quotation_list'),
+    path('quotations/create/', views.quotation_create, name='quotation_create'),
+    path('quotations/<int:pk>/', views.quotation_detail, name='quotation_detail'),
+    path('quotations/<int:pk>/edit/', views.quotation_edit, name='quotation_edit'),
+    path('quotations/<int:pk>/delete/', views.quotation_delete, name='quotation_delete'),
+    path('quotations/<int:pk>/status/<str:status>/', views.quotation_status, name='quotation_status'),
 ]

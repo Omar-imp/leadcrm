@@ -1,0 +1,109 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ quotation.title }} - Lead CRM{% endblock %}
+{% block content %}
+<div class="quotation-header">
+    <div>
+        <h1 class="page-title" style="margin:0;">{{ quotation.title }}</h1>
+        <div class="quotation-meta">Created {{ quotation.created_at|date:"d M Y" }}
+            {% if quotation.created_by %}by {{ quotation.created_by.username }}{% endif %}
+        </div>
+        <div class="quotation-meta">
+            {% if quotation.valid_until %}Valid until {{ quotation.valid_until|date:"d M Y" }}{% endif %}
+        </div>
+    </div>
+    <div style="text-align:right;">
+        <span class="pill
+            {% if quotation.status == 'approved' %}pill-converted
+            {% elif quotation.status == 'rejected' %}pill-lost
+            {% elif quotation.status == 'sent' %}pill-positive
+            {% else %}pill-new{% endif %}"
+            style="font-size:15px;">
+            {{ quotation.get_status_display }}
+        </span>
+        <div class="quotation-total">{{ quotation.total_amount }}</div>
+        <div class="action-links" style="justify-content:flex-end; margin-top:8px;">
+            <a href="{% url 'quotation_edit' quotation.pk %}">Edit</a>
+            <a onclick="window.print()">Print</a>
+            <a href="{% url 'quotation_delete' quotation.pk %}"
+               onclick="return confirm('Delete?')">Delete</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Details</h2>
+    <table>
+        {% if quotation.company %}
+        <tr><td><strong>Company</strong></td>
+            <td><a href="{% url 'company_detail' quotation.company.pk %}">{{ quotation.company.name }}</a></td></tr>
+        {% endif %}
+        {% if quotation.contact %}
+        <tr><td><strong>Contact</strong></td><td>{{ quotation.contact.get_full_name }}</td></tr>
+        {% endif %}
+        {% if quotation.opportunity %}
+        <tr><td><strong>Opportunity</strong></td>
+            <td><a href="{% url 'opportunity_detail' quotation.opportunity.pk %}">{{ quotation.opportunity.title }}</a></td></tr>
+        {% endif %}
+    </table>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Line Items</h2>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th style="text-align:right;">Qty</th>
+                <th style="text-align:right;">Unit Price</th>
+                <th style="text-align:right;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td style="text-align:right;">{{ item.quantity }}</td>
+                <td style="text-align:right;">{{ item.unit_price }}</td>
+                <td style="text-align:right;">{{ item.total_price }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="empty-state">No line items.</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" style="text-align:right; font-weight:700; padding:12px;">Grand Total</td>
+                <td style="text-align:right; font-weight:700; font-size:18px;
+                           color:var(--teal-dark); padding:12px;">
+                    {{ quotation.total_amount }}
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+{% if quotation.notes %}
+<div class="card">
+    <h2 class="section-heading">Notes</h2>
+    <p style="color:var(--text-muted);">{{ quotation.notes }}</p>
+</div>
+{% endif %}
+
+{% if quotation.terms %}
+<div class="card">
+    <h2 class="section-heading">Terms & Conditions</h2>
+    <p style="color:var(--text-muted);">{{ quotation.terms }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2 class="section-heading">Update Status</h2>
+    <div class="action-links">
+        {% for value, label in status_choices %}
+        {% if value != quotation.status %}
+        <a href="{% url 'quotation_status' quotation.pk value %}">→ {{ label }}</a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
