@@ -1,0 +1,69 @@
+{% extends 'leads/base.html' %}
+{% block title %}Pipeline - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Sales Pipeline</h1>
+    <a href="{% url 'opportunity_create' %}" class="btn">+ New Opportunity</a>
+</div>
+
+<div class="pipeline-board">
+
+    {% for stage_key, stage_label in stages %}
+    <div class="pipeline-col">
+        <div class="pipeline-col-header">
+            <span class="pipeline-col-title">{{ stage_label }}</span>
+            <span class="pipeline-col-count">
+                {% for key, data in pipeline.items %}
+                    {% if key == stage_key %}{{ data.count }}{% endif %}
+                {% endfor %}
+            </span>
+        </div>
+        <div class="pipeline-col-total">
+            {% for key, data in pipeline.items %}
+                {% if key == stage_key %}Total: {{ data.total }}{% endif %}
+            {% endfor %}
+        </div>
+
+        {% for key, data in pipeline.items %}
+        {% if key == stage_key %}
+            {% for opp in data.opps %}
+            <div class="pipeline-card {{ opp.stage }}">
+                <div class="pipeline-card-title">
+                    <a href="{% url 'opportunity_detail' opp.pk %}">{{ opp.title }}</a>
+                </div>
+                {% if opp.company %}
+                <div class="pipeline-card-meta">&#127970; {{ opp.company.name }}</div>
+                {% endif %}
+                {% if opp.contact %}
+                <div class="pipeline-card-meta">&#128100; {{ opp.contact.get_full_name }}</div>
+                {% endif %}
+                <div class="pipeline-card-value">{{ opp.value }}</div>
+                <div class="pipeline-card-meta">
+                    <span class="priority-{{ opp.priority }}">{{ opp.get_priority_display }}</span>
+                    {% if opp.expected_close_date %}
+                    &nbsp;· Close: {{ opp.expected_close_date|date:"d M Y" }}
+                    {% endif %}
+                </div>
+                <div class="pipeline-card-actions">
+                    <a href="{% url 'opportunity_detail' opp.pk %}">View</a>
+                    <a href="{% url 'opportunity_edit' opp.pk %}">Edit</a>
+                    {% if opp.stage != 'won' %}
+                    <a href="{% url 'opportunity_move' opp.pk 'won' %}">Won</a>
+                    {% endif %}
+                    {% if opp.stage != 'lost' %}
+                    <a href="{% url 'opportunity_move' opp.pk 'lost' %}">Lost</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div style="text-align:center; color:#aaa; font-size:13px; padding:20px 0;">
+                No deals
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+</div>
+{% endblock %}

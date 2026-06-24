@@ -1,0 +1,62 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ opp.title }} - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">
+        {{ opp.title }}
+        <span class="pill
+            {% if opp.stage == 'won' %}pill-converted
+            {% elif opp.stage == 'lost' %}pill-lost
+            {% elif opp.stage == 'negotiation' %}pill-quotation
+            {% elif opp.stage == 'proposal' %}pill-positive
+            {% else %}pill-new{% endif %}"
+            style="font-size:14px; vertical-align:middle;">
+            {{ opp.get_stage_display }}
+        </span>
+    </h1>
+    <div class="action-links">
+        <a href="{% url 'opportunity_edit' opp.pk %}" class="btn btn-small">Edit</a>
+        <a href="{% url 'opportunity_delete' opp.pk %}"
+           class="btn btn-small"
+           style="background:#e2574c;"
+           onclick="return confirm('Delete this opportunity?')">Delete</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Details</h2>
+    <table>
+        <tr><td><strong>Value</strong></td><td>{{ opp.value }}</td></tr>
+        <tr><td><strong>Probability</strong></td><td>{{ opp.probability }}%</td></tr>
+        <tr><td><strong>Priority</strong></td>
+            <td><span class="priority-{{ opp.priority }}">{{ opp.get_priority_display }}</span></td></tr>
+        <tr><td><strong>Expected Close</strong></td>
+            <td>{{ opp.expected_close_date|date:"d M Y"|default:"-" }}</td></tr>
+        <tr><td><strong>Assigned To</strong></td>
+            <td>{{ opp.assigned_to.username|default:"Unassigned" }}</td></tr>
+        <tr><td><strong>Lead</strong></td>
+            <td>{% if opp.lead %}<a href="{% url 'lead_detail' opp.lead.pk %}">{{ opp.lead.name }}</a>
+                {% else %}-{% endif %}</td></tr>
+        <tr><td><strong>Contact</strong></td>
+            <td>{{ opp.contact.get_full_name|default:"-" }}</td></tr>
+        <tr><td><strong>Company</strong></td>
+            <td>{% if opp.company %}<a href="{% url 'company_detail' opp.company.pk %}">{{ opp.company.name }}</a>
+                {% else %}-{% endif %}</td></tr>
+        <tr><td><strong>Description</strong></td><td>{{ opp.description|default:"-" }}</td></tr>
+        {% if opp.lost_reason %}
+        <tr><td><strong>Lost Reason</strong></td><td>{{ opp.lost_reason }}</td></tr>
+        {% endif %}
+    </table>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Move Stage</h2>
+    <div class="action-links">
+        {% for stage_key, stage_label in stages %}
+        {% if stage_key != opp.stage %}
+        <a href="{% url 'opportunity_move' opp.pk stage_key %}">→ {{ stage_label }}</a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

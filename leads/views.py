@@ -7,7 +7,8 @@ from django.contrib.auth import authenticate, login, logout
 
 from .models import (Lead, FollowUp, SalesPerson, Payment, 
                     ScheduledPayment, Installment, UserProfile,
-                    Company, Contact, ROLE_CHOICES)
+                    Company, Contact, Opportunity,
+                    OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES, ROLE_CHOICES)
 from .forms import LeadForm, FollowUpForm, PaymentForm, ScheduledPaymentForm, InstallmentForm
 from django.contrib.auth.models import User
 from .decorators import role_required
@@ -472,3 +473,160 @@ def contact_delete(request, pk):
     messages.success(request, 'Contact deleted.')
     return redirect('contact_list')
 
+# ── OPPORTUNITY VIEWS ──────────────────────────────────────
+
+@login_required
+def opportunity_pipeline(request):
+    """Kanban pipeline view — one column per stage."""
+    stages = OPPORTUNITY_STAGE_CHOICES
+    pipeline = {}
+    for stage_key, stage_label in stages:
+        opps = Opportunity.objects.filter(stage=stage_key).select_related(
+            'lead', 'contact', 'company', 'assigned_to'
+        )
+        pipeline[stage_key] = {
+            'label': stage_label,
+            'opps': opps,
+            'count': opps.count(),
+            'total': sum(o.value for o in opps),
+        }
+    context = {
+        'pipeline': pipeline,
+        'stages': stages,
+        'active': 'pipeline',
+        'title': 'Sales Pipeline',
+    }
+    return render(request, 'leads/pipeline.html', context)
+
+
+@login_required
+def opportunity_list(request):
+    opps = Opportunity.objects.select_related(
+        'lead', 'contact', 'company', 'assigned_to'
+    ).all()
+    q = request.GET.get('q')
+    if q:
+        opps = opps.filter(Q(title__icontains=q) | Q(company__name__icontains=q))
+    stage = request.GET.get('stage')
+    if stage:
+        opps = opps.filter(stage=stage)
+    context = {
+        'opps': opps,
+        'active': 'opportunities',
+        'title': 'All Opportunities',
+        'stages': OPPORTUNITY_STAGE_CHOICES,
+        'selected_stage': stage,
+    }
+    return render(request, 'leads/opportunity_list.html', context)
+
+
+@login_required
+def opportunity_create(request):
+    if request.method == 'POST':
+        opp = Opportunity(
+            title=request.POST.get('title'),
+            stage=request.POST.get('stage', 'new'),
+            priority=request.POST.get('priority', 'medium'),
+            value=request.POST.get('value') or 0,
+            probability=request.POST.get('probability') or 0,
+            description=request.POST.get('description'),
+            expected_close_date=request.POST.get('expected_close_date') or None,
+        )
+        lead_id = request.POST.get('lead')
+        contact_id = request.POST.get('contact')
+        company_id = request.POST.get('company')
+        assigned_id = request.POST.get('assigned_to')
+        if lead_id:
+            opp.lead_id = lead_id
+        if contact_id:
+            opp.contact_id = contact_id
+        if company_id:
+            opp.company_id = company_id
+        if assigned_id:
+            opp.assigned_to_id = assigned_id
+        opp.save()
+        messages.success(request, f'Opportunity "{opp.title}" created.')
+        return redirect('opportunity_pipeline')
+    context = {
+        'active': 'pipeline',
+        'title': 'Create Opportunity',
+        'stages': OPPORTUNITY_STAGE_CHOICES,
+        'priorities': PRIORITY_CHOICES,
+        'leads': Lead.objects.all(),
+        'contacts': Contact.objects.all(),
+        'companies': Company.objects.all(),
+        'users': User.objects.all(),
+    }
+    return render(request, 'leads/opportunity_form.html', context)
+
+
+@login_required
+def opportunity_detail(request, pk):
+    opp = get_object_or_404(Opportunity, pk=pk)
+    context = {
+        'opp': opp,
+        'active': 'pipeline',
+        'stages': OPPORTUNITY_STAGE_CHOICES,
+    }
+    return render(request, 'leads/opportunity_detail.html', context)
+
+
+@login_required
+def opportunity_edit(request, pk):
+    opp = get_object_or_404(Opportunity, pk=pk)
+    if request.method == 'POST':
+        opp.title = request.POST.get('title')
+        opp.stage = request.POST.get('stage', 'new')
+        opp.priority = request.POST.get('priority', 'medium')
+        opp.value = request.POST.get('value') or 0
+        opp.probability = request.POST.get('probability') or 0
+        opp.description = request.POST.get('description')
+        opp.expected_close_date = request.POST.get('expected_close_date') or None
+        opp.lost_reason = request.POST.get('lost_reason') or None
+        lead_id = request.POST.get('lead')
+        contact_id = request.POST.get('contact')
+        company_id = request.POST.get('company')
+        assigned_id = request.POST.get('assigned_to')
+        opp.lead_id = lead_id if lead_id else None
+        opp.contact_id = contact_id if contact_id else None
+        opp.company_id = company_id if company_id else None
+        opp.assigned_to_id = assigned_id if assigned_id else None
+        opp.save()
+        messages.success(request, 'Opportunity updated.')
+        return redirect('opportunity_detail', pk=pk)
+    context = {
+        'active': 'pipeline',
+        'title': 'Edit Opportunity',
+        'opp': opp,
+        'stages': OPPORTUNITY_STAGE_CHOICES,
+        'priorities': PRIORITY_CHOICES,
+        'leads': Lead.objects.all(),
+        'contacts': Contact.objects.all(),
+        'companies': Company.objects.all(),
+        'users': User.objects.all(),
+    }
+    return render(request, 'leads/opportunity_form.html', context)
+
+
+@login_required
+def opportunity_delete(request, pk):
+    opp = get_object_or_404(Opportunity, pk=pk)
+    opp.delete()
+    messages.success(request, 'Opportunity deleted.')
+    return redirect('opportunity_pipeline')
+
+
+@login_required
+def opportunity_move(request, pk, stage):
+    """Quick stage move — called from pipeline card buttons."""
+    opp = get_object_or_404(Opportunity, pk=pk)
+    valid = dict(OPPORTUNITY_STAGE_CHOICES)
+    if stage in valid:
+        opp.stage = stage
+        if stage == 'won':
+            opp.probability = 100
+        elif stage == 'lost':
+            opp.probability = 0
+        opp.save()
+        messages.success(request, f'Moved to {valid[stage]}.')
+    return redirect(request.META.get('HTTP_REFERER', 'opportunity_pipeline'))

@@ -1,0 +1,69 @@
+{% extends 'leads/base.html' %}
+{% block title %}Opportunities - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Opportunities</h1>
+    <a href="{% url 'opportunity_create' %}" class="btn">+ New Opportunity</a>
+</div>
+
+<div class="card">
+    <form method="get" class="search-bar">
+        <input type="text" name="q" class="form-control"
+               placeholder="Search by title or company" value="{{ request.GET.q }}">
+        <select name="stage" class="form-control" style="max-width:180px;">
+            <option value="">All Stages</option>
+            {% for value, label in stages %}
+            <option value="{{ value }}" {% if selected_stage == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-small">Filter</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th><th>Company</th><th>Contact</th><th>Stage</th>
+                <th>Value</th><th>Probability</th><th>Close Date</th>
+                <th>Assigned To</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for opp in opps %}
+            <tr>
+                <td><a href="{% url 'opportunity_detail' opp.pk %}">{{ opp.title }}</a></td>
+                <td>{{ opp.company.name|default:"-" }}</td>
+                <td>{{ opp.contact.get_full_name|default:"-" }}</td>
+                <td>
+                    <span class="pill
+                        {% if opp.stage == 'won' %}pill-converted
+                        {% elif opp.stage == 'lost' %}pill-lost
+                        {% elif opp.stage == 'negotiation' %}pill-quotation
+                        {% elif opp.stage == 'proposal' %}pill-positive
+                        {% else %}pill-new{% endif %}">
+                        {{ opp.get_stage_display }}
+                    </span>
+                </td>
+                <td>{{ opp.value }}</td>
+                <td>{{ opp.probability }}%</td>
+                <td>{{ opp.expected_close_date|date:"d M Y"|default:"-" }}</td>
+                <td>{{ opp.assigned_to.username|default:"Unassigned" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'opportunity_detail' opp.pk %}">View</a>
+                        <a href="{% url 'opportunity_edit' opp.pk %}">Edit</a>
+                        <a href="{% url 'opportunity_move' opp.pk 'won' %}">Won</a>
+                        <a href="{% url 'opportunity_move' opp.pk 'lost' %}">Lost</a>
+                        <a href="{% url 'opportunity_delete' opp.pk %}"
+                           onclick="return confirm('Delete this opportunity?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" class="empty-state">No opportunities found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

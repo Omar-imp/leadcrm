@@ -1,7 +1,13 @@
 from django.contrib import admin
 from .models import (Lead, FollowUp, SalesPerson, Payment, 
                      ScheduledPayment, Installment, UserProfile, 
-                     Company, Contact)
+                     Company, Contact, Opportunity)
+
+@admin.register(Opportunity)
+class OpportunityAdmin(admin.ModelAdmin):
+    list_display  = ('title', 'stage', 'value', 'probability', 'assigned_to', 'expected_close_date')
+    list_filter   = ('stage', 'priority')
+    search_fields = ('title',)
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):

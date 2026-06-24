@@ -1,0 +1,128 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ title }} - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+<div class="form-card">
+    <div class="form-card-header"><h2>{{ title }}</h2></div>
+    <div class="form-card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Title <span class="required">*</span></label>
+                    <input type="text" name="title" class="form-control" required
+                           value="{{ opp.title|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Stage</label>
+                    <select name="stage" class="form-control">
+                        {% for value, label in stages %}
+                        <option value="{{ value }}"
+                            {% if opp.stage == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Value</label>
+                    <input type="number" name="value" class="form-control"
+                           value="{{ opp.value|default:'0' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Probability %</label>
+                    <input type="number" name="probability" class="form-control"
+                           min="0" max="100" value="{{ opp.probability|default:'0' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Priority</label>
+                    <select name="priority" class="form-control">
+                        {% for value, label in priorities %}
+                        <option value="{{ value }}"
+                            {% if opp.priority == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Lead</label>
+                    <select name="lead" class="form-control">
+                        <option value="">-- No Lead --</option>
+                        {% for l in leads %}
+                        <option value="{{ l.pk }}"
+                            {% if opp.lead_id == l.pk %}selected{% endif %}>
+                            {{ l.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Contact</label>
+                    <select name="contact" class="form-control">
+                        <option value="">-- No Contact --</option>
+                        {% for c in contacts %}
+                        <option value="{{ c.pk }}"
+                            {% if opp.contact_id == c.pk %}selected{% endif %}>
+                            {{ c.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Company</label>
+                    <select name="company" class="form-control">
+                        <option value="">-- No Company --</option>
+                        {% for comp in companies %}
+                        <option value="{{ comp.pk }}"
+                            {% if opp.company_id == comp.pk %}selected{% endif %}>
+                            {{ comp.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Assigned To</label>
+                    <select name="assigned_to" class="form-control">
+                        <option value="">-- Unassigned --</option>
+                        {% for u in users %}
+                        <option value="{{ u.pk }}"
+                            {% if opp.assigned_to_id == u.pk %}selected{% endif %}>
+                            {{ u.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Expected Close Date</label>
+                    <input type="date" name="expected_close_date" class="form-control"
+                           value="{{ opp.expected_close_date|date:'Y-m-d'|default:'' }}">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Description</label>
+                <textarea name="description" class="form-control" rows="3">{{ opp.description|default:'' }}</textarea>
+            </div>
+            {% if opp.stage == 'lost' %}
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Lost Reason</label>
+                <textarea name="lost_reason" class="form-control" rows="2">{{ opp.lost_reason|default:'' }}</textarea>
+            </div>
+            {% endif %}
+            <div class="form-actions">
+                <a href="{% url 'opportunity_pipeline' %}"
+                   style="margin-right:12px; padding:12px 20px; color:#666;">Cancel</a>
+                <button type="submit" class="btn">
+                    {% if opp %}Save Changes{% else %}Create Opportunity{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

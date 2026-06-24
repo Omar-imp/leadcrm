@@ -34,6 +34,20 @@
                 <span class="badge badge-purple">{{ sidebar_counts.contacts }}</span>
             </a>
         </nav>
+
+        <div class="section-label">PIPELINE</div>
+        <nav>
+            <a href="{% url 'opportunity_pipeline' %}" class="{% if active == 'pipeline' %}active{% endif %}">
+                <span class="left"><span class="icon">&#9698;</span> Pipeline</span>
+                <span class="badge badge-blue">{{ sidebar_counts.opportunities }}</span>
+            </a>
+            <a href="{% url 'opportunity_list' %}" class="{% if active == 'opportunities' %}active{% endif %}">
+                <span class="left"><span class="icon">&#127942;</span> Opportunities</span>
+            </a>
+            <a href="{% url 'opportunity_list' %}?stage=won" class="{% if active == 'won' %}active{% endif %}">
+                <span class="left"><span class="icon">&#10003;</span> Won</span>
+                <span class="badge badge-green">{{ sidebar_counts.won }}</span>
+            </a>
         </nav>
 
         <div class="section-label">LEAD</div>

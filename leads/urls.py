@@ -39,4 +39,13 @@ urlpatterns = [
     path('contacts/create/', views.contact_create, name='contact_create'),
     path('contacts/<int:pk>/edit/', views.contact_edit, name='contact_edit'),
     path('contacts/<int:pk>/delete/', views.contact_delete, name='contact_delete'),
+
+    # Opportunities / Pipeline
+    path('pipeline/', views.opportunity_pipeline, name='opportunity_pipeline'),
+    path('opportunities/', views.opportunity_list, name='opportunity_list'),
+    path('opportunities/create/', views.opportunity_create, name='opportunity_create'),
+    path('opportunities/<int:pk>/', views.opportunity_detail, name='opportunity_detail'),
+    path('opportunities/<int:pk>/edit/', views.opportunity_edit, name='opportunity_edit'),
+    path('opportunities/<int:pk>/delete/', views.opportunity_delete, name='opportunity_delete'),
+    path('opportunities/<int:pk>/move/<str:stage>/', views.opportunity_move, name='opportunity_move'),
 ]

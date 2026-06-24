@@ -128,6 +128,45 @@ class Contact(models.Model):
     class Meta:
         ordering = ['first_name']
 
+OPPORTUNITY_STAGE_CHOICES = [
+    ('new', 'New'),
+    ('contacted', 'Contacted'),
+    ('qualified', 'Qualified'),
+    ('proposal', 'Proposal Sent'),
+    ('negotiation', 'Negotiation'),
+    ('won', 'Won'),
+    ('lost', 'Lost'),
+]
+
+PRIORITY_CHOICES = [
+    ('low', 'Low'),
+    ('medium', 'Medium'),
+    ('high', 'High')
+]
+
+class Opportunity(models.Model):
+    title               = models.CharField(max_length=200)
+    lead                = models.ForeignKey(Lead, on_delete=models.SET_NULL, null=True, blank=True, related_name='opportunities')
+    contact             = models.ForeignKey(Contact, on_delete=models.SET_NULL, null=True, blank=True, related_name='opportunities')
+    company             = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True, related_name='opportunities')
+    assigned_to         = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='opportunities')
+    stage               = models.CharField(max_length=20, choices=OPPORTUNITY_STAGE_CHOICES, default='new')
+    priority            = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    value               = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    probability         = models.IntegerField(default=0, help_text='Win probability 0-100%')
+    expected_close_date = models.DateField(blank=True, null=True)
+    description         = models.TextField(blank=True, null=True)
+    lost_reason         = models.TextField(blank=True, null=True)
+    created_at          = models.DateTimeField(auto_now_add=True)
+    updated_at          = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = 'Opportunities'
+
 class FollowUp(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
