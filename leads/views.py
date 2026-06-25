@@ -11,8 +11,12 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
                      Quotation, QuotationItem,
+                     Project, Milestone, Task,
                      OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES,
-                     QUOTATION_STATUS_CHOICES, ROLE_CHOICES)
+                     QUOTATION_STATUS_CHOICES,
+                     PROJECT_STATUS_CHOICES, PROJECT_PRIORITY_CHOICES,
+                     METHODOLOGY_CHOICES, MILESTONE_STATUS_CHOICES,
+                     TASK_STATUS_CHOICES, TASK_PRIORITY_CHOICES)
 
 
 def login_view(request):
@@ -790,3 +794,267 @@ def quotation_status(request, pk, status):
         quotation.save()
         messages.success(request, f'Quotation marked as {valid[status]}.')
     return redirect('quotation_detail', pk=pk)
+
+# ── PROJECT VIEWS ──────────────────────────────────────────
+
+@login_required
+def project_list(request):
+    projects = Project.objects.select_related('manager', 'company').all()
+    status = request.GET.get('status')
+    if status:
+        projects = projects.filter(status=status)
+    q = request.GET.get('q')
+    if q:
+        projects = projects.filter(Q(name__icontains=q) | Q(company__name__icontains=q))
+    context = {
+        'projects': projects,
+        'active': 'projects',
+        'title': 'Projects',
+        'status_choices': PROJECT_STATUS_CHOICES,
+        'selected_status': status,
+    }
+    return render(request, 'leads/project_list.html', context)
+
+
+@login_required
+def project_create(request, opp_pk=None):
+    opportunity = None
+    if opp_pk:
+        opportunity = get_object_or_404(Opportunity, pk=opp_pk)
+
+    if request.method == 'POST':
+        project = Project(
+            name=request.POST.get('name'),
+            description=request.POST.get('description'),
+            status=request.POST.get('status', 'planning'),
+            priority=request.POST.get('priority', 'medium'),
+            methodology=request.POST.get('methodology', 'agile'),
+            budget=request.POST.get('budget') or 0,
+            start_date=request.POST.get('start_date') or None,
+            end_date=request.POST.get('end_date') or None,
+            estimated_hours=request.POST.get('estimated_hours') or 0,
+            technology_stack=request.POST.get('technology_stack'),
+            notes=request.POST.get('notes'),
+        )
+        manager_id = request.POST.get('manager')
+        company_id = request.POST.get('company')
+        contact_id = request.POST.get('contact')
+        opp_id = request.POST.get('opportunity')
+        if manager_id:
+            project.manager_id = manager_id
+        if company_id:
+            project.company_id = company_id
+        if contact_id:
+            project.contact_id = contact_id
+        if opp_id:
+            project.opportunity_id = opp_id
+        project.save()
+
+        team_ids = request.POST.getlist('team')
+        if team_ids:
+            project.team.set(team_ids)
+
+        # mark opportunity as won if converting
+        if opportunity:
+            opportunity.stage = 'won'
+            opportunity.save()
+
+        messages.success(request, f'Project "{project.name}" created.')
+        return redirect('project_detail', pk=project.pk)
+
+    context = {
+        'active': 'projects',
+        'title': 'Create Project',
+        'opportunity': opportunity,
+        'status_choices': PROJECT_STATUS_CHOICES,
+        'priority_choices': PROJECT_PRIORITY_CHOICES,
+        'methodology_choices': METHODOLOGY_CHOICES,
+        'users': User.objects.all(),
+        'companies': Company.objects.all(),
+        'contacts': Contact.objects.all(),
+        'opportunities': Opportunity.objects.filter(stage='won'),
+    }
+    return render(request, 'leads/project_form.html', context)
+
+
+@login_required
+def project_detail(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    milestones = project.milestones.prefetch_related('tasks').all()
+    context = {
+        'project': project,
+        'milestones': milestones,
+        'active': 'projects',
+        'task_status_choices': TASK_STATUS_CHOICES,
+        'task_priority_choices': TASK_PRIORITY_CHOICES,
+        'milestone_status_choices': MILESTONE_STATUS_CHOICES,
+        'users': User.objects.all(),
+    }
+    return render(request, 'leads/project_detail.html', context)
+
+
+@login_required
+def project_edit(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    if request.method == 'POST':
+        project.name = request.POST.get('name')
+        project.description = request.POST.get('description')
+        project.status = request.POST.get('status', 'planning')
+        project.priority = request.POST.get('priority', 'medium')
+        project.methodology = request.POST.get('methodology', 'agile')
+        project.budget = request.POST.get('budget') or 0
+        project.start_date = request.POST.get('start_date') or None
+        project.end_date = request.POST.get('end_date') or None
+        project.estimated_hours = request.POST.get('estimated_hours') or 0
+        project.technology_stack = request.POST.get('technology_stack')
+        project.notes = request.POST.get('notes')
+        manager_id = request.POST.get('manager')
+        company_id = request.POST.get('company')
+        contact_id = request.POST.get('contact')
+        project.manager_id = manager_id if manager_id else None
+        project.company_id = company_id if company_id else None
+        project.contact_id = contact_id if contact_id else None
+        project.save()
+        team_ids = request.POST.getlist('team')
+        project.team.set(team_ids)
+        messages.success(request, 'Project updated.')
+        return redirect('project_detail', pk=pk)
+
+    context = {
+        'active': 'projects',
+        'title': 'Edit Project',
+        'project': project,
+        'status_choices': PROJECT_STATUS_CHOICES,
+        'priority_choices': PROJECT_PRIORITY_CHOICES,
+        'methodology_choices': METHODOLOGY_CHOICES,
+        'users': User.objects.all(),
+        'companies': Company.objects.all(),
+        'contacts': Contact.objects.all(),
+        'opportunities': Opportunity.objects.filter(stage='won'),
+    }
+    return render(request, 'leads/project_form.html', context)
+
+
+@login_required
+def project_delete(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    project.delete()
+    messages.success(request, 'Project deleted.')
+    return redirect('project_list')
+
+
+# ── MILESTONE VIEWS ────────────────────────────────────────
+
+@login_required
+def milestone_create(request, project_pk):
+    project = get_object_or_404(Project, pk=project_pk)
+    if request.method == 'POST':
+        milestone = Milestone(
+            project=project,
+            title=request.POST.get('title'),
+            description=request.POST.get('description'),
+            status=request.POST.get('status', 'pending'),
+            start_date=request.POST.get('start_date') or None,
+            end_date=request.POST.get('end_date') or None,
+            order=project.milestones.count() + 1,
+        )
+        assigned_id = request.POST.get('assigned_to')
+        if assigned_id:
+            milestone.assigned_to_id = assigned_id
+        milestone.save()
+        messages.success(request, 'Milestone added.')
+    return redirect('project_detail', pk=project_pk)
+
+
+@login_required
+def milestone_edit(request, pk):
+    milestone = get_object_or_404(Milestone, pk=pk)
+    if request.method == 'POST':
+        milestone.title = request.POST.get('title')
+        milestone.description = request.POST.get('description')
+        milestone.status = request.POST.get('status', 'pending')
+        milestone.start_date = request.POST.get('start_date') or None
+        milestone.end_date = request.POST.get('end_date') or None
+        assigned_id = request.POST.get('assigned_to')
+        milestone.assigned_to_id = assigned_id if assigned_id else None
+        milestone.save()
+        messages.success(request, 'Milestone updated.')
+    return redirect('project_detail', pk=milestone.project.pk)
+
+
+@login_required
+def milestone_delete(request, pk):
+    milestone = get_object_or_404(Milestone, pk=pk)
+    project_pk = milestone.project.pk
+    milestone.delete()
+    messages.success(request, 'Milestone deleted.')
+    return redirect('project_detail', pk=project_pk)
+
+
+# ── TASK VIEWS ─────────────────────────────────────────────
+
+@login_required
+def task_create(request, milestone_pk):
+    milestone = get_object_or_404(Milestone, pk=milestone_pk)
+    if request.method == 'POST':
+        task = Task(
+            milestone=milestone,
+            title=request.POST.get('title'),
+            description=request.POST.get('description'),
+            status=request.POST.get('status', 'todo'),
+            priority=request.POST.get('priority', 'medium'),
+            due_date=request.POST.get('due_date') or None,
+            notes=request.POST.get('notes'),
+        )
+        assigned_id = request.POST.get('assigned_to')
+        if assigned_id:
+            task.assigned_to_id = assigned_id
+        task.save()
+        messages.success(request, 'Task added.')
+    return redirect('project_detail', pk=milestone.project.pk)
+
+
+@login_required
+def task_edit(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+    if request.method == 'POST':
+        task.title = request.POST.get('title')
+        task.description = request.POST.get('description')
+        task.status = request.POST.get('status', 'todo')
+        task.priority = request.POST.get('priority', 'medium')
+        task.due_date = request.POST.get('due_date') or None
+        task.notes = request.POST.get('notes')
+        assigned_id = request.POST.get('assigned_to')
+        task.assigned_to_id = assigned_id if assigned_id else None
+        task.save()
+        messages.success(request, 'Task updated.')
+    return redirect('project_detail', pk=task.milestone.project.pk)
+
+
+@login_required
+def task_delete(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+    project_pk = task.milestone.project.pk
+    task.delete()
+    messages.success(request, 'Task deleted.')
+    return redirect('project_detail', pk=project_pk)
+
+
+@login_required
+def task_status(request, pk, status):
+    task = get_object_or_404(Task, pk=pk)
+    valid = dict(TASK_STATUS_CHOICES)
+    if status in valid:
+        task.status = status
+        task.save()
+    return redirect(request.META.get('HTTP_REFERER', 'project_list'))
+
+
+@login_required
+def convert_to_project(request, opp_pk):
+    """One-click convert a won opportunity to a project."""
+    opportunity = get_object_or_404(Opportunity, pk=opp_pk)
+    if hasattr(opportunity, 'project'):
+        messages.info(request, 'This opportunity already has a project.')
+        return redirect('project_detail', pk=opportunity.project.pk)
+    return redirect('project_create_from_opp', opp_pk=opp_pk)

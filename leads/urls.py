@@ -60,4 +60,24 @@ urlpatterns = [
     path('quotations/<int:pk>/edit/', views.quotation_edit, name='quotation_edit'),
     path('quotations/<int:pk>/delete/', views.quotation_delete, name='quotation_delete'),
     path('quotations/<int:pk>/status/<str:status>/', views.quotation_status, name='quotation_status'),
+
+    # Projects
+    path('projects/', views.project_list, name='project_list'),
+    path('projects/create/', views.project_create, name='project_create'),
+    path('projects/create/from/<int:opp_pk>/', views.project_create, name='project_create_from_opp'),
+    path('projects/<int:pk>/', views.project_detail, name='project_detail'),
+    path('projects/<int:pk>/edit/', views.project_edit, name='project_edit'),
+    path('projects/<int:pk>/delete/', views.project_delete, name='project_delete'),
+    path('opportunities/<int:opp_pk>/convert/', views.convert_to_project, name='convert_to_project'),
+
+    # Milestones
+    path('projects/<int:project_pk>/milestones/add/', views.milestone_create, name='milestone_create'),
+    path('milestones/<int:pk>/edit/', views.milestone_edit, name='milestone_edit'),
+    path('milestones/<int:pk>/delete/', views.milestone_delete, name='milestone_delete'),
+
+    # Tasks
+    path('milestones/<int:milestone_pk>/tasks/add/', views.task_create, name='task_create'),
+    path('tasks/<int:pk>/edit/', views.task_edit, name='task_edit'),
+    path('tasks/<int:pk>/delete/', views.task_delete, name='task_delete'),
+    path('tasks/<int:pk>/status/<str:status>/', views.task_status, name='task_status'),
 ]

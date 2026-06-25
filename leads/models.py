@@ -210,7 +210,155 @@ class QuotationItem(models.Model):
 
     def __str__(self):
         return self.description
-           
+
+PROJECT_STATUS_CHOICES = [
+    ('planning', 'Planning'),
+    ('active', 'Active'),
+    ('on_hold', 'On Hold'),
+    ('completed', 'Completed'),
+    ('cancelled', 'Cancelled'),
+]
+
+PROJECT_PRIORITY_CHOICES = [
+    ('low', 'Low'),
+    ('medium', 'Medium'),
+    ('high', 'High'),
+    ('critical', 'Critical'),
+]
+
+METHODOLOGY_CHOICES = [
+    ('agile', 'Agile'),
+    ('waterfall', 'Waterfall'),
+    ('hybrid', 'Hybrid'),
+]
+
+MILESTONE_STATUS_CHOICES = [
+    ('pending', 'Pending'),
+    ('in_progress', 'In Progress'),
+    ('completed', 'Completed'),
+]
+
+TASK_STATUS_CHOICES = [
+    ('todo', 'To Do'),
+    ('in_progress', 'In Progress'),
+    ('review', 'In Review'),
+    ('done', 'Done'),
+]
+
+TASK_PRIORITY_CHOICES = [
+    ('low', 'Low'),
+    ('medium', 'Medium'),
+    ('high', 'High'),
+    ('critical', 'Critical'),
+]
+
+
+class Project(models.Model):
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    opportunity = models.OneToOneField(
+        Opportunity, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='project'
+    )
+    company = models.ForeignKey(
+        Company, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='projects'
+    )
+    contact = models.ForeignKey(
+        Contact, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='projects'
+    )
+    manager = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='managed_projects'
+    )
+    team = models.ManyToManyField(
+        User, blank=True, related_name='projects'
+    )
+    status = models.CharField(max_length=20, choices=PROJECT_STATUS_CHOICES, default='planning')
+    priority = models.CharField(max_length=10, choices=PROJECT_PRIORITY_CHOICES, default='medium')
+    methodology = models.CharField(max_length=10, choices=METHODOLOGY_CHOICES, default='agile')
+    budget = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    estimated_hours = models.IntegerField(default=0)
+    technology_stack = models.CharField(max_length=255, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    def progress(self):
+        total = Task.objects.filter(milestone__project=self).count()
+        if total == 0:
+            return 0
+        done = Task.objects.filter(milestone__project=self, status='done').count()
+        return int((done / total) * 100)
+
+    def total_tasks(self):
+        return Task.objects.filter(milestone__project=self).count()
+
+    def done_tasks(self):
+        return Task.objects.filter(milestone__project=self, status='done').count()
+
+    def pending_tasks(self):
+        return Task.objects.filter(
+            milestone__project=self
+        ).exclude(status='done').count()
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class Milestone(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='milestones')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    assigned_to = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='milestones'
+    )
+    status = models.CharField(max_length=15, choices=MILESTONE_STATUS_CHOICES, default='pending')
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    order = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.project.name} — {self.title}"
+
+    def progress(self):
+        total = self.tasks.count()
+        if total == 0:
+            return 0
+        done = self.tasks.filter(status='done').count()
+        return int((done / total) * 100)
+
+    class Meta:
+        ordering = ['order', 'start_date']
+
+
+class Task(models.Model):
+    milestone = models.ForeignKey(Milestone, on_delete=models.CASCADE, related_name='tasks')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    assigned_to = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='tasks'
+    )
+    status = models.CharField(max_length=15, choices=TASK_STATUS_CHOICES, default='todo')
+    priority = models.CharField(max_length=10, choices=TASK_PRIORITY_CHOICES, default='medium')
+    due_date = models.DateField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ['due_date', 'priority']
+                 
 class FollowUp(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),

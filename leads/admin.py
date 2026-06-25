@@ -1,7 +1,51 @@
 from django.contrib import admin
-from .models import (Lead, FollowUp, SalesPerson, Payment, 
-                     ScheduledPayment, Installment, UserProfile, 
-                     Company, Contact, Opportunity)
+from .models import (Lead, FollowUp, SalesPerson, Payment,
+                     ScheduledPayment, Installment, UserProfile,
+                     Company, Contact, Opportunity,
+                     Quotation, QuotationItem,
+                     Project, Milestone, Task)
+
+
+class MilestoneInline(admin.TabularInline):
+    model = Milestone
+    extra = 1
+
+
+class TaskInline(admin.TabularInline):
+    model = Task
+    extra = 1
+
+
+@admin.register(Project)
+class ProjectAdmin(admin.ModelAdmin):
+    list_display = ('name', 'status', 'priority', 'manager', 'start_date', 'end_date')
+    list_filter = ('status', 'priority', 'methodology')
+    search_fields = ('name',)
+    inlines = [MilestoneInline]
+
+
+@admin.register(Milestone)
+class MilestoneAdmin(admin.ModelAdmin):
+    list_display = ('title', 'project', 'status', 'start_date', 'end_date')
+    list_filter = ('status',)
+    inlines = [TaskInline]
+
+
+@admin.register(Task)
+class TaskAdmin(admin.ModelAdmin):
+    list_display = ('title', 'milestone', 'assigned_to', 'status', 'priority', 'due_date')
+    list_filter = ('status', 'priority')
+
+class QuotationItemInline(admin.TabularInline):
+    model = QuotationItem
+    extra = 1
+
+@admin.register(Quotation)
+class QuotationAdmin(admin.ModelAdmin):
+    list_display = ('title', 'status', 'company', 'valid_until', 'created_at')
+    list_filter = ('status',)
+    search_fields = ('title',)
+    inlines = [QuotationItemInline]
 
 @admin.register(Opportunity)
 class OpportunityAdmin(admin.ModelAdmin):

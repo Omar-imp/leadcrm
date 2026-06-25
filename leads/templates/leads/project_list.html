@@ -1,0 +1,70 @@
+{% extends 'leads/base.html' %}
+{% block title %}Projects - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Projects</h1>
+    <a href="{% url 'project_create' %}" class="btn">+ New Project</a>
+</div>
+
+<div class="card">
+    <form method="get" class="search-bar">
+        <input type="text" name="q" class="form-control"
+               placeholder="Search projects" value="{{ request.GET.q }}">
+        <select name="status" class="form-control" style="max-width:180px;">
+            <option value="">All Statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-small">Filter</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Project</th><th>Company</th><th>Manager</th><th>Status</th>
+                <th>Progress</th><th>End Date</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in projects %}
+            <tr>
+                <td><a href="{% url 'project_detail' p.pk %}">{{ p.name }}</a></td>
+                <td>{{ p.company.name|default:"-" }}</td>
+                <td>{{ p.manager.username|default:"-" }}</td>
+                <td>
+                    <span class="pill
+                        {% if p.status == 'active' %}pill-positive
+                        {% elif p.status == 'completed' %}pill-converted
+                        {% elif p.status == 'cancelled' %}pill-lost
+                        {% elif p.status == 'on_hold' %}pill-quotation
+                        {% else %}pill-new{% endif %}">
+                        {{ p.get_status_display }}
+                    </span>
+                </td>
+                <td style="min-width:120px;">
+                    <div style="font-size:12px; color:var(--text-muted);">{{ p.progress }}%</div>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-fill {% if p.progress == 100 %}done{% endif %}"
+                             style="width:{{ p.progress }}%"></div>
+                    </div>
+                </td>
+                <td>{{ p.end_date|date:"d M Y"|default:"-" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'project_detail' p.pk %}">View</a>
+                        <a href="{% url 'project_edit' p.pk %}">Edit</a>
+                        <a href="{% url 'project_delete' p.pk %}"
+                           onclick="return confirm('Delete project?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="empty-state">No projects yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

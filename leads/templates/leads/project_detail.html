@@ -1,0 +1,330 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ project.name }} - Lead CRM{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <div>
+        <h1 class="page-title" style="margin:0;">{{ project.name }}</h1>
+        <span class="pill
+            {% if project.status == 'active' %}pill-positive
+            {% elif project.status == 'completed' %}pill-converted
+            {% elif project.status == 'cancelled' %}pill-lost
+            {% elif project.status == 'on_hold' %}pill-quotation
+            {% else %}pill-new{% endif %}"
+            style="margin-top:8px; display:inline-block;">
+            {{ project.get_status_display }}
+        </span>
+    </div>
+    <div class="action-links">
+        <a href="{% url 'project_edit' project.pk %}" class="btn btn-small">Edit Project</a>
+    </div>
+</div>
+
+<!-- Stats row -->
+<div class="card">
+    <div class="stats-row">
+        <div class="stat">
+            <div class="label">Progress</div>
+            <div class="value">{{ project.progress }}%</div>
+            <div class="progress-bar-wrap" style="width:80px; margin:6px auto 0;">
+                <div class="progress-bar-fill {% if project.progress == 100 %}done{% endif %}"
+                     style="width:{{ project.progress }}%"></div>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="label">Total Tasks</div>
+            <div class="value">{{ project.total_tasks }}</div>
+        </div>
+        <div class="stat">
+            <div class="label">Done</div>
+            <div class="value" style="color:var(--green);">{{ project.done_tasks }}</div>
+        </div>
+        <div class="stat">
+            <div class="label">Pending</div>
+            <div class="value" style="color:var(--orange);">{{ project.pending_tasks }}</div>
+        </div>
+        <div class="stat">
+            <div class="label">Budget</div>
+            <div class="value">{{ project.budget }}</div>
+        </div>
+        <div class="stat">
+            <div class="label">End Date</div>
+            <div class="value" style="font-size:16px;">
+                {{ project.end_date|date:"d M Y"|default:"-" }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details -->
+<div class="card">
+    <h2 class="section-heading">Project Details</h2>
+    <table>
+        <tr><td><strong>Manager</strong></td><td>{{ project.manager.username|default:"-" }}</td></tr>
+        <tr><td><strong>Company</strong></td>
+            <td>{% if project.company %}
+                <a href="{% url 'company_detail' project.company.pk %}">{{ project.company.name }}</a>
+                {% else %}-{% endif %}</td></tr>
+        <tr><td><strong>Priority</strong></td>
+            <td><span class="priority-{{ project.priority }}">{{ project.get_priority_display }}</span></td></tr>
+        <tr><td><strong>Methodology</strong></td><td>{{ project.get_methodology_display }}</td></tr>
+        <tr><td><strong>Technology Stack</strong></td><td>{{ project.technology_stack|default:"-" }}</td></tr>
+        <tr><td><strong>Estimated Hours</strong></td><td>{{ project.estimated_hours }}</td></tr>
+        <tr><td><strong>Start Date</strong></td><td>{{ project.start_date|date:"d M Y"|default:"-" }}</td></tr>
+        <tr><td><strong>Team</strong></td>
+            <td>{% for u in project.team.all %}{{ u.username }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td></tr>
+        <tr><td><strong>Description</strong></td><td>{{ project.description|default:"-" }}</td></tr>
+        <tr><td><strong>Notes</strong></td><td>{{ project.notes|default:"-" }}</td></tr>
+    </table>
+</div>
+
+<!-- Milestones & Tasks -->
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+        <h2 class="section-heading" style="margin:0;">Milestones & Tasks</h2>
+        <button onclick="openModal('modal-add-milestone')" class="btn btn-small">+ Add Milestone</button>
+    </div>
+
+    {% for milestone in milestones %}
+    <div class="milestone-block">
+        <div class="milestone-header">
+            <div>
+                <span class="milestone-title">{{ milestone.title }}</span>
+                <span class="pill
+                    {% if milestone.status == 'completed' %}pill-converted
+                    {% elif milestone.status == 'in_progress' %}pill-positive
+                    {% else %}pill-new{% endif %}"
+                    style="margin-left:10px; font-size:11px;">
+                    {{ milestone.get_status_display }}
+                </span>
+                {% if milestone.end_date %}
+                <span style="font-size:12px; color:var(--text-muted); margin-left:10px;">
+                    Due: {{ milestone.end_date|date:"d M Y" }}
+                </span>
+                {% endif %}
+            </div>
+            <div class="action-links">
+                <span style="font-size:12px; color:var(--text-muted);">{{ milestone.progress }}%</span>
+                <button onclick="openMilestoneEdit({{ milestone.pk }}, '{{ milestone.title|escapejs }}', '{{ milestone.status }}', '{{ milestone.start_date|date:'Y-m-d' }}', '{{ milestone.end_date|date:'Y-m-d' }}')"
+                        style="border:1px solid var(--border); background:#fff; border-radius:4px; padding:4px 10px; font-size:12px; cursor:pointer;">Edit</button>
+                <a href="{% url 'milestone_delete' milestone.pk %}"
+                   onclick="return confirm('Delete milestone and all its tasks?')"
+                   style="border:1px solid var(--border); background:#fff; border-radius:4px; padding:4px 10px; font-size:12px;">Delete</a>
+                <button onclick="openAddTask({{ milestone.pk }})"
+                        style="border:1px solid var(--teal); background:var(--teal); color:#fff; border-radius:4px; padding:4px 10px; font-size:12px; cursor:pointer;">+ Task</button>
+            </div>
+        </div>
+
+        <div class="milestone-body">
+            {% for task in milestone.tasks.all %}
+            <div class="task-row">
+                <div class="task-title">{{ task.title }}</div>
+                <span class="task-meta">
+                    <span class="priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                </span>
+                <span class="task-meta">
+                    <span class="pill
+                        {% if task.status == 'done' %}pill-converted
+                        {% elif task.status == 'in_progress' %}pill-positive
+                        {% elif task.status == 'review' %}pill-quotation
+                        {% else %}pill-new{% endif %}"
+                        style="font-size:11px;">
+                        {{ task.get_status_display }}
+                    </span>
+                </span>
+                {% if task.assigned_to %}
+                <span class="task-meta">&#128100; {{ task.assigned_to.username }}</span>
+                {% endif %}
+                {% if task.due_date %}
+                <span class="task-meta">&#128197; {{ task.due_date|date:"d M Y" }}</span>
+                {% endif %}
+                <div class="action-links">
+                    {% for value, label in task_status_choices %}
+                    {% if value != task.status %}
+                    <a href="{% url 'task_status' task.pk value %}" style="font-size:11px;">{{ label }}</a>
+                    {% endif %}
+                    {% endfor %}
+                    <a href="{% url 'task_delete' task.pk %}"
+                       onclick="return confirm('Delete task?')" style="font-size:11px;">Delete</a>
+                </div>
+            </div>
+            {% empty %}
+            <p style="color:var(--text-muted); font-size:13px; padding:12px 0 0;">No tasks yet. Click + Task to add one.</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">No milestones yet. Click + Add Milestone to get started.</div>
+    {% endfor %}
+</div>
+
+<!-- Add Milestone Modal -->
+<div class="modal-overlay" id="modal-add-milestone">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('modal-add-milestone')">&#10005;</button>
+        <h3>Add Milestone</h3>
+        <form method="post" action="{% url 'milestone_create' project.pk %}">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="field-label">Title</label>
+                <input type="text" name="title" class="form-control" required>
+            </div>
+            <div class="form-row" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">End Date</label>
+                    <input type="date" name="end_date" class="form-control">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="field-label">Assigned To</label>
+                <select name="assigned_to" class="form-control">
+                    <option value="">-- None --</option>
+                    {% for u in users %}
+                    <option value="{{ u.pk }}">{{ u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="field-label">Status</label>
+                <select name="status" class="form-control">
+                    {% for value, label in milestone_status_choices %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="closeModal('modal-add-milestone')"
+                        style="margin-right:12px; padding:10px 20px; color:#666; background:none; border:none; cursor:pointer;">Cancel</button>
+                <button type="submit" class="btn">Add Milestone</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Milestone Modal -->
+<div class="modal-overlay" id="modal-edit-milestone">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('modal-edit-milestone')">&#10005;</button>
+        <h3>Edit Milestone</h3>
+        <form method="post" id="edit-milestone-form" action="">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="field-label">Title</label>
+                <input type="text" name="title" id="edit-milestone-title" class="form-control" required>
+            </div>
+            <div class="form-row" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Start Date</label>
+                    <input type="date" name="start_date" id="edit-milestone-start" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">End Date</label>
+                    <input type="date" name="end_date" id="edit-milestone-end" class="form-control">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="field-label">Status</label>
+                <select name="status" id="edit-milestone-status" class="form-control">
+                    {% for value, label in milestone_status_choices %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="closeModal('modal-edit-milestone')"
+                        style="margin-right:12px; padding:10px 20px; color:#666; background:none; border:none; cursor:pointer;">Cancel</button>
+                <button type="submit" class="btn">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal-overlay" id="modal-add-task">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('modal-add-task')">&#10005;</button>
+        <h3>Add Task</h3>
+        <form method="post" id="add-task-form" action="">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="field-label">Task Title</label>
+                <input type="text" name="title" class="form-control" required>
+            </div>
+            <div class="form-row" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Priority</label>
+                    <select name="priority" class="form-control">
+                        {% for value, label in task_priority_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Status</label>
+                    <select name="status" class="form-control">
+                        {% for value, label in task_status_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-row" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Assigned To</label>
+                    <select name="assigned_to" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for u in users %}
+                        <option value="{{ u.pk }}">{{ u.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Due Date</label>
+                    <input type="date" name="due_date" class="form-control">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="field-label">Description</label>
+                <textarea name="description" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="closeModal('modal-add-task')"
+                        style="margin-right:12px; padding:10px 20px; color:#666; background:none; border:none; cursor:pointer;">Cancel</button>
+                <button type="submit" class="btn">Add Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+}
+function openAddTask(milestonePk) {
+    document.getElementById('add-task-form').action = '/milestones/' + milestonePk + '/tasks/add/';
+    openModal('modal-add-task');
+}
+function openMilestoneEdit(pk, title, status, start, end) {
+    document.getElementById('edit-milestone-form').action = '/milestones/' + pk + '/edit/';
+    document.getElementById('edit-milestone-title').value = title;
+    document.getElementById('edit-milestone-start').value = start;
+    document.getElementById('edit-milestone-end').value = end;
+    const sel = document.getElementById('edit-milestone-status');
+    for (let o of sel.options) { o.selected = o.value === status; }
+    openModal('modal-edit-milestone');
+}
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('open');
+    });
+});
+</script>
+
+{% endblock %}
