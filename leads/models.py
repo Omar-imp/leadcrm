@@ -358,7 +358,115 @@ class Task(models.Model):
 
     class Meta:
         ordering = ['due_date', 'priority']
-                 
+
+MEETING_STATUS_CHOICES = [
+    ('scheduled', 'Scheduled'),
+    ('completed', 'Completed'),
+    ('cancelled', 'Cancelled'),
+    ('no_show', 'No Show'),
+]
+
+MEETING_TYPE_CHOICES = [
+    ('call', 'Phone Call'),
+    ('video', 'Video Call'),
+    ('in_person', 'In Person'),
+    ('demo', 'Demo'),
+    ('follow_up', 'Follow Up'),
+]
+
+GENERAL_TASK_STATUS_CHOICES = [
+    ('todo', 'To Do'),
+    ('in_progress', 'In Progress'),
+    ('done', 'Done'),
+]
+
+GENERAL_TASK_PRIORITY_CHOICES = [
+    ('low', 'Low'),
+    ('medium', 'Medium'),
+    ('high', 'High'),
+]
+
+
+class Meeting(models.Model):
+    title = models.CharField(max_length=200)
+    meeting_type = models.CharField(max_length=20, choices=MEETING_TYPE_CHOICES, default='call')
+    status = models.CharField(max_length=20, choices=MEETING_STATUS_CHOICES, default='scheduled')
+    scheduled_at = models.DateTimeField()
+    duration_minutes = models.IntegerField(default=30)
+    location = models.CharField(max_length=255, blank=True, null=True)
+    agenda = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    action_items = models.TextField(blank=True, null=True)
+    lead = models.ForeignKey(
+        Lead, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='meetings'
+    )
+    opportunity = models.ForeignKey(
+        Opportunity, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='meetings'
+    )
+    company = models.ForeignKey(
+        Company, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='meetings'
+    )
+    contact = models.ForeignKey(
+        Contact, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='meetings'
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_meetings'
+    )
+    attendees = models.ManyToManyField(
+        User, blank=True, related_name='meetings'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} — {self.scheduled_at:%d %b %Y %H:%M}"
+
+    class Meta:
+        ordering = ['-scheduled_at']
+
+
+class GeneralTask(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    assigned_to = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='general_tasks'
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_tasks'
+    )
+    status = models.CharField(
+        max_length=15,
+        choices=GENERAL_TASK_STATUS_CHOICES,
+        default='todo'
+    )
+    priority = models.CharField(
+        max_length=10,
+        choices=GENERAL_TASK_PRIORITY_CHOICES,
+        default='medium'
+    )
+    due_date = models.DateField(blank=True, null=True)
+    lead = models.ForeignKey(
+        Lead, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='general_tasks'
+    )
+    opportunity = models.ForeignKey(
+        Opportunity, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='general_tasks'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ['due_date', '-created_at']
+                       
 class FollowUp(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),

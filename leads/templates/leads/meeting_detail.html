@@ -1,0 +1,81 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ meeting.title }} - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <div>
+        <h1 class="page-title" style="margin:0;">{{ meeting.title }}</h1>
+        <span class="pill
+            {% if meeting.status == 'completed' %}pill-converted
+            {% elif meeting.status == 'cancelled' %}pill-lost
+            {% elif meeting.status == 'no_show' %}pill-quotation
+            {% else %}pill-new{% endif %}"
+            style="margin-top:8px; display:inline-block;">
+            {{ meeting.get_status_display }}
+        </span>
+    </div>
+    <div class="action-links">
+        <a href="{% url 'meeting_edit' meeting.pk %}" class="btn btn-small">Edit</a>
+        <a href="{% url 'meeting_delete' meeting.pk %}"
+           class="btn btn-small" style="background:#e2574c;"
+           onclick="return confirm('Delete meeting?')">Delete</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Meeting Details</h2>
+    <table>
+        <tr><td><strong>Type</strong></td><td>{{ meeting.get_meeting_type_display }}</td></tr>
+        <tr><td><strong>Date & Time</strong></td><td>{{ meeting.scheduled_at|date:"d M Y, h:i A" }}</td></tr>
+        <tr><td><strong>Duration</strong></td><td>{{ meeting.duration_minutes }} minutes</td></tr>
+        <tr><td><strong>Location</strong></td><td>{{ meeting.location|default:"-" }}</td></tr>
+        <tr><td><strong>Created By</strong></td><td>{{ meeting.created_by.username|default:"-" }}</td></tr>
+        <tr><td><strong>Attendees</strong></td>
+            <td>{% for u in meeting.attendees.all %}{{ u.username }}{% if not forloop.last %}, {% endif %}
+                {% empty %}-{% endfor %}</td></tr>
+        {% if meeting.lead %}
+        <tr><td><strong>Lead</strong></td>
+            <td><a href="{% url 'lead_detail' meeting.lead.pk %}">{{ meeting.lead.name }}</a></td></tr>
+        {% endif %}
+        {% if meeting.opportunity %}
+        <tr><td><strong>Opportunity</strong></td>
+            <td><a href="{% url 'opportunity_detail' meeting.opportunity.pk %}">{{ meeting.opportunity.title }}</a></td></tr>
+        {% endif %}
+        {% if meeting.company %}
+        <tr><td><strong>Company</strong></td>
+            <td><a href="{% url 'company_detail' meeting.company.pk %}">{{ meeting.company.name }}</a></td></tr>
+        {% endif %}
+    </table>
+</div>
+
+{% if meeting.agenda %}
+<div class="card">
+    <h2 class="section-heading">Agenda</h2>
+    <p style="color:var(--text-muted); white-space:pre-line;">{{ meeting.agenda }}</p>
+</div>
+{% endif %}
+
+{% if meeting.notes %}
+<div class="card">
+    <h2 class="section-heading">Notes / Minutes</h2>
+    <p style="color:var(--text-muted); white-space:pre-line;">{{ meeting.notes }}</p>
+</div>
+{% endif %}
+
+{% if meeting.action_items %}
+<div class="card">
+    <h2 class="section-heading">Action Items</h2>
+    <p style="color:var(--text-muted); white-space:pre-line;">{{ meeting.action_items }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2 class="section-heading">Update Status</h2>
+    <div class="action-links">
+        {% for value, label in meeting_statuses %}
+        {% if value != meeting.status %}
+        <a href="{% url 'meeting_status' meeting.pk value %}">→ {{ label }}</a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

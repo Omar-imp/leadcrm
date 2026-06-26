@@ -3,7 +3,21 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
                      Quotation, QuotationItem,
-                     Project, Milestone, Task)
+                     Project, Milestone, Task,
+                     Meeting, GeneralTask)
+
+
+@admin.register(Meeting)
+class MeetingAdmin(admin.ModelAdmin):
+    list_display = ('title', 'meeting_type', 'status', 'scheduled_at', 'created_by')
+    list_filter = ('status', 'meeting_type')
+    search_fields = ('title',)
+
+
+@admin.register(GeneralTask)
+class GeneralTaskAdmin(admin.ModelAdmin):
+    list_display = ('title', 'status', 'priority', 'assigned_to', 'due_date')
+    list_filter = ('status', 'priority')
 
 
 class MilestoneInline(admin.TabularInline):

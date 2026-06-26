@@ -1,0 +1,75 @@
+{% extends 'leads/base.html' %}
+{% block title %}Tasks - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Tasks</h1>
+    <a href="{% url 'general_task_create' %}" class="btn">+ New Task</a>
+</div>
+
+<div class="card">
+    <div style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
+        <a href="{% url 'general_task_list' %}"
+           class="btn btn-small {% if scope != 'mine' and scope != 'today' and scope != 'overdue' %}{% else %}btn-outline{% endif %}">All</a>
+        <a href="?scope=mine"
+           class="btn btn-small {% if scope == 'mine' %}{% else %}btn-outline{% endif %}">Mine</a>
+        <a href="?scope=today"
+           class="btn btn-small {% if scope == 'today' %}{% else %}btn-outline{% endif %}">Due Today</a>
+        <a href="?scope=overdue"
+           class="btn btn-small {% if scope == 'overdue' %}{% else %}btn-outline{% endif %}">Overdue</a>
+    </div>
+
+    <form method="get" class="search-bar">
+        <select name="status" class="form-control" style="max-width:180px;">
+            <option value="">All Statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        <input type="hidden" name="scope" value="{{ scope }}">
+        <button type="submit" class="btn btn-small">Filter</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th><th>Priority</th><th>Status</th>
+                <th>Assigned To</th><th>Due Date</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in tasks %}
+            <tr>
+                <td>{{ t.title }}</td>
+                <td><span class="priority-{{ t.priority }}">{{ t.get_priority_display }}</span></td>
+                <td>
+                    <span class="pill
+                        {% if t.status == 'done' %}pill-converted
+                        {% elif t.status == 'in_progress' %}pill-positive
+                        {% else %}pill-new{% endif %}">
+                        {{ t.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ t.assigned_to.username|default:"-" }}</td>
+                <td>{{ t.due_date|date:"d M Y"|default:"-" }}</td>
+                <td>
+                    <div class="action-links">
+                        {% for value, label in status_choices %}
+                        {% if value != t.status %}
+                        <a href="{% url 'general_task_status' t.pk value %}">{{ label }}</a>
+                        {% endif %}
+                        {% endfor %}
+                        <a href="{% url 'general_task_edit' t.pk %}">Edit</a>
+                        <a href="{% url 'general_task_delete' t.pk %}"
+                           onclick="return confirm('Delete task?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No tasks found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

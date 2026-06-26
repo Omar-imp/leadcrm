@@ -66,7 +66,54 @@
                 <span class="left"><span class="icon">&#43;</span> New Quotation</span>
             </a>
         </nav>
+        
+        <div class="section-label">PROJECTS</div>
+        <nav>
+            <a href="{% url 'project_list' %}" class="{% if active == 'projects' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128196;</span> All Projects</span>
+                <span class="badge badge-blue">{{ sidebar_counts.projects }}</span>
+            </a>
+            <a href="{% url 'project_list' %}?status=active" class="">
+                <span class="left"><span class="icon">&#9654;</span> Active</span>
+            </a>
+            <a href="{% url 'project_list' %}?status=completed" class="">
+                <span class="left"><span class="icon">&#10003;</span> Completed</span>
+            </a>
+            <a href="{% url 'project_create' %}" class="">
+                <span class="left"><span class="icon">&#43;</span> New Project</span>
+            </a>
+        </nav>
 
+        <div class="section-label">MEETINGS</div>
+        <nav>
+            <a href="{% url 'meeting_list' %}" class="{% if active == 'meetings' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128197;</span> All Meetings</span>
+                <span class="badge badge-blue">{{ sidebar_counts.meetings_upcoming }}</span>
+            </a>
+            <a href="{% url 'meeting_list' %}?scope=today" class="">
+                <span class="left"><span class="icon">&#9200;</span> Today</span>
+                <span class="badge badge-orange">{{ sidebar_counts.meetings_today }}</span>
+            </a>
+            <a href="{% url 'meeting_create' %}" class="">
+                <span class="left"><span class="icon">&#43;</span> Schedule Meeting</span>
+            </a>
+        </nav>
+
+        <div class="section-label">TASKS</div>
+        <nav>
+            <a href="{% url 'general_task_list' %}" class="{% if active == 'general_tasks' %}active{% endif %}">
+                <span class="left"><span class="icon">&#9989;</span> All Tasks</span>
+                <span class="badge badge-blue">{{ sidebar_counts.tasks_pending }}</span>
+            </a>
+            <a href="{% url 'general_task_list' %}?scope=overdue" class="">
+                <span class="left"><span class="icon">&#9888;</span> Overdue</span>
+                <span class="badge badge-red">{{ sidebar_counts.tasks_overdue }}</span>
+            </a>
+            <a href="{% url 'general_task_create' %}" class="">
+                <span class="left"><span class="icon">&#43;</span> New Task</span>
+            </a>
+        </nav>
+        
         <div class="section-label">LEAD</div>
         <nav>
             <a href="{% url 'create_lead' %}" class="{% if active == 'create_lead' %}active{% endif %}">

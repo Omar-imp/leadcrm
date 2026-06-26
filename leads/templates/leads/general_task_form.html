@@ -1,0 +1,87 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ title }} - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+<div class="form-card">
+    <div class="form-card-header"><h2>{{ title }}</h2></div>
+    <div class="form-card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Title <span class="required">*</span></label>
+                    <input type="text" name="title" class="form-control" required
+                           value="{{ task.title|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Priority</label>
+                    <select name="priority" class="form-control">
+                        {% for value, label in priority_choices %}
+                        <option value="{{ value }}"
+                            {% if task.priority == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Status</label>
+                    <select name="status" class="form-control">
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}"
+                            {% if task.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Assigned To</label>
+                    <select name="assigned_to" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for u in users %}
+                        <option value="{{ u.pk }}"
+                            {% if task.assigned_to_id == u.pk %}selected{% endif %}>
+                            {{ u.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Due Date</label>
+                    <input type="date" name="due_date" class="form-control"
+                           value="{{ task.due_date|date:'Y-m-d'|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Linked Lead</label>
+                    <select name="lead" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for l in leads %}
+                        <option value="{{ l.pk }}"
+                            {% if task.lead_id == l.pk %}selected{% endif %}>
+                            {{ l.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Description</label>
+                <textarea name="description" class="form-control" rows="4">{{ task.description|default:'' }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'general_task_list' %}"
+                   style="margin-right:12px; padding:12px 20px; color:#666;">Cancel</a>
+                <button type="submit" class="btn">
+                    {% if task %}Save Changes{% else %}Create Task{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

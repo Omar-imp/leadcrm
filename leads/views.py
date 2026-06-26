@@ -12,11 +12,14 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      Company, Contact, Opportunity,
                      Quotation, QuotationItem,
                      Project, Milestone, Task,
+                     Meeting, GeneralTask,
                      OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES,
                      QUOTATION_STATUS_CHOICES,
                      PROJECT_STATUS_CHOICES, PROJECT_PRIORITY_CHOICES,
                      METHODOLOGY_CHOICES, MILESTONE_STATUS_CHOICES,
-                     TASK_STATUS_CHOICES, TASK_PRIORITY_CHOICES)
+                     TASK_STATUS_CHOICES, TASK_PRIORITY_CHOICES,
+                     MEETING_STATUS_CHOICES, MEETING_TYPE_CHOICES,
+                     GENERAL_TASK_STATUS_CHOICES, GENERAL_TASK_PRIORITY_CHOICES)
 
 
 def login_view(request):
@@ -1058,3 +1061,283 @@ def convert_to_project(request, opp_pk):
         messages.info(request, 'This opportunity already has a project.')
         return redirect('project_detail', pk=opportunity.project.pk)
     return redirect('project_create_from_opp', opp_pk=opp_pk)
+
+# ── MEETING VIEWS ──────────────────────────────────────────
+
+@login_required
+def meeting_list(request):
+    today = timezone.localdate()
+    meetings = Meeting.objects.select_related(
+        'lead', 'opportunity', 'company', 'created_by'
+    ).all()
+
+    scope = request.GET.get('scope', 'all')
+    if scope == 'upcoming':
+        meetings = meetings.filter(
+            scheduled_at__date__gte=today,
+            status='scheduled'
+        )
+    elif scope == 'today':
+        meetings = meetings.filter(scheduled_at__date=today)
+    elif scope == 'past':
+        meetings = meetings.filter(scheduled_at__date__lt=today)
+
+    q = request.GET.get('q')
+    if q:
+        meetings = meetings.filter(
+            Q(title__icontains=q) | Q(company__name__icontains=q)
+        )
+
+    context = {
+        'meetings': meetings,
+        'active': 'meetings',
+        'title': 'Meetings',
+        'scope': scope,
+    }
+    return render(request, 'leads/meeting_list.html', context)
+
+
+@login_required
+def meeting_create(request):
+    if request.method == 'POST':
+        scheduled_at = request.POST.get('scheduled_at')
+        if not scheduled_at:
+            messages.error(request, 'Please select a date and time for the meeting.')
+            context = {
+                'active': 'meetings',
+                'title': 'Schedule Meeting',
+                'meeting_types': MEETING_TYPE_CHOICES,
+                'meeting_statuses': MEETING_STATUS_CHOICES,
+                'leads': Lead.objects.all(),
+                'opportunities': Opportunity.objects.all(),
+                'companies': Company.objects.all(),
+                'contacts': Contact.objects.all(),
+                'users': User.objects.all(),
+            }
+            return render(request, 'leads/meeting_form.html', context)
+
+        meeting = Meeting(
+            title=request.POST.get('title'),
+            meeting_type=request.POST.get('meeting_type', 'call'),
+            status=request.POST.get('status', 'scheduled'),
+            scheduled_at=scheduled_at,
+            duration_minutes=request.POST.get('duration_minutes') or 30,
+            location=request.POST.get('location'),
+            agenda=request.POST.get('agenda'),
+            notes=request.POST.get('notes'),
+            action_items=request.POST.get('action_items'),
+            created_by=request.user,
+        )
+        lead_id = request.POST.get('lead')
+        opp_id = request.POST.get('opportunity')
+        company_id = request.POST.get('company')
+        contact_id = request.POST.get('contact')
+        meeting.lead_id = lead_id if lead_id else None
+        meeting.opportunity_id = opp_id if opp_id else None
+        meeting.company_id = company_id if company_id else None
+        meeting.contact_id = contact_id if contact_id else None
+        meeting.save()
+        attendee_ids = request.POST.getlist('attendees')
+        if attendee_ids:
+            meeting.attendees.set(attendee_ids)
+        messages.success(request, 'Meeting scheduled.')
+        return redirect('meeting_detail', pk=meeting.pk)
+
+    context = {
+        'active': 'meetings',
+        'title': 'Schedule Meeting',
+        'meeting_types': MEETING_TYPE_CHOICES,
+        'meeting_statuses': MEETING_STATUS_CHOICES,
+        'leads': Lead.objects.all(),
+        'opportunities': Opportunity.objects.all(),
+        'companies': Company.objects.all(),
+        'contacts': Contact.objects.all(),
+        'users': User.objects.all(),
+    }
+    return render(request, 'leads/meeting_form.html', context)
+
+
+@login_required
+def meeting_detail(request, pk):
+    meeting = get_object_or_404(Meeting, pk=pk)
+    context = {
+        'meeting': meeting,
+        'active': 'meetings',
+        'meeting_statuses': MEETING_STATUS_CHOICES,
+    }
+    return render(request, 'leads/meeting_detail.html', context)
+
+
+@login_required
+def meeting_edit(request, pk):
+    meeting = get_object_or_404(Meeting, pk=pk)
+    if request.method == 'POST':
+        meeting.title = request.POST.get('title')
+        meeting.meeting_type = request.POST.get('meeting_type', 'call')
+        meeting.status = request.POST.get('status', 'scheduled')
+        meeting.scheduled_at = request.POST.get('scheduled_at')
+        meeting.duration_minutes = request.POST.get('duration_minutes') or 30
+        meeting.location = request.POST.get('location')
+        meeting.agenda = request.POST.get('agenda')
+        meeting.notes = request.POST.get('notes')
+        meeting.action_items = request.POST.get('action_items')
+        lead_id = request.POST.get('lead')
+        opp_id = request.POST.get('opportunity')
+        company_id = request.POST.get('company')
+        contact_id = request.POST.get('contact')
+        meeting.lead_id = lead_id if lead_id else None
+        meeting.opportunity_id = opp_id if opp_id else None
+        meeting.company_id = company_id if company_id else None
+        meeting.contact_id = contact_id if contact_id else None
+        meeting.save()
+        attendee_ids = request.POST.getlist('attendees')
+        meeting.attendees.set(attendee_ids)
+        messages.success(request, 'Meeting updated.')
+        return redirect('meeting_detail', pk=pk)
+
+    context = {
+        'active': 'meetings',
+        'title': 'Edit Meeting',
+        'meeting': meeting,
+        'meeting_types': MEETING_TYPE_CHOICES,
+        'meeting_statuses': MEETING_STATUS_CHOICES,
+        'leads': Lead.objects.all(),
+        'opportunities': Opportunity.objects.all(),
+        'companies': Company.objects.all(),
+        'contacts': Contact.objects.all(),
+        'users': User.objects.all(),
+    }
+    return render(request, 'leads/meeting_form.html', context)
+
+
+@login_required
+def meeting_delete(request, pk):
+    meeting = get_object_or_404(Meeting, pk=pk)
+    meeting.delete()
+    messages.success(request, 'Meeting deleted.')
+    return redirect('meeting_list')
+
+
+@login_required
+def meeting_status(request, pk, status):
+    meeting = get_object_or_404(Meeting, pk=pk)
+    valid = dict(MEETING_STATUS_CHOICES)
+    if status in valid:
+        meeting.status = status
+        meeting.save()
+        messages.success(request, f'Meeting marked as {valid[status]}.')
+    return redirect('meeting_detail', pk=pk)
+
+
+# ── GENERAL TASK VIEWS ─────────────────────────────────────
+
+@login_required
+def general_task_list(request):
+    today = timezone.localdate()
+    tasks = GeneralTask.objects.select_related('assigned_to', 'created_by').all()
+
+    scope = request.GET.get('scope', 'all')
+    if scope == 'mine':
+        tasks = tasks.filter(assigned_to=request.user)
+    elif scope == 'today':
+        tasks = tasks.filter(due_date=today)
+    elif scope == 'overdue':
+        tasks = tasks.filter(due_date__lt=today, status__in=['todo', 'in_progress'])
+
+    status = request.GET.get('status')
+    if status:
+        tasks = tasks.filter(status=status)
+
+    context = {
+        'tasks': tasks,
+        'active': 'general_tasks',
+        'title': 'Tasks',
+        'scope': scope,
+        'status_choices': GENERAL_TASK_STATUS_CHOICES,
+        'priority_choices': GENERAL_TASK_PRIORITY_CHOICES,
+        'selected_status': status,
+    }
+    return render(request, 'leads/general_task_list.html', context)
+
+
+@login_required
+def general_task_create(request):
+    if request.method == 'POST':
+        task = GeneralTask(
+            title=request.POST.get('title'),
+            description=request.POST.get('description'),
+            status=request.POST.get('status', 'todo'),
+            priority=request.POST.get('priority', 'medium'),
+            due_date=request.POST.get('due_date') or None,
+            created_by=request.user,
+        )
+        assigned_id = request.POST.get('assigned_to')
+        lead_id = request.POST.get('lead')
+        opp_id = request.POST.get('opportunity')
+        task.assigned_to_id = assigned_id if assigned_id else None
+        task.lead_id = lead_id if lead_id else None
+        task.opportunity_id = opp_id if opp_id else None
+        task.save()
+        messages.success(request, 'Task created.')
+        return redirect('general_task_list')
+
+    context = {
+        'active': 'general_tasks',
+        'title': 'Create Task',
+        'status_choices': GENERAL_TASK_STATUS_CHOICES,
+        'priority_choices': GENERAL_TASK_PRIORITY_CHOICES,
+        'users': User.objects.all(),
+        'leads': Lead.objects.all(),
+        'opportunities': Opportunity.objects.all(),
+    }
+    return render(request, 'leads/general_task_form.html', context)
+
+
+@login_required
+def general_task_edit(request, pk):
+    task = get_object_or_404(GeneralTask, pk=pk)
+    if request.method == 'POST':
+        task.title = request.POST.get('title')
+        task.description = request.POST.get('description')
+        task.status = request.POST.get('status', 'todo')
+        task.priority = request.POST.get('priority', 'medium')
+        task.due_date = request.POST.get('due_date') or None
+        assigned_id = request.POST.get('assigned_to')
+        lead_id = request.POST.get('lead')
+        opp_id = request.POST.get('opportunity')
+        task.assigned_to_id = assigned_id if assigned_id else None
+        task.lead_id = lead_id if lead_id else None
+        task.opportunity_id = opp_id if opp_id else None
+        task.save()
+        messages.success(request, 'Task updated.')
+        return redirect('general_task_list')
+
+    context = {
+        'active': 'general_tasks',
+        'title': 'Edit Task',
+        'task': task,
+        'status_choices': GENERAL_TASK_STATUS_CHOICES,
+        'priority_choices': GENERAL_TASK_PRIORITY_CHOICES,
+        'users': User.objects.all(),
+        'leads': Lead.objects.all(),
+        'opportunities': Opportunity.objects.all(),
+    }
+    return render(request, 'leads/general_task_form.html', context)
+
+
+@login_required
+def general_task_delete(request, pk):
+    task = get_object_or_404(GeneralTask, pk=pk)
+    task.delete()
+    messages.success(request, 'Task deleted.')
+    return redirect('general_task_list')
+
+
+@login_required
+def general_task_status(request, pk, status):
+    task = get_object_or_404(GeneralTask, pk=pk)
+    valid = dict(GENERAL_TASK_STATUS_CHOICES)
+    if status in valid:
+        task.status = status
+        task.save()
+    return redirect(request.META.get('HTTP_REFERER', 'general_task_list'))

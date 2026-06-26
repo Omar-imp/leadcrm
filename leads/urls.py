@@ -80,4 +80,19 @@ urlpatterns = [
     path('tasks/<int:pk>/edit/', views.task_edit, name='task_edit'),
     path('tasks/<int:pk>/delete/', views.task_delete, name='task_delete'),
     path('tasks/<int:pk>/status/<str:status>/', views.task_status, name='task_status'),
+
+    # Meetings
+    path('meetings/', views.meeting_list, name='meeting_list'),
+    path('meetings/create/', views.meeting_create, name='meeting_create'),
+    path('meetings/<int:pk>/', views.meeting_detail, name='meeting_detail'),
+    path('meetings/<int:pk>/edit/', views.meeting_edit, name='meeting_edit'),
+    path('meetings/<int:pk>/delete/', views.meeting_delete, name='meeting_delete'),
+    path('meetings/<int:pk>/status/<str:status>/', views.meeting_status, name='meeting_status'),
+
+    # General Tasks
+    path('tasks/', views.general_task_list, name='general_task_list'),
+    path('tasks/create/', views.general_task_create, name='general_task_create'),
+    path('tasks/<int:pk>/edit/', views.general_task_edit, name='general_task_edit'),
+    path('tasks/<int:pk>/delete/', views.general_task_delete, name='general_task_delete'),
+    path('tasks/<int:pk>/status/<str:status>/', views.general_task_status, name='general_task_status'),
 ]

@@ -1,0 +1,152 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ title }} - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+<div class="form-card">
+    <div class="form-card-header"><h2>{{ title }}</h2></div>
+    <div class="form-card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Title <span class="required">*</span></label>
+                    <input type="text" name="title" class="form-control" required
+                           value="{{ meeting.title|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Type</label>
+                    <select name="meeting_type" class="form-control">
+                        {% for value, label in meeting_types %}
+                        <option value="{{ value }}"
+                            {% if meeting.meeting_type == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Status</label>
+                    <select name="status" class="form-control">
+                        {% for value, label in meeting_statuses %}
+                        <option value="{{ value }}"
+                            {% if meeting.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Date & Time <span class="required">*</span></label>
+                    <input type="datetime-local" name="scheduled_at" class="form-control" required
+                        value="{{ meeting.scheduled_at|date:'Y-m-d\TH:i'|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Duration (minutes)</label>
+                    <input type="number" name="duration_minutes" class="form-control"
+                           value="{{ meeting.duration_minutes|default:'30' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Lead</label>
+                    <select name="lead" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for l in leads %}
+                        <option value="{{ l.pk }}"
+                            {% if meeting.lead_id == l.pk %}selected{% endif %}>
+                            {{ l.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Opportunity</label>
+                    <select name="opportunity" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for o in opportunities %}
+                        <option value="{{ o.pk }}"
+                            {% if meeting.opportunity_id == o.pk %}selected{% endif %}>
+                            {{ o.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Company</label>
+                    <select name="company" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for c in companies %}
+                        <option value="{{ c.pk }}"
+                            {% if meeting.company_id == c.pk %}selected{% endif %}>
+                            {{ c.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Contact</label>
+                    <select name="contact" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for c in contacts %}
+                        <option value="{{ c.pk }}"
+                            {% if meeting.contact_id == c.pk %}selected{% endif %}>
+                            {{ c.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Location</label>
+                    <input type="text" name="location" class="form-control"
+                           placeholder="e.g. Zoom / Office / Google Meet"
+                           value="{{ meeting.location|default:'' }}">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Attendees</label>
+                <select name="attendees" class="form-control" multiple style="height:100px;">
+                    {% for u in users %}
+                    <option value="{{ u.pk }}"
+                        {% if u in meeting.attendees.all %}selected{% endif %}>
+                        {{ u.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <small style="color:var(--text-muted);">Hold Cmd (Mac) to select multiple</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Agenda</label>
+                <textarea name="agenda" class="form-control" rows="3">{{ meeting.agenda|default:'' }}</textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Notes / Minutes</label>
+                <textarea name="notes" class="form-control" rows="3">{{ meeting.notes|default:'' }}</textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Action Items</label>
+                <textarea name="action_items" class="form-control" rows="3"
+                          placeholder="List follow-up actions from this meeting">{{ meeting.action_items|default:'' }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'meeting_list' %}"
+                   style="margin-right:12px; padding:12px 20px; color:#666;">Cancel</a>
+                <button type="submit" class="btn">
+                    {% if meeting %}Save Changes{% else %}Schedule Meeting{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'leads/base.html' %}
+{% block title %}Meetings - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Meetings</h1>
+    <a href="{% url 'meeting_create' %}" class="btn">+ Schedule Meeting</a>
+</div>
+
+<div class="card">
+    <div style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
+        <a href="{% url 'meeting_list' %}"
+           class="btn btn-small {% if scope == 'all' %}{% else %}btn-outline{% endif %}">All</a>
+        <a href="?scope=today"
+           class="btn btn-small {% if scope == 'today' %}{% else %}btn-outline{% endif %}">Today</a>
+        <a href="?scope=upcoming"
+           class="btn btn-small {% if scope == 'upcoming' %}{% else %}btn-outline{% endif %}">Upcoming</a>
+        <a href="?scope=past"
+           class="btn btn-small {% if scope == 'past' %}{% else %}btn-outline{% endif %}">Past</a>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th><th>Type</th><th>Date & Time</th><th>Duration</th>
+                <th>Company</th><th>Status</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in meetings %}
+            <tr>
+                <td><a href="{% url 'meeting_detail' m.pk %}">{{ m.title }}</a></td>
+                <td>{{ m.get_meeting_type_display }}</td>
+                <td>{{ m.scheduled_at|date:"d M Y, h:i A" }}</td>
+                <td>{{ m.duration_minutes }} min</td>
+                <td>{{ m.company.name|default:"-" }}</td>
+                <td>
+                    <span class="pill
+                        {% if m.status == 'completed' %}pill-converted
+                        {% elif m.status == 'cancelled' %}pill-lost
+                        {% elif m.status == 'no_show' %}pill-quotation
+                        {% else %}pill-new{% endif %}">
+                        {{ m.get_status_display }}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'meeting_detail' m.pk %}">View</a>
+                        <a href="{% url 'meeting_edit' m.pk %}">Edit</a>
+                        <a href="{% url 'meeting_delete' m.pk %}"
+                           onclick="return confirm('Delete meeting?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="empty-state">No meetings found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

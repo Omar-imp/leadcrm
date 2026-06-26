@@ -1,6 +1,7 @@
 from django.utils import timezone
 from .models import (Lead, FollowUp, Payment, ScheduledPayment,
-                     Company, Contact, Opportunity, Quotation, Project)
+                     Company, Contact, Opportunity, Quotation,
+                     Project, Meeting, GeneralTask)
 
 
 def sidebar_counts(request):
@@ -30,5 +31,9 @@ def sidebar_counts(request):
             'won': Opportunity.objects.filter(stage='won').count(),
             'quotations': Quotation.objects.filter(status__in=['draft', 'sent']).count(),
             'projects': Project.objects.filter(status__in=['planning', 'active']).count(),
+            'meetings_today': Meeting.objects.filter(scheduled_at__date=today, status='scheduled').count(),
+            'meetings_upcoming': Meeting.objects.filter(scheduled_at__date__gte=today, status='scheduled').count(),
+            'tasks_pending': GeneralTask.objects.filter(status__in=['todo', 'in_progress']).count(),
+            'tasks_overdue': GeneralTask.objects.filter(due_date__lt=today, status__in=['todo', 'in_progress']).count(),
         }
     }
