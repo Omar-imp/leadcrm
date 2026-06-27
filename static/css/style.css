@@ -380,3 +380,192 @@ textarea.form-control { resize: vertical; }
     .main { padding: 0 !important; }
     .card { box-shadow: none !important; border: 1px solid #ddd; }
 }
+/* PROJECTS */
+.progress-bar-wrap {
+    background: #e8eaf0;
+    border-radius: 10px;
+    height: 10px;
+    width: 100%;
+    margin: 6px 0;
+}
+
+.progress-bar-fill {
+    height: 10px;
+    border-radius: 10px;
+    background: var(--teal);
+    transition: width 0.3s;
+}
+
+.progress-bar-fill.done { background: var(--green); }
+.progress-bar-fill.warning { background: var(--orange); }
+
+.milestone-block {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.milestone-header {
+    background: #f3f4f8;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.milestone-title {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.milestone-body { padding: 0 18px 18px; }
+
+.task-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.task-row:last-child { border-bottom: none; }
+
+.task-title { flex: 1; font-size: 14px; }
+
+.task-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 28px 32px;
+    width: 520px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
+.modal-box h3 { margin-top: 0; }
+
+.modal-close {
+    float: right;
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+/* COMMUNICATION TIMELINE */
+.timeline {
+    position: relative;
+    padding-left: 32px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: -26px;
+    top: 4px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--teal);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px var(--teal);
+}
+
+.timeline-dot.email { background: var(--blue); box-shadow: 0 0 0 2px var(--blue); }
+.timeline-dot.call { background: var(--green); box-shadow: 0 0 0 2px var(--green); }
+.timeline-dot.whatsapp { background: #25d366; box-shadow: 0 0 0 2px #25d366; }
+.timeline-dot.sms { background: var(--orange); box-shadow: 0 0 0 2px var(--orange); }
+.timeline-dot.note { background: var(--purple); box-shadow: 0 0 0 2px var(--purple); }
+.timeline-dot.meeting_note { background: var(--teal); box-shadow: 0 0 0 2px var(--teal); }
+
+.timeline-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+}
+
+.timeline-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.timeline-card-type {
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.timeline-card-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.timeline-card-subject {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.timeline-card-body {
+    font-size: 14px;
+    color: var(--text-muted);
+    white-space: pre-line;
+}
+
+.comm-type-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.comm-type-email { background: var(--blue); }
+.comm-type-call { background: var(--green); }
+.comm-type-whatsapp { background: #25d366; }
+.comm-type-sms { background: var(--orange); }
+.comm-type-note { background: var(--purple); }
+.comm-type-meeting_note { background: var(--teal); }

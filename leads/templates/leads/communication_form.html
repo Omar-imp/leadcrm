@@ -1,0 +1,116 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ title }} - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+<div class="form-card">
+    <div class="form-card-header"><h2>{{ title }}</h2></div>
+    <div class="form-card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Type <span class="required">*</span></label>
+                    <select name="comm_type" class="form-control">
+                        {% for value, label in comm_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Direction</label>
+                    <select name="direction" class="form-control">
+                        {% for value, label in directions %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Subject</label>
+                    <input type="text" name="subject" class="form-control"
+                           placeholder="e.g. Follow up on proposal">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Lead</label>
+                    <select name="lead" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for l in leads %}
+                        <option value="{{ l.pk }}"
+                            {% if preselect_lead == l.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ l.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Contact</label>
+                    <select name="contact" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for c in contacts %}
+                        <option value="{{ c.pk }}"
+                            {% if preselect_contact == c.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ c.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Company</label>
+                    <select name="company" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for c in companies %}
+                        <option value="{{ c.pk }}"
+                            {% if preselect_company == c.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ c.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Opportunity</label>
+                    <select name="opportunity" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for o in opportunities %}
+                        <option value="{{ o.pk }}"
+                            {% if preselect_opportunity == o.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ o.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Project</label>
+                    <select name="project" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for p in projects %}
+                        <option value="{{ p.pk }}"
+                            {% if preselect_project == p.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ p.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Message / Notes <span class="required">*</span></label>
+                <textarea name="body" class="form-control" rows="6" required
+                          placeholder="Write your email, call notes, WhatsApp message or internal note here..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'communication_list' %}"
+                   style="margin-right:12px; padding:12px 20px; color:#666;">Cancel</a>
+                <button type="submit" class="btn">Save Log</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
