@@ -600,6 +600,36 @@ class TicketReply(models.Model):
     class Meta:
         ordering = ['created_at']
 
+class ActivityLog(models.Model):
+    ACTION_CHOICES = [
+        ('created', 'Created'),
+        ('updated', 'Updated'),
+        ('deleted', 'Deleted'),
+        ('status_changed', 'Status Changed'),
+        ('assigned', 'Assigned'),
+        ('commented', 'Commented'),
+        ('payment', 'Payment Recorded'),
+        ('converted', 'Converted'),
+        ('login', 'Logged In'),
+    ]
+
+    user = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='activity_logs'
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    entity_type = models.CharField(max_length=50)
+    entity_id = models.IntegerField(null=True, blank=True)
+    entity_name = models.CharField(max_length=200, blank=True, null=True)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user} — {self.action} — {self.entity_type}"
+
+    class Meta:
+        ordering = ['-created_at']
+
 class FollowUp(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -622,7 +652,6 @@ PAYMENT_TYPE_CHOICES = [
     ('advance', 'Advance'),
     ('full', 'Full'),
 ]
-
 
 class Payment(models.Model):
     lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name='payments')
@@ -674,10 +703,10 @@ class Installment(models.Model):
     class Meta:
         ordering = ['due_date']
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-
+# ── Auto-create UserProfile ────────────────────────────────
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -688,3 +717,134 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     if hasattr(instance, 'profile'):
         instance.profile.save()
+
+
+# ── Activity Log helpers ───────────────────────────────────
+def log_activity(user, action, entity_type, entity_id, entity_name, description):
+    ActivityLog.objects.create(
+        user=user,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        entity_name=entity_name,
+        description=description,
+    )
+
+DOCUMENT_TYPE_CHOICES = [
+    ('proposal', 'Proposal'),
+    ('contract', 'Contract'),
+    ('invoice', 'Invoice'),
+    ('requirement', 'Requirement Document'),
+    ('design', 'Design File'),
+    ('report', 'Report'),
+    ('other', 'Other'),
+]
+
+
+class Document(models.Model):
+    title = models.CharField(max_length=200)
+    doc_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES, default='other')
+    file = models.FileField(upload_to='documents/%Y/%m/')
+    uploaded_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='documents'
+    )
+    lead = models.ForeignKey(
+        Lead, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='documents'
+    )
+    opportunity = models.ForeignKey(
+        Opportunity, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='documents'
+    )
+    project = models.ForeignKey(
+        Project, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='documents'
+    )
+    ticket = models.ForeignKey(
+        Ticket, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='documents'
+    )
+    quotation = models.ForeignKey(
+        Quotation, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='documents'
+    )
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+    def filename(self):
+        import os
+        return os.path.basename(self.file.name)
+
+    def filesize(self):
+        try:
+            size = self.file.size
+            if size < 1024:
+                return f"{size} B"
+            elif size < 1024 * 1024:
+                return f"{size // 1024} KB"
+            else:
+                return f"{size // (1024 * 1024)} MB"
+        except Exception:
+            return "Unknown"
+
+    class Meta:
+        ordering = ['-created_at']
+
+# ── Lead signals ───────────────────────────────────────────
+@receiver(post_save, sender=Lead)
+def log_lead_save(sender, instance, created, **kwargs):
+    action = 'created' if created else 'updated'
+    description = f'Lead "{instance.name}" was {action}.'
+    log_activity(None, action, 'Lead', instance.pk, instance.name, description)
+
+
+# ── Opportunity signals ────────────────────────────────────
+@receiver(post_save, sender=Opportunity)
+def log_opportunity_save(sender, instance, created, **kwargs):
+    action = 'created' if created else 'updated'
+    description = f'Opportunity "{instance.title}" was {action} — Stage: {instance.get_stage_display()}.'
+    log_activity(None, action, 'Opportunity', instance.pk, instance.title, description)
+
+
+# ── Ticket signals ─────────────────────────────────────────
+@receiver(post_save, sender=Ticket)
+def log_ticket_save(sender, instance, created, **kwargs):
+    action = 'created' if created else 'updated'
+    description = f'Ticket #{instance.pk} "{instance.title}" was {action} — Status: {instance.get_status_display()}.'
+    log_activity(None, action, 'Ticket', instance.pk, instance.title, description)
+
+
+# ── Payment signals ────────────────────────────────────────
+@receiver(post_save, sender=Payment)
+def log_payment_save(sender, instance, created, **kwargs):
+    if created:
+        description = f'{instance.get_payment_type_display()} payment of {instance.amount} recorded for "{instance.lead.name}".'
+        log_activity(None, 'payment', 'Payment', instance.pk, str(instance.amount), description)
+
+
+# ── Project signals ────────────────────────────────────────
+@receiver(post_save, sender=Project)
+def log_project_save(sender, instance, created, **kwargs):
+    action = 'created' if created else 'updated'
+    description = f'Project "{instance.name}" was {action} — Status: {instance.get_status_display()}.'
+    log_activity(None, action, 'Project', instance.pk, instance.name, description)
+
+
+# ── FollowUp signals ───────────────────────────────────────
+@receiver(post_save, sender=FollowUp)
+def log_followup_save(sender, instance, created, **kwargs):
+    if created:
+        description = f'Follow-up scheduled for lead "{instance.lead.name}" on {instance.follow_up_date:%d %b %Y}.'
+        log_activity(None, 'created', 'FollowUp', instance.pk, instance.lead.name, description)
+
+
+# ── Meeting signals ────────────────────────────────────────
+@receiver(post_save, sender=Meeting)
+def log_meeting_save(sender, instance, created, **kwargs):
+    if created:
+        description = f'Meeting "{instance.title}" scheduled for {instance.scheduled_at:%d %b %Y %H:%M}.'
+        log_activity(None, 'created', 'Meeting', instance.pk, instance.title, description)

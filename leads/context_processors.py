@@ -2,7 +2,7 @@ from django.utils import timezone
 from .models import (Lead, FollowUp, Payment, ScheduledPayment,
                      Company, Contact, Opportunity, Quotation,
                      Project, Meeting, GeneralTask,
-                     CommunicationLog, Ticket)
+                     CommunicationLog, Ticket, ActivityLog, Document)
 
 
 def sidebar_counts(request):
@@ -39,5 +39,7 @@ def sidebar_counts(request):
             'communications': CommunicationLog.objects.count(),
             'tickets_open': Ticket.objects.filter(status__in=['open', 'in_progress']).count(),
             'tickets_critical': Ticket.objects.filter(priority='critical', status__in=['open', 'in_progress']).count(),
+            'activity_today': ActivityLog.objects.filter(created_at__date=today).count(),
+            'documents': Document.objects.count(),
         }
     }

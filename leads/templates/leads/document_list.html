@@ -1,0 +1,56 @@
+{% extends 'leads/base.html' %}
+{% block title %}Documents - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Documents</h1>
+    <a href="{% url 'document_upload' %}" class="btn">&#11014; Upload Document</a>
+</div>
+
+<div class="card">
+    <form method="get" class="search-bar">
+        <input type="text" name="q" class="form-control"
+               placeholder="Search documents" value="{{ request.GET.q }}">
+        <select name="type" class="form-control" style="max-width:180px;">
+            <option value="">All Types</option>
+            {% for value, label in doc_types %}
+            <option value="{{ value }}"
+                {% if selected_type == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-small">Filter</button>
+    </form>
+
+    {% for doc in documents %}
+    <div class="doc-row">
+        <div class="doc-icon">
+            {% if doc.doc_type == 'contract' %}&#128221;
+            {% elif doc.doc_type == 'proposal' %}&#128203;
+            {% elif doc.doc_type == 'invoice' %}&#128176;
+            {% elif doc.doc_type == 'design' %}&#127912;
+            {% else %}&#128196;{% endif %}
+        </div>
+        <div class="doc-info">
+            <div class="doc-title">{{ doc.title }}</div>
+            <div class="doc-meta">
+                {{ doc.get_doc_type_display }}
+                · {{ doc.filesize }}
+                · Uploaded {{ doc.created_at|date:"d M Y" }}
+                {% if doc.uploaded_by %}by {{ doc.uploaded_by.username }}{% endif %}
+                {% if doc.lead %}· Lead: <a href="{% url 'lead_detail' doc.lead.pk %}">{{ doc.lead.name }}</a>{% endif %}
+                {% if doc.project %}· Project: <a href="{% url 'project_detail' doc.project.pk %}">{{ doc.project.name }}</a>{% endif %}
+                {% if doc.opportunity %}· Opportunity: {{ doc.opportunity.title }}{% endif %}
+            </div>
+        </div>
+        <div class="action-links">
+            <a href="{{ doc.file.url }}" target="_blank">&#11015; Download</a>
+            <a href="{% url 'document_delete' doc.pk %}"
+               onclick="return confirm('Delete this document?')">Delete</a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">No documents uploaded yet.</div>
+    {% endfor %}
+</div>
+{% endblock %}

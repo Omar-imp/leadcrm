@@ -1,0 +1,118 @@
+{% extends 'leads/base.html' %}
+{% block title %}Upload Document - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">Upload Document</h1>
+<div class="form-card">
+    <div class="form-card-header"><h2>Upload Document</h2></div>
+    <div class="form-card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+            <div class="file-upload-area" onclick="document.getElementById('file-input').click()">
+                <div class="file-upload-icon">&#128194;</div>
+                <div class="file-upload-label">
+                    <span>Click to choose a file</span> or drag and drop here
+                </div>
+                <div id="file-name" style="margin-top:10px; font-size:13px; color:var(--teal);"></div>
+                <input type="file" name="file" id="file-input" required
+                       onchange="document.getElementById('file-name').textContent = this.files[0]?.name">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Title</label>
+                    <input type="text" name="title" class="form-control"
+                           placeholder="Leave blank to use filename">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Document Type</label>
+                    <select name="doc_type" class="form-control">
+                        {% for value, label in doc_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Link to Lead</label>
+                    <select name="lead" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for l in leads %}
+                        <option value="{{ l.pk }}"
+                            {% if preselect_lead == l.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ l.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Link to Project</label>
+                    <select name="project" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for p in projects %}
+                        <option value="{{ p.pk }}"
+                            {% if preselect_project == p.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ p.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Link to Opportunity</label>
+                    <select name="opportunity" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for o in opportunities %}
+                        <option value="{{ o.pk }}"
+                            {% if preselect_opportunity == o.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ o.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Link to Ticket</label>
+                    <select name="ticket" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for t in tickets %}
+                        <option value="{{ t.pk }}"
+                            {% if preselect_ticket == t.pk|stringformat:'s' %}selected{% endif %}>
+                            #{{ t.pk }} {{ t.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Link to Quotation</label>
+                    <select name="quotation" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for q in quotations %}
+                        <option value="{{ q.pk }}"
+                            {% if preselect_quotation == q.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ q.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="3"
+                          placeholder="Optional description of this document"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'document_list' %}"
+                   style="margin-right:12px; padding:12px 20px; color:#666;">Cancel</a>
+                <button type="submit" class="btn">&#11014; Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

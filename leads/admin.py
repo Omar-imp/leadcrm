@@ -5,7 +5,21 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      Quotation, QuotationItem,
                      Project, Milestone, Task,
                      Meeting, GeneralTask, CommunicationLog,
-                     Ticket, TicketReply)
+                     Ticket, TicketReply, ActivityLog, Document)
+
+@admin.register(Document)
+class DocumentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'doc_type', 'uploaded_by', 'created_at')
+    list_filter = ('doc_type',)
+
+    
+@admin.register(ActivityLog)
+class ActivityLogAdmin(admin.ModelAdmin):
+    list_display = ('action', 'entity_type', 'entity_name', 'user', 'created_at')
+    list_filter = ('action', 'entity_type')
+    search_fields = ('description', 'entity_name')
+    readonly_fields = ('user', 'action', 'entity_type', 'entity_id',
+                       'entity_name', 'description', 'created_at')
 
 
 @admin.register(SalesPerson)

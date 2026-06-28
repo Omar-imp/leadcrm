@@ -14,7 +14,7 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      Quotation, QuotationItem,
                      Project, Milestone, Task,
                      Meeting, GeneralTask, CommunicationLog,
-                     Ticket, TicketReply,
+                     Ticket, TicketReply, ActivityLog, Document,
                      OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES,
                      QUOTATION_STATUS_CHOICES,
                      PROJECT_STATUS_CHOICES, PROJECT_PRIORITY_CHOICES,
@@ -24,7 +24,7 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      GENERAL_TASK_STATUS_CHOICES, GENERAL_TASK_PRIORITY_CHOICES,
                      COMMUNICATION_TYPE_CHOICES, COMMUNICATION_DIRECTION_CHOICES,
                      TICKET_STATUS_CHOICES, TICKET_PRIORITY_CHOICES,
-                     TICKET_CATEGORY_CHOICES)
+                     TICKET_CATEGORY_CHOICES, DOCUMENT_TYPE_CHOICES)
 
 def login_view(request):
     if request.method == 'POST':
@@ -1759,3 +1759,124 @@ def ticket_status(request, pk, status):
         ticket.save()
         messages.success(request, f'Ticket marked as {valid[status]}.')
     return redirect('ticket_detail', pk=pk)
+
+# ── ACTIVITY LOG VIEW ──────────────────────────────────────
+
+@login_required
+def activity_log(request):
+    logs = ActivityLog.objects.select_related('user').all()
+
+    entity_type = request.GET.get('entity')
+    if entity_type:
+        logs = logs.filter(entity_type=entity_type)
+
+    action = request.GET.get('action')
+    if action:
+        logs = logs.filter(action=action)
+
+    # only show last 500 to keep it fast
+    logs = logs[:500]
+
+    entity_types = ActivityLog.objects.values_list(
+        'entity_type', flat=True
+    ).distinct().order_by('entity_type')
+
+    context = {
+        'logs': logs,
+        'active': 'activity_log',
+        'title': 'Activity Log',
+        'entity_types': entity_types,
+        'action_choices': ActivityLog.ACTION_CHOICES,
+        'selected_entity': entity_type,
+        'selected_action': action,
+    }
+    return render(request, 'leads/activity_log.html', context)
+
+# ── DOCUMENT VIEWS ─────────────────────────────────────────
+
+@login_required
+def document_upload(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        doc_type = request.POST.get('doc_type', 'other')
+        notes = request.POST.get('notes')
+        file = request.FILES.get('file')
+
+        if not file:
+            messages.error(request, 'Please select a file to upload.')
+            return redirect(request.META.get('HTTP_REFERER', 'document_list'))
+
+        doc = Document(
+            title=title or file.name,
+            doc_type=doc_type,
+            notes=notes,
+            uploaded_by=request.user,
+            file=file,
+        )
+        lead_id = request.POST.get('lead')
+        opp_id = request.POST.get('opportunity')
+        project_id = request.POST.get('project')
+        ticket_id = request.POST.get('ticket')
+        quotation_id = request.POST.get('quotation')
+        doc.lead_id = lead_id if lead_id else None
+        doc.opportunity_id = opp_id if opp_id else None
+        doc.project_id = project_id if project_id else None
+        doc.ticket_id = ticket_id if ticket_id else None
+        doc.quotation_id = quotation_id if quotation_id else None
+        doc.save()
+        messages.success(request, f'"{doc.title}" uploaded successfully.')
+
+        next_url = request.POST.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('document_list')
+
+    context = {
+        'active': 'documents',
+        'title': 'Upload Document',
+        'doc_types': DOCUMENT_TYPE_CHOICES,
+        'leads': Lead.objects.all(),
+        'opportunities': Opportunity.objects.all(),
+        'projects': Project.objects.all(),
+        'tickets': Ticket.objects.all(),
+        'quotations': Quotation.objects.all(),
+        'preselect_lead': request.GET.get('lead'),
+        'preselect_opportunity': request.GET.get('opportunity'),
+        'preselect_project': request.GET.get('project'),
+        'preselect_ticket': request.GET.get('ticket'),
+        'preselect_quotation': request.GET.get('quotation'),
+    }
+    return render(request, 'leads/document_upload.html', context)
+
+
+@login_required
+def document_list(request):
+    documents = Document.objects.select_related(
+        'uploaded_by', 'lead', 'project', 'opportunity'
+    ).all()
+
+    doc_type = request.GET.get('type')
+    if doc_type:
+        documents = documents.filter(doc_type=doc_type)
+
+    q = request.GET.get('q')
+    if q:
+        documents = documents.filter(Q(title__icontains=q))
+
+    context = {
+        'documents': documents,
+        'active': 'documents',
+        'title': 'Documents',
+        'doc_types': DOCUMENT_TYPE_CHOICES,
+        'selected_type': doc_type,
+    }
+    return render(request, 'leads/document_list.html', context)
+
+
+@login_required
+def document_delete(request, pk):
+    doc = get_object_or_404(Document, pk=pk)
+    doc.file.delete()
+    doc.delete()
+    messages.success(request, 'Document deleted.')
+    return redirect(request.META.get('HTTP_REFERER', 'document_list'))

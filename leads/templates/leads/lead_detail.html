@@ -132,4 +132,25 @@
     <div class="empty-state">No communication history for this lead.</div>
     {% endif %}
 </div>
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 class="section-heading" style="margin:0;">Documents</h2>
+        <a href="{% url 'document_upload' %}?lead={{ lead.pk }}" class="btn btn-small">&#11014; Upload</a>
+    </div>
+    {% for doc in lead.documents.all %}
+    <div class="doc-row">
+        <div class="doc-icon">&#128196;</div>
+        <div class="doc-info">
+            <div class="doc-title">{{ doc.title }}</div>
+            <div class="doc-meta">{{ doc.get_doc_type_display }} · {{ doc.filesize }} · {{ doc.created_at|date:"d M Y" }}</div>
+        </div>
+        <div class="action-links">
+            <a href="{{ doc.file.url }}" target="_blank">&#11015; Download</a>
+            <a href="{% url 'document_delete' doc.pk %}" onclick="return confirm('Delete?')">Delete</a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">No documents attached.</div>
+    {% endfor %}
+</div>
 {% endblock %}

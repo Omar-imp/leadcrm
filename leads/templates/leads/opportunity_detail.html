@@ -49,6 +49,25 @@
     </table>
 </div>
 
+{% if opp.stage == 'won' and not opp.project %}
+<div class="card" style="border-left: 4px solid var(--green);">
+    <h2 class="section-heading">Convert to Project</h2>
+    <p style="color:var(--text-muted); margin-bottom:16px;">
+        This deal is won. Convert it to a project to start development.
+    </p>
+    <a href="{% url 'convert_to_project' opp.pk %}" class="btn">
+        &#128196; Convert to Project
+    </a>
+</div>
+{% elif opp.project %}
+<div class="card" style="border-left: 4px solid var(--green);">
+    <h2 class="section-heading">Project</h2>
+    <a href="{% url 'project_detail' opp.project.pk %}">
+        View Project: {{ opp.project.name }}
+    </a>
+</div>
+{% endif %}
+
 <div class="card">
     <h2 class="section-heading">Move Stage</h2>
     <div class="action-links">
@@ -58,5 +77,51 @@
         {% endif %}
         {% endfor %}
     </div>
+</div>
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 class="section-heading" style="margin:0;">Communication History</h2>
+        <a href="{% url 'communication_create' %}?opportunity={{ opp.pk }}" class="btn btn-small">+ Log Communication</a>
+    </div>
+    {% if opp.communications.all %}
+    <div class="timeline">
+        {% for log in opp.communications.all %}
+        <div class="timeline-item">
+            <div class="timeline-dot {{ log.comm_type }}"></div>
+            <div class="timeline-card">
+                <div class="timeline-card-header">
+                    <span class="comm-type-badge comm-type-{{ log.comm_type }}">{{ log.get_comm_type_display }}</span>
+                    <span class="timeline-card-meta">{{ log.created_at|date:"d M Y, h:i A" }} {% if log.created_by %}· {{ log.created_by.username }}{% endif %}</span>
+                </div>
+                {% if log.subject %}<div class="timeline-card-subject">{{ log.subject }}</div>{% endif %}
+                <div class="timeline-card-body">{{ log.body }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">No communication history yet.</div>
+    {% endif %}
+</div>
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 class="section-heading" style="margin:0;">Documents</h2>
+        <a href="{% url 'document_upload' %}?opportunity={{ opp.pk }}" class="btn btn-small">&#11014; Upload</a>
+    </div>
+    {% for doc in opp.documents.all %}
+    <div class="doc-row">
+        <div class="doc-icon">&#128196;</div>
+        <div class="doc-info">
+            <div class="doc-title">{{ doc.title }}</div>
+            <div class="doc-meta">{{ doc.get_doc_type_display }} · {{ doc.filesize }} · {{ doc.created_at|date:"d M Y" }}</div>
+        </div>
+        <div class="action-links">
+            <a href="{{ doc.file.url }}" target="_blank">&#11015; Download</a>
+            <a href="{% url 'document_delete' doc.pk %}" onclick="return confirm('Delete?')">Delete</a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">No documents attached.</div>
+    {% endfor %}
 </div>
 {% endblock %}

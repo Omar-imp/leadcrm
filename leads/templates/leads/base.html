@@ -12,7 +12,7 @@
     <aside class="sidebar">
         <div class="brand">Lead CRM</div>
 
-        <div class="section-label">MENU</div>
+        <!-- MENU -->
         <nav>
             <a href="{% url 'dashboard' %}" class="{% if active == 'dashboard' %}active{% endif %}">
                 <span class="left"><span class="icon">&#9632;</span> Dashboard</span>
@@ -23,8 +23,12 @@
             </a>
             {% endif %}
         </nav>
-        <div class="section-label">CONTACTS</div>
-        <nav>
+
+        <!-- CONTACTS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('contacts')">
+            CONTACTS <span class="arrow" id="arrow-contacts">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-contacts">
             <a href="{% url 'company_list' %}" class="{% if active == 'companies' %}active{% endif %}">
                 <span class="left"><span class="icon">&#127970;</span> Companies</span>
                 <span class="badge badge-blue">{{ sidebar_counts.companies }}</span>
@@ -35,8 +39,11 @@
             </a>
         </nav>
 
-        <div class="section-label">PIPELINE</div>
-        <nav>
+        <!-- PIPELINE -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('pipeline')">
+            PIPELINE <span class="arrow" id="arrow-pipeline">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-pipeline">
             <a href="{% url 'opportunity_pipeline' %}" class="{% if active == 'pipeline' %}active{% endif %}">
                 <span class="left"><span class="icon">&#9698;</span> Pipeline</span>
                 <span class="badge badge-blue">{{ sidebar_counts.opportunities }}</span>
@@ -50,120 +57,93 @@
             </a>
         </nav>
 
-        <div class="section-label">QUOTATIONS</div>
-        <nav>
+        <!-- QUOTATIONS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('quotations')">
+            QUOTATIONS <span class="arrow" id="arrow-quotations">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-quotations">
             <a href="{% url 'quotation_list' %}" class="{% if active == 'quotations' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128203;</span> All Quotations</span>
                 <span class="badge badge-blue">{{ sidebar_counts.quotations }}</span>
             </a>
-            <a href="{% url 'quotation_list' %}?status=draft" class="">
+            <a href="{% url 'quotation_list' %}?status=draft">
                 <span class="left"><span class="icon">&#9998;</span> Draft</span>
             </a>
-            <a href="{% url 'quotation_list' %}?status=approved" class="">
+            <a href="{% url 'quotation_list' %}?status=approved">
                 <span class="left"><span class="icon">&#10003;</span> Approved</span>
             </a>
-            <a href="{% url 'quotation_create' %}" class="">
+            <a href="{% url 'quotation_create' %}">
                 <span class="left"><span class="icon">&#43;</span> New Quotation</span>
             </a>
         </nav>
-        
-        <div class="section-label">PROJECTS</div>
-        <nav>
+
+        <!-- PROJECTS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('projects')">
+            PROJECTS <span class="arrow" id="arrow-projects">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-projects">
             <a href="{% url 'project_list' %}" class="{% if active == 'projects' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128196;</span> All Projects</span>
                 <span class="badge badge-blue">{{ sidebar_counts.projects }}</span>
             </a>
-            <a href="{% url 'project_list' %}?status=active" class="">
+            <a href="{% url 'project_list' %}?status=active">
                 <span class="left"><span class="icon">&#9654;</span> Active</span>
             </a>
-            <a href="{% url 'project_list' %}?status=completed" class="">
+            <a href="{% url 'project_list' %}?status=completed">
                 <span class="left"><span class="icon">&#10003;</span> Completed</span>
             </a>
-            <a href="{% url 'project_create' %}" class="">
+            <a href="{% url 'project_create' %}">
                 <span class="left"><span class="icon">&#43;</span> New Project</span>
             </a>
         </nav>
 
-        <div class="section-label">MEETINGS</div>
-        <nav>
+        <!-- MEETINGS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('meetings')">
+            MEETINGS <span class="arrow" id="arrow-meetings">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-meetings">
             <a href="{% url 'meeting_list' %}" class="{% if active == 'meetings' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128197;</span> All Meetings</span>
                 <span class="badge badge-blue">{{ sidebar_counts.meetings_upcoming }}</span>
             </a>
-            <a href="{% url 'meeting_list' %}?scope=today" class="">
+            <a href="{% url 'meeting_list' %}?scope=today">
                 <span class="left"><span class="icon">&#9200;</span> Today</span>
                 <span class="badge badge-orange">{{ sidebar_counts.meetings_today }}</span>
             </a>
-            <a href="{% url 'meeting_create' %}" class="">
+            <a href="{% url 'meeting_list' %}?scope=upcoming">
+                <span class="left"><span class="icon">&#128337;</span> Upcoming</span>
+            </a>
+            <a href="{% url 'meeting_create' %}">
                 <span class="left"><span class="icon">&#43;</span> Schedule Meeting</span>
             </a>
         </nav>
 
-        <div class="section-label">TASKS</div>
-        <nav>
+        <!-- TASKS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('tasks')">
+            TASKS <span class="arrow" id="arrow-tasks">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-tasks">
             <a href="{% url 'general_task_list' %}" class="{% if active == 'general_tasks' %}active{% endif %}">
                 <span class="left"><span class="icon">&#9989;</span> All Tasks</span>
                 <span class="badge badge-blue">{{ sidebar_counts.tasks_pending }}</span>
             </a>
-            <a href="{% url 'general_task_list' %}?scope=overdue" class="">
+            <a href="{% url 'general_task_list' %}?scope=mine">
+                <span class="left"><span class="icon">&#128100;</span> Mine</span>
+            </a>
+            <a href="{% url 'general_task_list' %}?scope=overdue">
                 <span class="left"><span class="icon">&#9888;</span> Overdue</span>
                 <span class="badge badge-red">{{ sidebar_counts.tasks_overdue }}</span>
             </a>
-            <a href="{% url 'general_task_create' %}" class="">
+            <a href="{% url 'general_task_create' %}">
                 <span class="left"><span class="icon">&#43;</span> New Task</span>
             </a>
         </nav>
 
-        <div class="section-label">COMMUNICATIONS</div>
-        <nav>
-            <a href="{% url 'communication_list' %}" class="{% if active == 'communications' %}active{% endif %}">
-                <span class="left"><span class="icon">&#128172;</span> All Logs</span>
-                <span class="badge badge-blue">{{ sidebar_counts.communications }}</span>
-            </a>
-            <a href="{% url 'communication_list' %}?type=email" class="">
-                <span class="left"><span class="icon">&#128140;</span> Emails</span>
-            </a>
-            <a href="{% url 'communication_list' %}?type=call" class="">
-                <span class="left"><span class="icon">&#128222;</span> Calls</span>
-            </a>
-            <a href="{% url 'communication_list' %}?type=whatsapp" class="">
-                <span class="left"><span class="icon">&#128241;</span> WhatsApp</span>
-            </a>
-            <a href="{% url 'communication_create' %}" class="">
-                <span class="left"><span class="icon">&#43;</span> Log Communication</span>
-            </a>
-        </nav>
-
-        <div class="section-label">REPORTS</div>
-        <nav>
-            <a href="{% url 'reports' %}" class="{% if active == 'reports' %}active{% endif %}">
-                <span class="left"><span class="icon">&#128202;</span> Analytics</span>
-            </a>
-        </nav>
-
-        <div class="section-label">SUPPORT</div>
-        <nav>
-            <a href="{% url 'ticket_list' %}" class="{% if active == 'tickets' %}active{% endif %}">
-                <span class="left"><span class="icon">&#127917;</span> All Tickets</span>
-                <span class="badge badge-blue">{{ sidebar_counts.tickets_open }}</span>
-            </a>
-            <a href="{% url 'ticket_list' %}?status=open" class="">
-                <span class="left"><span class="icon">&#128308;</span> Open</span>
-            </a>
-            <a href="{% url 'ticket_list' %}?priority=critical" class="">
-                <span class="left"><span class="icon">&#9888;</span> Critical</span>
-                <span class="badge badge-red">{{ sidebar_counts.tickets_critical }}</span>
-            </a>
-            <a href="{% url 'ticket_list' %}?status=resolved" class="">
-                <span class="left"><span class="icon">&#10003;</span> Resolved</span>
-            </a>
-            <a href="{% url 'ticket_create' %}" class="">
-                <span class="left"><span class="icon">&#43;</span> New Ticket</span>
-            </a>
-        </nav>
-
-        <div class="section-label">LEAD</div>
-        <nav>
+        <!-- LEAD -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('lead')">
+            LEAD <span class="arrow" id="arrow-lead">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-lead">
             <a href="{% url 'create_lead' %}" class="{% if active == 'create_lead' %}active{% endif %}">
                 <span class="left"><span class="icon">&#43;</span> Create Lead</span>
             </a>
@@ -193,8 +173,11 @@
             </a>
         </nav>
 
-        <div class="section-label">PAYMENT</div>
-        <nav>
+        <!-- PAYMENT -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('payment')">
+            PAYMENT <span class="arrow" id="arrow-payment">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-payment">
             <a href="{% url 'payment_advance' %}" class="{% if active == 'advance' %}active{% endif %}">
                 <span class="left"><span class="icon">$</span> Advance</span>
                 <span class="badge badge-red">{{ sidebar_counts.payment_advance }}</span>
@@ -209,8 +192,11 @@
             </a>
         </nav>
 
-        <div class="section-label">FOLLOWUP</div>
-        <nav>
+        <!-- FOLLOWUP -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('followup')">
+            FOLLOWUP <span class="arrow" id="arrow-followup">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-followup">
             <a href="{% url 'followup_list' 'pending' %}" class="{% if active == 'pending' %}active{% endif %}">
                 <span class="left"><span class="icon">&#9742;</span> Pending</span>
                 <span class="badge badge-orange">{{ sidebar_counts.followup_pending }}</span>
@@ -229,6 +215,95 @@
             </a>
         </nav>
 
+        <!-- COMMUNICATIONS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('communications')">
+            COMMUNICATIONS <span class="arrow" id="arrow-communications">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-communications">
+            <a href="{% url 'communication_list' %}" class="{% if active == 'communications' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128172;</span> All Logs</span>
+                <span class="badge badge-blue">{{ sidebar_counts.communications }}</span>
+            </a>
+            <a href="{% url 'communication_list' %}?type=email">
+                <span class="left"><span class="icon">&#128140;</span> Emails</span>
+            </a>
+            <a href="{% url 'communication_list' %}?type=call">
+                <span class="left"><span class="icon">&#128222;</span> Calls</span>
+            </a>
+            <a href="{% url 'communication_list' %}?type=whatsapp">
+                <span class="left"><span class="icon">&#128241;</span> WhatsApp</span>
+            </a>
+            <a href="{% url 'communication_create' %}">
+                <span class="left"><span class="icon">&#43;</span> Log Communication</span>
+            </a>
+        </nav>
+
+        <!-- SUPPORT -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('support')">
+            SUPPORT <span class="arrow" id="arrow-support">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-support">
+            <a href="{% url 'ticket_list' %}" class="{% if active == 'tickets' %}active{% endif %}">
+                <span class="left"><span class="icon">&#127917;</span> All Tickets</span>
+                <span class="badge badge-blue">{{ sidebar_counts.tickets_open }}</span>
+            </a>
+            <a href="{% url 'ticket_list' %}?status=open">
+                <span class="left"><span class="icon">&#128308;</span> Open</span>
+            </a>
+            <a href="{% url 'ticket_list' %}?priority=critical">
+                <span class="left"><span class="icon">&#9888;</span> Critical</span>
+                <span class="badge badge-red">{{ sidebar_counts.tickets_critical }}</span>
+            </a>
+            <a href="{% url 'ticket_list' %}?status=resolved">
+                <span class="left"><span class="icon">&#10003;</span> Resolved</span>
+            </a>
+            <a href="{% url 'ticket_create' %}">
+                <span class="left"><span class="icon">&#43;</span> New Ticket</span>
+            </a>
+        </nav>
+
+        <!-- ACTIVITY -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('activity')">
+            ACTIVITY <span class="arrow" id="arrow-activity">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-activity">
+            <a href="{% url 'activity_log' %}" class="{% if active == 'activity_log' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128336;</span> Activity Log</span>
+                <span class="badge badge-purple">{{ sidebar_counts.activity_today }}</span>
+            </a>
+        </nav>
+
+        <!-- REPORTS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('reports')">
+            REPORTS <span class="arrow" id="arrow-reports">&#9660;</span>
+        </div>
+        <nav class="dropdown-section" id="section-reports">
+            <a href="{% url 'reports' %}" class="{% if active == 'reports' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128202;</span> Analytics</span>
+            </a>
+        </nav>
+
+        <!-- DOCUMENTS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('documents')">
+            DOCUMENTS <span class="arrow" id="arrow-documents">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-documents">
+            <a href="{% url 'document_list' %}" class="{% if active == 'documents' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128194;</span> All Documents</span>
+                <span class="badge badge-blue">{{ sidebar_counts.documents }}</span>
+            </a>
+            <a href="{% url 'document_list' %}?type=contract">
+                <span class="left"><span class="icon">&#128221;</span> Contracts</span>
+            </a>
+            <a href="{% url 'document_list' %}?type=proposal">
+                <span class="left"><span class="icon">&#128203;</span> Proposals</span>
+            </a>
+            <a href="{% url 'document_upload' %}">
+                <span class="left"><span class="icon">&#11014;</span> Upload</span>
+            </a>
+        </nav>
+
+        <!-- ACCOUNT -->
         {% if user.is_authenticated %}
         <div class="section-label">ACCOUNT</div>
         <nav>
@@ -243,12 +318,58 @@
         {% if messages %}
         <div class="messages">
             {% for message in messages %}
-            <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">{{ message }}</div>
+            <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+                {{ message }}
+            </div>
             {% endfor %}
         </div>
         {% endif %}
         {% block content %}{% endblock %}
     </main>
 </div>
+
+<script>
+// remember open/closed state in localStorage
+function toggleSection(name) {
+    const section = document.getElementById('section-' + name);
+    const arrow = document.getElementById('arrow-' + name);
+    const isOpen = section.classList.contains('open');
+
+    if (isOpen) {
+        section.classList.remove('open');
+        arrow.innerHTML = '&#9658;';
+        localStorage.setItem('sidebar-' + name, 'closed');
+    } else {
+        section.classList.add('open');
+        arrow.innerHTML = '&#9660;';
+        localStorage.setItem('sidebar-' + name, 'open');
+    }
+}
+
+// restore state on page load
+const sections = [
+    'contacts', 'pipeline', 'quotations', 'projects',
+    'meetings', 'tasks', 'lead', 'payment', 'followup',
+    'communications', 'support', 'activity', 'reports', 'documents'
+];
+
+sections.forEach(name => {
+    const state = localStorage.getItem('sidebar-' + name);
+    const section = document.getElementById('section-' + name);
+    const arrow = document.getElementById('arrow-' + name);
+    if (!section || !arrow) return;
+
+    // default open for active section, closed for others
+    const hasActive = section.querySelector('a.active');
+    if (state === 'open' || (!state && hasActive)) {
+        section.classList.add('open');
+        arrow.innerHTML = '&#9660;';
+    } else {
+        section.classList.remove('open');
+        arrow.innerHTML = '&#9658;';
+    }
+});
+</script>
+
 </body>
 </html>

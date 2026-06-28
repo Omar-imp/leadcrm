@@ -112,4 +112,12 @@ urlpatterns = [
     path('tickets/<int:pk>/edit/', views.ticket_edit, name='ticket_edit'),
     path('tickets/<int:pk>/delete/', views.ticket_delete, name='ticket_delete'),
     path('tickets/<int:pk>/status/<str:status>/', views.ticket_status, name='ticket_status'),
+
+    # Activity Log
+    path('activity/', views.activity_log, name='activity_log'),
+
+    # Documents
+    path('documents/', views.document_list, name='document_list'),
+    path('documents/upload/', views.document_upload, name='document_upload'),
+    path('documents/<int:pk>/delete/', views.document_delete, name='document_delete'),
 ]
