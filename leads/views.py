@@ -7,20 +7,24 @@ from django.contrib.auth import authenticate, login, logout
 from .forms import LeadForm, FollowUpForm, PaymentForm, ScheduledPaymentForm, InstallmentForm
 from django.contrib.auth.models import User
 from .decorators import role_required
+from django.db.models import Sum, Count
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
                      Quotation, QuotationItem,
                      Project, Milestone, Task,
-                     Meeting, GeneralTask,
+                     Meeting, GeneralTask, CommunicationLog,
+                     Ticket, TicketReply,
                      OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES,
                      QUOTATION_STATUS_CHOICES,
                      PROJECT_STATUS_CHOICES, PROJECT_PRIORITY_CHOICES,
                      METHODOLOGY_CHOICES, MILESTONE_STATUS_CHOICES,
                      TASK_STATUS_CHOICES, TASK_PRIORITY_CHOICES,
                      MEETING_STATUS_CHOICES, MEETING_TYPE_CHOICES,
-                     GENERAL_TASK_STATUS_CHOICES, GENERAL_TASK_PRIORITY_CHOICES)
-
+                     GENERAL_TASK_STATUS_CHOICES, GENERAL_TASK_PRIORITY_CHOICES,
+                     COMMUNICATION_TYPE_CHOICES, COMMUNICATION_DIRECTION_CHOICES,
+                     TICKET_STATUS_CHOICES, TICKET_PRIORITY_CHOICES,
+                     TICKET_CATEGORY_CHOICES)
 
 def login_view(request):
     if request.method == 'POST':
@@ -1156,7 +1160,6 @@ def meeting_create(request):
     }
     return render(request, 'leads/meeting_form.html', context)
 
-
 @login_required
 def meeting_detail(request, pk):
     meeting = get_object_or_404(Meeting, pk=pk)
@@ -1341,3 +1344,418 @@ def general_task_status(request, pk, status):
         task.status = status
         task.save()
     return redirect(request.META.get('HTTP_REFERER', 'general_task_list'))
+
+# ── COMMUNICATION LOG VIEWS ────────────────────────────────
+
+@login_required
+def communication_list(request):
+    logs = CommunicationLog.objects.select_related(
+        'created_by', 'lead', 'contact', 'company', 'opportunity', 'project'
+    ).all()
+
+    comm_type = request.GET.get('type')
+    if comm_type:
+        logs = logs.filter(comm_type=comm_type)
+
+    q = request.GET.get('q')
+    if q:
+        logs = logs.filter(
+            Q(subject__icontains=q) | Q(body__icontains=q)
+        )
+
+    context = {
+        'logs': logs,
+        'active': 'communications',
+        'title': 'Communication Log',
+        'comm_types': COMMUNICATION_TYPE_CHOICES,
+        'selected_type': comm_type,
+    }
+    return render(request, 'leads/communication_list.html', context)
+
+
+@login_required
+def communication_create(request):
+    if request.method == 'POST':
+        log = CommunicationLog(
+            comm_type=request.POST.get('comm_type', 'note'),
+            direction=request.POST.get('direction', 'outbound'),
+            subject=request.POST.get('subject'),
+            body=request.POST.get('body'),
+            created_by=request.user,
+        )
+        lead_id = request.POST.get('lead')
+        opp_id = request.POST.get('opportunity')
+        contact_id = request.POST.get('contact')
+        company_id = request.POST.get('company')
+        project_id = request.POST.get('project')
+        log.lead_id = lead_id if lead_id else None
+        log.opportunity_id = opp_id if opp_id else None
+        log.contact_id = contact_id if contact_id else None
+        log.company_id = company_id if company_id else None
+        log.project_id = project_id if project_id else None
+        log.save()
+        messages.success(request, 'Communication logged.')
+
+        # redirect back to wherever they came from
+        next_url = request.POST.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('communication_list')
+
+    context = {
+        'active': 'communications',
+        'title': 'Log Communication',
+        'comm_types': COMMUNICATION_TYPE_CHOICES,
+        'directions': COMMUNICATION_DIRECTION_CHOICES,
+        'leads': Lead.objects.all(),
+        'opportunities': Opportunity.objects.all(),
+        'contacts': Contact.objects.all(),
+        'companies': Company.objects.all(),
+        'projects': Project.objects.all(),
+        # pre-fill from query params if coming from a detail page
+        'preselect_lead': request.GET.get('lead'),
+        'preselect_contact': request.GET.get('contact'),
+        'preselect_company': request.GET.get('company'),
+        'preselect_opportunity': request.GET.get('opportunity'),
+        'preselect_project': request.GET.get('project'),
+    }
+    return render(request, 'leads/communication_form.html', context)
+
+
+@login_required
+def communication_delete(request, pk):
+    log = get_object_or_404(CommunicationLog, pk=pk)
+    log.delete()
+    messages.success(request, 'Log deleted.')
+    return redirect(request.META.get('HTTP_REFERER', 'communication_list'))
+
+
+@login_required
+def communication_timeline(request):
+    """
+    Unified timeline — filter by lead, contact, company or opportunity.
+    Used as an embedded view from detail pages.
+    """
+    logs = CommunicationLog.objects.select_related(
+        'created_by', 'lead', 'contact', 'company'
+    ).all()
+
+    lead_id = request.GET.get('lead')
+    contact_id = request.GET.get('contact')
+    company_id = request.GET.get('company')
+    opp_id = request.GET.get('opportunity')
+    project_id = request.GET.get('project')
+
+    if lead_id:
+        logs = logs.filter(lead_id=lead_id)
+    if contact_id:
+        logs = logs.filter(contact_id=contact_id)
+    if company_id:
+        logs = logs.filter(company_id=company_id)
+    if opp_id:
+        logs = logs.filter(opportunity_id=opp_id)
+    if project_id:
+        logs = logs.filter(project_id=project_id)
+
+    context = {
+        'logs': logs,
+        'active': 'communications',
+        'title': 'Communication Timeline',
+        'comm_types': COMMUNICATION_TYPE_CHOICES,
+    }
+    return render(request, 'leads/communication_timeline.html', context)
+
+# ── REPORTS & ANALYTICS ────────────────────────────────────
+
+@login_required
+def reports(request):
+    today = timezone.localdate()
+    this_month = today.replace(day=1)
+
+    # ── Lead Stats ──────────────────────────────────────────
+    leads = Lead.objects.all()
+    total_leads = leads.count()
+    leads_this_month = leads.filter(created_at__date__gte=this_month).count()
+
+    leads_by_status = {}
+    for status, label in Lead._meta.get_field('status').choices:
+        leads_by_status[label] = leads.filter(status=status).count()
+
+    leads_by_source = {}
+    for source, label in Lead._meta.get_field('lead_source').choices:
+        count = leads.filter(lead_source=source).count()
+        if count > 0:
+            leads_by_source[label] = count
+
+    # ── Pipeline Stats ──────────────────────────────────────
+    opportunities = Opportunity.objects.all()
+    total_pipeline_value = opportunities.exclude(
+        stage__in=['lost']
+    ).aggregate(total=Sum('value'))['total'] or 0
+
+    won_value = opportunities.filter(
+        stage='won'
+    ).aggregate(total=Sum('value'))['total'] or 0
+
+    total_opps = opportunities.count()
+    won_opps = opportunities.filter(stage='won').count()
+    win_rate = int((won_opps / total_opps) * 100) if total_opps > 0 else 0
+
+    pipeline_by_stage = {}
+    for stage, label in OPPORTUNITY_STAGE_CHOICES:
+        pipeline_by_stage[label] = {
+            'count': opportunities.filter(stage=stage).count(),
+            'value': opportunities.filter(stage=stage).aggregate(
+                total=Sum('value')
+            )['total'] or 0,
+        }
+
+    # ── SPO Performance ─────────────────────────────────────
+    spo_stats = []
+    for spo in SalesPerson.objects.all():
+        spo_leads = leads.filter(spo=spo)
+        spo_stats.append({
+            'name': spo.name,
+            'total': spo_leads.count(),
+            'new': spo_leads.filter(status='new').count(),
+            'positive': spo_leads.filter(status='positive').count(),
+            'converted': spo_leads.filter(status='converted').count(),
+            'lost': spo_leads.filter(status='lost').count(),
+            'conversion_rate': int(
+                (spo_leads.filter(status='converted').count() /
+                 spo_leads.count()) * 100
+            ) if spo_leads.count() > 0 else 0,
+        })
+
+    # ── Payment Stats ───────────────────────────────────────
+    payments = Payment.objects.all()
+    total_revenue = payments.aggregate(total=Sum('amount'))['total'] or 0
+    advance_revenue = payments.filter(
+        payment_type='advance'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    full_revenue = payments.filter(
+        payment_type='full'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    # ── Project Stats ───────────────────────────────────────
+    projects = Project.objects.all()
+    project_by_status = {}
+    for status, label in PROJECT_STATUS_CHOICES:
+        project_by_status[label] = projects.filter(status=status).count()
+
+    # ── Meeting Stats ───────────────────────────────────────
+    meetings = Meeting.objects.all()
+    meeting_by_type = {}
+    for mtype, label in MEETING_TYPE_CHOICES:
+        count = meetings.filter(meeting_type=mtype).count()
+        if count > 0:
+            meeting_by_type[label] = count
+
+    # ── Followup Stats ───────────────────────────────────────
+    followups = FollowUp.objects.all()
+    followup_done = followups.filter(status='done').count()
+    followup_pending = followups.filter(status='pending').count()
+
+    context = {
+        'active': 'reports',
+        'title': 'Reports & Analytics',
+
+        # leads
+        'total_leads': total_leads,
+        'leads_this_month': leads_this_month,
+        'leads_by_status': leads_by_status,
+        'leads_by_source': leads_by_source,
+
+        # pipeline
+        'total_pipeline_value': total_pipeline_value,
+        'won_value': won_value,
+        'win_rate': win_rate,
+        'total_opps': total_opps,
+        'won_opps': won_opps,
+        'pipeline_by_stage': pipeline_by_stage,
+
+        # spo
+        'spo_stats': spo_stats,
+
+        # payments
+        'total_revenue': total_revenue,
+        'advance_revenue': advance_revenue,
+        'full_revenue': full_revenue,
+
+        # projects
+        'project_by_status': project_by_status,
+
+        # meetings
+        'meeting_by_type': meeting_by_type,
+
+        # followups
+        'followup_done': followup_done,
+        'followup_pending': followup_pending,
+    }
+    return render(request, 'leads/reports.html', context)
+
+# ── SUPPORT TICKET VIEWS ───────────────────────────────────
+
+@login_required
+def ticket_list(request):
+    tickets = Ticket.objects.select_related(
+        'created_by', 'assigned_to', 'company'
+    ).all()
+
+    status = request.GET.get('status')
+    if status:
+        tickets = tickets.filter(status=status)
+
+    priority = request.GET.get('priority')
+    if priority:
+        tickets = tickets.filter(priority=priority)
+
+    q = request.GET.get('q')
+    if q:
+        tickets = tickets.filter(
+            Q(title__icontains=q) | Q(description__icontains=q)
+        )
+
+    context = {
+        'tickets': tickets,
+        'active': 'tickets',
+        'title': 'Support Tickets',
+        'status_choices': TICKET_STATUS_CHOICES,
+        'priority_choices': TICKET_PRIORITY_CHOICES,
+        'selected_status': status,
+        'selected_priority': priority,
+    }
+    return render(request, 'leads/ticket_list.html', context)
+
+
+@login_required
+def ticket_create(request):
+    if request.method == 'POST':
+        ticket = Ticket(
+            title=request.POST.get('title'),
+            description=request.POST.get('description'),
+            status=request.POST.get('status', 'open'),
+            priority=request.POST.get('priority', 'medium'),
+            category=request.POST.get('category', 'support'),
+            created_by=request.user,
+        )
+        assigned_id = request.POST.get('assigned_to')
+        lead_id = request.POST.get('lead')
+        company_id = request.POST.get('company')
+        contact_id = request.POST.get('contact')
+        project_id = request.POST.get('project')
+        ticket.assigned_to_id = assigned_id if assigned_id else None
+        ticket.lead_id = lead_id if lead_id else None
+        ticket.company_id = company_id if company_id else None
+        ticket.contact_id = contact_id if contact_id else None
+        ticket.project_id = project_id if project_id else None
+        ticket.save()
+        messages.success(request, f'Ticket #{ticket.pk} created.')
+        return redirect('ticket_detail', pk=ticket.pk)
+
+    context = {
+        'active': 'tickets',
+        'title': 'Create Ticket',
+        'status_choices': TICKET_STATUS_CHOICES,
+        'priority_choices': TICKET_PRIORITY_CHOICES,
+        'category_choices': TICKET_CATEGORY_CHOICES,
+        'users': User.objects.all(),
+        'leads': Lead.objects.all(),
+        'companies': Company.objects.all(),
+        'contacts': Contact.objects.all(),
+        'projects': Project.objects.all(),
+    }
+    return render(request, 'leads/ticket_form.html', context)
+
+
+@login_required
+def ticket_detail(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+
+    if request.method == 'POST':
+        body = request.POST.get('body')
+        if body:
+            TicketReply.objects.create(
+                ticket=ticket,
+                author=request.user,
+                body=body,
+            )
+            # update status if replying
+            new_status = request.POST.get('status')
+            if new_status:
+                ticket.status = new_status
+                if new_status == 'resolved':
+                    ticket.resolved_at = timezone.now()
+                ticket.save()
+            messages.success(request, 'Reply added.')
+            return redirect('ticket_detail', pk=pk)
+
+    context = {
+        'ticket': ticket,
+        'replies': ticket.replies.all(),
+        'active': 'tickets',
+        'status_choices': TICKET_STATUS_CHOICES,
+    }
+    return render(request, 'leads/ticket_detail.html', context)
+
+
+@login_required
+def ticket_edit(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+    if request.method == 'POST':
+        ticket.title = request.POST.get('title')
+        ticket.description = request.POST.get('description')
+        ticket.status = request.POST.get('status', 'open')
+        ticket.priority = request.POST.get('priority', 'medium')
+        ticket.category = request.POST.get('category', 'support')
+        assigned_id = request.POST.get('assigned_to')
+        lead_id = request.POST.get('lead')
+        company_id = request.POST.get('company')
+        contact_id = request.POST.get('contact')
+        project_id = request.POST.get('project')
+        ticket.assigned_to_id = assigned_id if assigned_id else None
+        ticket.lead_id = lead_id if lead_id else None
+        ticket.company_id = company_id if company_id else None
+        ticket.contact_id = contact_id if contact_id else None
+        ticket.project_id = project_id if project_id else None
+        if ticket.status == 'resolved' and not ticket.resolved_at:
+            ticket.resolved_at = timezone.now()
+        ticket.save()
+        messages.success(request, 'Ticket updated.')
+        return redirect('ticket_detail', pk=pk)
+
+    context = {
+        'active': 'tickets',
+        'title': 'Edit Ticket',
+        'ticket': ticket,
+        'status_choices': TICKET_STATUS_CHOICES,
+        'priority_choices': TICKET_PRIORITY_CHOICES,
+        'category_choices': TICKET_CATEGORY_CHOICES,
+        'users': User.objects.all(),
+        'leads': Lead.objects.all(),
+        'companies': Company.objects.all(),
+        'contacts': Contact.objects.all(),
+        'projects': Project.objects.all(),
+    }
+    return render(request, 'leads/ticket_form.html', context)
+
+
+@login_required
+def ticket_delete(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+    ticket.delete()
+    messages.success(request, 'Ticket deleted.')
+    return redirect('ticket_list')
+
+
+@login_required
+def ticket_status(request, pk, status):
+    ticket = get_object_or_404(Ticket, pk=pk)
+    valid = dict(TICKET_STATUS_CHOICES)
+    if status in valid:
+        ticket.status = status
+        if status == 'resolved':
+            ticket.resolved_at = timezone.now()
+        ticket.save()
+        messages.success(request, f'Ticket marked as {valid[status]}.')
+    return redirect('ticket_detail', pk=pk)

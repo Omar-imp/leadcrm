@@ -1,0 +1,224 @@
+{% extends 'leads/base.html' %}
+{% block title %}Reports & Analytics - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">Reports & Analytics</h1>
+
+<!-- KPI Row 1 — Leads -->
+<div class="report-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">Total Leads</div>
+        <div class="kpi-value">{{ total_leads }}</div>
+        <div class="kpi-sub">{{ leads_this_month }} added this month</div>
+    </div>
+    <div class="kpi-card green">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value">{{ total_revenue }}</div>
+        <div class="kpi-sub">Advance: {{ advance_revenue }} · Full: {{ full_revenue }}</div>
+    </div>
+    <div class="kpi-card purple">
+        <div class="kpi-label">Pipeline Value</div>
+        <div class="kpi-value">{{ total_pipeline_value }}</div>
+        <div class="kpi-sub">Won: {{ won_value }}</div>
+    </div>
+    <div class="kpi-card orange">
+        <div class="kpi-label">Win Rate</div>
+        <div class="kpi-value">{{ win_rate }}%</div>
+        <div class="kpi-sub">{{ won_opps }} won out of {{ total_opps }} opportunities</div>
+    </div>
+</div>
+
+<!-- Row 2 — Leads by Status + Leads by Source -->
+<div class="report-row">
+    <div class="card">
+        <h2 class="section-heading">Leads by Status</h2>
+        {% with max=total_leads %}
+        <div class="bar-chart">
+            {% for label, count in leads_by_status.items %}
+            <div class="bar-row">
+                <div class="bar-label">{{ label }}</div>
+                <div class="bar-track">
+                    <div class="bar-fill
+                        {% if label == 'Lost' %}red
+                        {% elif label == 'Converted' %}green
+                        {% elif label == 'Positive' %}purple
+                        {% elif label == 'Quotation' %}orange
+                        {% else %}blue{% endif %}"
+                        style="width: {% if max > 0 %}{% widthratio count max 100 %}{% else %}0{% endif %}%">
+                    </div>
+                </div>
+                <div class="bar-count">{{ count }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endwith %}
+    </div>
+
+    <div class="card">
+        <h2 class="section-heading">Leads by Source</h2>
+        {% with max=total_leads %}
+        <div class="bar-chart">
+            {% for label, count in leads_by_source.items %}
+            <div class="bar-row">
+                <div class="bar-label">{{ label }}</div>
+                <div class="bar-track">
+                    <div class="bar-fill"
+                         style="width: {% if max > 0 %}{% widthratio count max 100 %}{% else %}0{% endif %}%">
+                    </div>
+                </div>
+                <div class="bar-count">{{ count }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endwith %}
+    </div>
+</div>
+
+<!-- Row 3 — Pipeline by Stage + SPO Performance -->
+<div class="report-row">
+    <div class="card">
+        <h2 class="section-heading">Pipeline by Stage</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Stage</th>
+                    <th>Deals</th>
+                    <th>Value</th>
+                    <th>Bar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for label, data in pipeline_by_stage.items %}
+                <tr>
+                    <td>{{ label }}</td>
+                    <td>{{ data.count }}</td>
+                    <td>{{ data.value }}</td>
+                    <td style="min-width:100px;">
+                        <div class="bar-track" style="height:14px;">
+                            <div class="bar-fill
+                                {% if label == 'Lost' %}red
+                                {% elif label == 'Won' %}green
+                                {% elif label == 'Negotiation' %}orange
+                                {% else %}blue{% endif %}"
+                                style="width: {% if total_opps > 0 %}{% widthratio data.count total_opps 100 %}{% else %}0{% endif %}%">
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="empty-state">No opportunities yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2 class="section-heading">Follow Up Summary</h2>
+        <div class="bar-chart">
+            <div class="bar-row">
+                <div class="bar-label">Done</div>
+                <div class="bar-track">
+                    <div class="bar-fill green"
+                         style="width: {% widthratio followup_done followup_done|add:followup_pending 100 %}%">
+                    </div>
+                </div>
+                <div class="bar-count">{{ followup_done }}</div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label">Pending</div>
+                <div class="bar-track">
+                    <div class="bar-fill orange"
+                         style="width: {% widthratio followup_pending followup_done|add:followup_pending 100 %}%">
+                    </div>
+                </div>
+                <div class="bar-count">{{ followup_pending }}</div>
+            </div>
+        </div>
+
+        <h2 class="section-heading" style="margin-top:24px;">Meetings by Type</h2>
+        <div class="bar-chart">
+            {% for label, count in meeting_by_type.items %}
+            <div class="bar-row">
+                <div class="bar-label">{{ label }}</div>
+                <div class="bar-track">
+                    <div class="bar-fill purple"
+                         style="width: {% widthratio count meetings_total|default:1 100 %}%">
+                    </div>
+                </div>
+                <div class="bar-count">{{ count }}</div>
+            </div>
+            {% empty %}
+            <p style="color:var(--text-muted); font-size:13px;">No meetings yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Row 4 — SPO Performance Table -->
+<div class="card">
+    <h2 class="section-heading">SPO Performance</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Sales Person</th>
+                <th>Total Leads</th>
+                <th>New</th>
+                <th>Positive</th>
+                <th>Converted</th>
+                <th>Lost</th>
+                <th>Conversion Rate</th>
+                <th>Rate Bar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for spo in spo_stats %}
+            <tr>
+                <td>{{ spo.name }}</td>
+                <td>{{ spo.total }}</td>
+                <td>{{ spo.new }}</td>
+                <td>{{ spo.positive }}</td>
+                <td style="color:var(--green); font-weight:700;">{{ spo.converted }}</td>
+                <td style="color:var(--red);">{{ spo.lost }}</td>
+                <td>{{ spo.conversion_rate }}%</td>
+                <td style="min-width:120px;">
+                    <div class="bar-track" style="height:14px;">
+                        <div class="bar-fill green"
+                             style="width:{{ spo.conversion_rate }}%">
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="empty-state">
+                    No sales persons yet. Add some via /admin/.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Row 5 — Projects by Status -->
+<div class="card">
+    <h2 class="section-heading">Projects by Status</h2>
+    <div class="bar-chart">
+        {% for label, count in project_by_status.items %}
+        <div class="bar-row">
+            <div class="bar-label">{{ label }}</div>
+            <div class="bar-track">
+                <div class="bar-fill
+                    {% if label == 'Active' %}green
+                    {% elif label == 'Completed' %}blue
+                    {% elif label == 'Cancelled' %}red
+                    {% elif label == 'On Hold' %}orange
+                    {% else %}purple{% endif %}"
+                    style="width: {% if total_leads > 0 %}{% widthratio count total_leads 100 %}{% else %}0{% endif %}%">
+                </div>
+            </div>
+            <div class="bar-count">{{ count }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

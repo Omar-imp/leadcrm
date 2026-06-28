@@ -466,12 +466,146 @@ class GeneralTask(models.Model):
 
     class Meta:
         ordering = ['due_date', '-created_at']
-                       
+
+COMMUNICATION_TYPE_CHOICES = [
+    ('email', 'Email'),
+    ('call', 'Phone Call'),
+    ('whatsapp', 'WhatsApp'),
+    ('sms', 'SMS'),
+    ('note', 'Internal Note'),
+    ('meeting_note', 'Meeting Note'),
+]
+
+COMMUNICATION_DIRECTION_CHOICES = [
+    ('inbound', 'Inbound'),
+    ('outbound', 'Outbound'),
+    ('internal', 'Internal'),
+]
+
+
+class CommunicationLog(models.Model):
+    comm_type = models.CharField(max_length=20, choices=COMMUNICATION_TYPE_CHOICES, default='note')
+    direction = models.CharField(max_length=10, choices=COMMUNICATION_DIRECTION_CHOICES, default='outbound')
+    subject = models.CharField(max_length=255, blank=True, null=True)
+    body = models.TextField()
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='communications'
+    )
+    lead = models.ForeignKey(
+        Lead, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='communications'
+    )
+    opportunity = models.ForeignKey(
+        Opportunity, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='communications'
+    )
+    contact = models.ForeignKey(
+        Contact, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='communications'
+    )
+    company = models.ForeignKey(
+        Company, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='communications'
+    )
+    project = models.ForeignKey(
+        Project, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='communications'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.get_comm_type_display()} — {self.created_at:%d %b %Y}"
+
+    class Meta:
+        ordering = ['-created_at']
+
+TICKET_STATUS_CHOICES = [
+    ('open', 'Open'),
+    ('in_progress', 'In Progress'),
+    ('waiting', 'Waiting on Client'),
+    ('resolved', 'Resolved'),
+    ('closed', 'Closed'),
+]
+
+TICKET_PRIORITY_CHOICES = [
+    ('low', 'Low'),
+    ('medium', 'Medium'),
+    ('high', 'High'),
+    ('critical', 'Critical'),
+]
+
+TICKET_CATEGORY_CHOICES = [
+    ('bug', 'Bug Report'),
+    ('feature', 'Feature Request'),
+    ('support', 'General Support'),
+    ('billing', 'Billing'),
+    ('other', 'Other'),
+]
+
+
+class Ticket(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=TICKET_STATUS_CHOICES, default='open')
+    priority = models.CharField(max_length=10, choices=TICKET_PRIORITY_CHOICES, default='medium')
+    category = models.CharField(max_length=20, choices=TICKET_CATEGORY_CHOICES, default='support')
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_tickets'
+    )
+    assigned_to = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='assigned_tickets'
+    )
+    lead = models.ForeignKey(
+        Lead, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='tickets'
+    )
+    company = models.ForeignKey(
+        Company, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='tickets'
+    )
+    contact = models.ForeignKey(
+        Contact, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='tickets'
+    )
+    project = models.ForeignKey(
+        Project, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='tickets'
+    )
+    resolved_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"#{self.pk} {self.title}"
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class TicketReply(models.Model):
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='replies')
+    author = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='ticket_replies'
+    )
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Reply to #{self.ticket.pk} by {self.author}"
+
+    class Meta:
+        ordering = ['created_at']
+
 class FollowUp(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('done', 'Done'),
     ]
+    
     lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name='followups')
     follow_up_date= models.DateTimeField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')

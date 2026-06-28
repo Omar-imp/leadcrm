@@ -95,4 +95,21 @@ urlpatterns = [
     path('tasks/<int:pk>/edit/', views.general_task_edit, name='general_task_edit'),
     path('tasks/<int:pk>/delete/', views.general_task_delete, name='general_task_delete'),
     path('tasks/<int:pk>/status/<str:status>/', views.general_task_status, name='general_task_status'),
+
+    # Communication Log
+    path('communications/', views.communication_list, name='communication_list'),
+    path('communications/create/', views.communication_create, name='communication_create'),
+    path('communications/<int:pk>/delete/', views.communication_delete, name='communication_delete'),
+    path('communications/timeline/', views.communication_timeline, name='communication_timeline'),
+
+    # Reports
+    path('reports/', views.reports, name='reports'),
+
+    # Support Tickets
+    path('tickets/', views.ticket_list, name='ticket_list'),
+    path('tickets/create/', views.ticket_create, name='ticket_create'),
+    path('tickets/<int:pk>/', views.ticket_detail, name='ticket_detail'),
+    path('tickets/<int:pk>/edit/', views.ticket_edit, name='ticket_edit'),
+    path('tickets/<int:pk>/delete/', views.ticket_delete, name='ticket_delete'),
+    path('tickets/<int:pk>/status/<str:status>/', views.ticket_status, name='ticket_status'),
 ]

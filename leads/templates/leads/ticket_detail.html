@@ -1,0 +1,127 @@
+{% extends 'leads/base.html' %}
+{% block title %}#{{ ticket.pk }} {{ ticket.title }} - Lead CRM{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <div>
+        <h1 class="page-title" style="margin:0;">
+            #{{ ticket.pk }} — {{ ticket.title }}
+        </h1>
+        <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap;">
+            <span class="pill
+                {% if ticket.status == 'resolved' or ticket.status == 'closed' %}pill-converted
+                {% elif ticket.status == 'in_progress' %}pill-positive
+                {% elif ticket.status == 'waiting' %}pill-quotation
+                {% else %}pill-new{% endif %}">
+                {{ ticket.get_status_display }}
+            </span>
+            <span class="priority-{{ ticket.priority }}">
+                {{ ticket.get_priority_display }} Priority
+            </span>
+            <span style="font-size:13px; color:var(--text-muted);">
+                {{ ticket.get_category_display }}
+            </span>
+        </div>
+    </div>
+    <div class="action-links">
+        <a href="{% url 'ticket_edit' ticket.pk %}" class="btn btn-small">Edit</a>
+        <a href="{% url 'ticket_delete' ticket.pk %}"
+           class="btn btn-small" style="background:#e2574c;"
+           onclick="return confirm('Delete ticket?')">Delete</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Ticket Details</h2>
+    <table>
+        <tr><td><strong>Created By</strong></td>
+            <td>{{ ticket.created_by.username|default:"-" }}</td></tr>
+        <tr><td><strong>Assigned To</strong></td>
+            <td>{{ ticket.assigned_to.username|default:"Unassigned" }}</td></tr>
+        <tr><td><strong>Created</strong></td>
+            <td>{{ ticket.created_at|date:"d M Y, h:i A" }}</td></tr>
+        {% if ticket.resolved_at %}
+        <tr><td><strong>Resolved</strong></td>
+            <td>{{ ticket.resolved_at|date:"d M Y, h:i A" }}</td></tr>
+        {% endif %}
+        {% if ticket.company %}
+        <tr><td><strong>Company</strong></td>
+            <td><a href="{% url 'company_detail' ticket.company.pk %}">
+                {{ ticket.company.name }}</a></td></tr>
+        {% endif %}
+        {% if ticket.lead %}
+        <tr><td><strong>Lead</strong></td>
+            <td><a href="{% url 'lead_detail' ticket.lead.pk %}">
+                {{ ticket.lead.name }}</a></td></tr>
+        {% endif %}
+        {% if ticket.project %}
+        <tr><td><strong>Project</strong></td>
+            <td><a href="{% url 'project_detail' ticket.project.pk %}">
+                {{ ticket.project.name }}</a></td></tr>
+        {% endif %}
+    </table>
+    <div style="margin-top:16px; padding:16px; background:#f8f9f9;
+                border-radius:6px; white-space:pre-line;">
+        {{ ticket.description }}
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Update Status</h2>
+    <div class="action-links">
+        {% for value, label in status_choices %}
+        {% if value != ticket.status %}
+        <a href="{% url 'ticket_status' ticket.pk value %}">→ {{ label }}</a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">
+        Thread ({{ replies.count }} repl{{ replies.count|pluralize:"y,ies" }})
+    </h2>
+
+    <div class="ticket-thread">
+        {% for reply in replies %}
+        <div class="ticket-reply">
+            <div class="ticket-reply-avatar">
+                {{ reply.author.username|first|upper }}
+            </div>
+            <div class="ticket-reply-bubble staff">
+                <div class="ticket-reply-meta">
+                    <strong>{{ reply.author.username }}</strong>
+                    · {{ reply.created_at|date:"d M Y, h:i A" }}
+                </div>
+                <div class="ticket-reply-body">{{ reply.body }}</div>
+            </div>
+        </div>
+        {% empty %}
+        <p style="color:var(--text-muted); font-size:13px;">
+            No replies yet. Add one below.
+        </p>
+        {% endfor %}
+    </div>
+
+    <h3 style="margin-top:24px;">Add Reply</h3>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group" style="margin-bottom:16px;">
+            <textarea name="body" class="form-control" rows="4"
+                      placeholder="Type your reply..." required></textarea>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <label class="field-label" style="margin:0;">Also change status:</label>
+                <select name="status" class="form-control" style="width:auto;">
+                    <option value="">No change</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn">Send Reply</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

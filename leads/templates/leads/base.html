@@ -113,7 +113,55 @@
                 <span class="left"><span class="icon">&#43;</span> New Task</span>
             </a>
         </nav>
-        
+
+        <div class="section-label">COMMUNICATIONS</div>
+        <nav>
+            <a href="{% url 'communication_list' %}" class="{% if active == 'communications' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128172;</span> All Logs</span>
+                <span class="badge badge-blue">{{ sidebar_counts.communications }}</span>
+            </a>
+            <a href="{% url 'communication_list' %}?type=email" class="">
+                <span class="left"><span class="icon">&#128140;</span> Emails</span>
+            </a>
+            <a href="{% url 'communication_list' %}?type=call" class="">
+                <span class="left"><span class="icon">&#128222;</span> Calls</span>
+            </a>
+            <a href="{% url 'communication_list' %}?type=whatsapp" class="">
+                <span class="left"><span class="icon">&#128241;</span> WhatsApp</span>
+            </a>
+            <a href="{% url 'communication_create' %}" class="">
+                <span class="left"><span class="icon">&#43;</span> Log Communication</span>
+            </a>
+        </nav>
+
+        <div class="section-label">REPORTS</div>
+        <nav>
+            <a href="{% url 'reports' %}" class="{% if active == 'reports' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128202;</span> Analytics</span>
+            </a>
+        </nav>
+
+        <div class="section-label">SUPPORT</div>
+        <nav>
+            <a href="{% url 'ticket_list' %}" class="{% if active == 'tickets' %}active{% endif %}">
+                <span class="left"><span class="icon">&#127917;</span> All Tickets</span>
+                <span class="badge badge-blue">{{ sidebar_counts.tickets_open }}</span>
+            </a>
+            <a href="{% url 'ticket_list' %}?status=open" class="">
+                <span class="left"><span class="icon">&#128308;</span> Open</span>
+            </a>
+            <a href="{% url 'ticket_list' %}?priority=critical" class="">
+                <span class="left"><span class="icon">&#9888;</span> Critical</span>
+                <span class="badge badge-red">{{ sidebar_counts.tickets_critical }}</span>
+            </a>
+            <a href="{% url 'ticket_list' %}?status=resolved" class="">
+                <span class="left"><span class="icon">&#10003;</span> Resolved</span>
+            </a>
+            <a href="{% url 'ticket_create' %}" class="">
+                <span class="left"><span class="icon">&#43;</span> New Ticket</span>
+            </a>
+        </nav>
+
         <div class="section-label">LEAD</div>
         <nav>
             <a href="{% url 'create_lead' %}" class="{% if active == 'create_lead' %}active{% endif %}">
