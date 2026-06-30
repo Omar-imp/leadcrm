@@ -1,0 +1,65 @@
+{% extends 'leads/base.html' %}
+{% block title %}Contracts - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Contracts</h1>
+    <a href="{% url 'contract_create' %}" class="btn">+ New Contract</a>
+</div>
+
+<div class="card">
+    <form method="get" class="search-bar">
+        <input type="text" name="q" class="form-control"
+               placeholder="Search contracts" value="{{ request.GET.q }}">
+        <select name="status" class="form-control" style="max-width:180px;">
+            <option value="">All Statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}"
+                {% if selected_status == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-small">Filter</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th><th>Company</th><th>Status</th><th>Value</th>
+                <th>Start</th><th>End</th><th>Signed</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in contracts %}
+            <tr>
+                <td><a href="{% url 'contract_detail' c.pk %}">{{ c.title }}</a></td>
+                <td>{{ c.company.name|default:"-" }}</td>
+                <td>
+                    <span class="pill
+                        {% if c.status == 'active' or c.status == 'signed' %}pill-converted
+                        {% elif c.status == 'expired' or c.status == 'cancelled' %}pill-lost
+                        {% elif c.status == 'sent' %}pill-positive
+                        {% else %}pill-new{% endif %}">
+                        {{ c.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ c.value }}</td>
+                <td>{{ c.start_date|date:"d M Y"|default:"-" }}</td>
+                <td>{{ c.end_date|date:"d M Y"|default:"-" }}</td>
+                <td>{{ c.signed_date|date:"d M Y"|default:"-" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'contract_detail' c.pk %}">View</a>
+                        <a href="{% url 'contract_edit' c.pk %}">Edit</a>
+                        <a href="{% url 'contract_delete' c.pk %}"
+                           onclick="return confirm('Delete contract?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="empty-state">No contracts yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

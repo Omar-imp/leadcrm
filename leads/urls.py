@@ -120,4 +120,18 @@ urlpatterns = [
     path('documents/', views.document_list, name='document_list'),
     path('documents/upload/', views.document_upload, name='document_upload'),
     path('documents/<int:pk>/delete/', views.document_delete, name='document_delete'),
+
+    # Contracts
+    path('contracts/', views.contract_list, name='contract_list'),
+    path('contracts/create/', views.contract_create, name='contract_create'),
+    path('contracts/<int:pk>/', views.contract_detail, name='contract_detail'),
+    path('contracts/<int:pk>/edit/', views.contract_edit, name='contract_edit'),
+    path('contracts/<int:pk>/delete/', views.contract_delete, name='contract_delete'),
+    path('contracts/<int:pk>/status/<str:status>/', views.contract_status, name='contract_status'),
+
+    # Notifications
+    path('notifications/', views.notification_list, name='notification_list'),
+    path('notifications/<int:pk>/read/', views.notification_read, name='notification_read'),
+    path('notifications/read-all/', views.notification_read_all, name='notification_read_all'),
+    path('notifications/<int:pk>/delete/', views.notification_delete, name='notification_delete'),
 ]

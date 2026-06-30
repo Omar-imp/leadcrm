@@ -1,0 +1,22 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Access Denied - Lead CRM</title>
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="login-wrap">
+    <div class="login-card" style="text-align:center;">
+        <div style="font-size:48px; margin-bottom:16px;">&#128683;</div>
+        <h1 style="color:var(--red);">Access Denied</h1>
+        <p style="color:var(--text-muted); margin-bottom:24px;">
+            You don't have permission to access this section.
+            Contact your administrator if you believe this is a mistake.
+        </p>
+        <a href="/" class="btn">&#8592; Back to Dashboard</a>
+    </div>
+</div>
+</body>
+</html>

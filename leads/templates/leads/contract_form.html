@@ -1,0 +1,141 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ title }} - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+<div class="form-card">
+    <div class="form-card-header"><h2>{{ title }}</h2></div>
+    <div class="form-card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Title <span class="required">*</span></label>
+                    <input type="text" name="title" class="form-control" required
+                           value="{{ contract.title|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Status</label>
+                    <select name="status" class="form-control">
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}"
+                            {% if contract.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Contract Value</label>
+                    <input type="number" name="value" class="form-control"
+                           value="{{ contract.value|default:'0' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-control"
+                           value="{{ contract.start_date|date:'Y-m-d'|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">End Date</label>
+                    <input type="date" name="end_date" class="form-control"
+                           value="{{ contract.end_date|date:'Y-m-d'|default:'' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Opportunity (Won)</label>
+                    <select name="opportunity" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for o in opportunities %}
+                        <option value="{{ o.pk }}"
+                            {% if contract.opportunity_id == o.pk %}selected{% endif %}>
+                            {{ o.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Quotation</label>
+                    <select name="quotation" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for q in quotations %}
+                        <option value="{{ q.pk }}"
+                            {% if contract.quotation_id == q.pk %}selected{% endif %}>
+                            {{ q.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Company</label>
+                    <select name="company" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for c in companies %}
+                        <option value="{{ c.pk }}"
+                            {% if contract.company_id == c.pk %}selected{% endif %}>
+                            {{ c.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Contact</label>
+                    <select name="contact" class="form-control">
+                        <option value="">-- None --</option>
+                        {% for c in contacts %}
+                        <option value="{{ c.pk }}"
+                            {% if contract.contact_id == c.pk %}selected{% endif %}>
+                            {{ c.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Signed Date</label>
+                    <input type="date" name="signed_date" class="form-control"
+                           value="{{ contract.signed_date|date:'Y-m-d'|default:'' }}">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Upload Signed Contract (PDF)</label>
+                {% if contract.signed_file %}
+                <div style="margin-bottom:8px; font-size:13px; color:var(--teal);">
+                    Current file:
+                    <a href="{{ contract.signed_file.url }}" target="_blank">
+                        Download existing file
+                    </a>
+                </div>
+                {% endif %}
+                <input type="file" name="signed_file" class="form-control"
+                       accept=".pdf,.doc,.docx">
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Terms & Conditions</label>
+                <textarea name="terms" class="form-control" rows="5">{{ contract.terms|default:'' }}</textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Internal Notes</label>
+                <textarea name="notes" class="form-control" rows="3">{{ contract.notes|default:'' }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'contract_list' %}"
+                   style="margin-right:12px; padding:12px 20px; color:#666;">Cancel</a>
+                <button type="submit" class="btn">
+                    {% if contract %}Save Changes{% else %}Create Contract{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

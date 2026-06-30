@@ -25,8 +25,9 @@
         </nav>
 
         <!-- CONTACTS -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('contacts')">
-            CONTACTS <span class="arrow" id="arrow-contacts">&#9660;</span>
+            CONTACTS <span class="arrow" id="arrow-contacts">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-contacts">
             <a href="{% url 'company_list' %}" class="{% if active == 'companies' %}active{% endif %}">
@@ -38,8 +39,10 @@
                 <span class="badge badge-purple">{{ sidebar_counts.contacts }}</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- PIPELINE -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('pipeline')">
             PIPELINE <span class="arrow" id="arrow-pipeline">&#9660;</span>
         </div>
@@ -56,8 +59,10 @@
                 <span class="badge badge-green">{{ sidebar_counts.won }}</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- QUOTATIONS -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('quotations')">
             QUOTATIONS <span class="arrow" id="arrow-quotations">&#9660;</span>
         </div>
@@ -76,8 +81,10 @@
                 <span class="left"><span class="icon">&#43;</span> New Quotation</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- PROJECTS -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('projects')">
             PROJECTS <span class="arrow" id="arrow-projects">&#9660;</span>
         </div>
@@ -96,8 +103,10 @@
                 <span class="left"><span class="icon">&#43;</span> New Project</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- MEETINGS -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('meetings')">
             MEETINGS <span class="arrow" id="arrow-meetings">&#9660;</span>
         </div>
@@ -117,8 +126,10 @@
                 <span class="left"><span class="icon">&#43;</span> Schedule Meeting</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- TASKS -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('tasks')">
             TASKS <span class="arrow" id="arrow-tasks">&#9660;</span>
         </div>
@@ -138,8 +149,10 @@
                 <span class="left"><span class="icon">&#43;</span> New Task</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- LEAD -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('lead')">
             LEAD <span class="arrow" id="arrow-lead">&#9660;</span>
         </div>
@@ -172,8 +185,10 @@
                 <span class="badge badge-green">{{ sidebar_counts.convert }}</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- PAYMENT -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('payment')">
             PAYMENT <span class="arrow" id="arrow-payment">&#9660;</span>
         </div>
@@ -191,8 +206,10 @@
                 <span class="badge badge-blue">{{ sidebar_counts.payment_scheduled }}</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- FOLLOWUP -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('followup')">
             FOLLOWUP <span class="arrow" id="arrow-followup">&#9660;</span>
         </div>
@@ -214,8 +231,10 @@
                 <span class="badge badge-orange">{{ sidebar_counts.followup_done }}</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- COMMUNICATIONS -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('communications')">
             COMMUNICATIONS <span class="arrow" id="arrow-communications">&#9660;</span>
         </div>
@@ -237,8 +256,10 @@
                 <span class="left"><span class="icon">&#43;</span> Log Communication</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- SUPPORT -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('support')">
             SUPPORT <span class="arrow" id="arrow-support">&#9660;</span>
         </div>
@@ -261,8 +282,10 @@
                 <span class="left"><span class="icon">&#43;</span> New Ticket</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- ACTIVITY -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('activity')">
             ACTIVITY <span class="arrow" id="arrow-activity">&#9660;</span>
         </div>
@@ -272,8 +295,10 @@
                 <span class="badge badge-purple">{{ sidebar_counts.activity_today }}</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- REPORTS -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('reports')">
             REPORTS <span class="arrow" id="arrow-reports">&#9660;</span>
         </div>
@@ -282,8 +307,10 @@
                 <span class="left"><span class="icon">&#128202;</span> Analytics</span>
             </a>
         </nav>
+{% endif %}
 
         <!-- DOCUMENTS -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('documents')">
             DOCUMENTS <span class="arrow" id="arrow-documents">&#9658;</span>
         </div>
@@ -302,6 +329,30 @@
                 <span class="left"><span class="icon">&#11014;</span> Upload</span>
             </a>
         </nav>
+{% endif %}
+
+        <!-- CONTRACTS -->
+{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+        <div class="section-label dropdown-toggle" onclick="toggleSection('contracts')">
+            CONTRACTS <span class="arrow" id="arrow-contracts">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-contracts">
+            <a href="{% url 'contract_list' %}" class="{% if active == 'contracts' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128221;</span> All Contracts</span>
+                <span class="badge badge-blue">{{ sidebar_counts.contracts_active }}</span>
+            </a>
+            <a href="{% url 'contract_list' %}?status=draft">
+                <span class="left"><span class="icon">&#9998;</span> Draft</span>
+                <span class="badge badge-orange">{{ sidebar_counts.contracts_draft }}</span>
+            </a>
+            <a href="{% url 'contract_list' %}?status=signed">
+                <span class="left"><span class="icon">&#10003;</span> Signed</span>
+            </a>
+            <a href="{% url 'contract_create' %}">
+                <span class="left"><span class="icon">&#43;</span> New Contract</span>
+            </a>
+        </nav>
+{% endif %}
 
         <!-- ACCOUNT -->
         {% if user.is_authenticated %}
@@ -315,6 +366,16 @@
     </aside>
 
     <main class="main">
+        <div class="topbar">
+            <div style="flex:1;"></div>
+            <a href="{% url 'notification_list' %}" class="notif-bell">
+                &#128276;
+                {% if sidebar_counts.unread_notifications > 0 %}
+                <span class="notif-count">{{ sidebar_counts.unread_notifications }}</span>
+                {% endif %}
+            </a>
+        </div>
+
         {% if messages %}
         <div class="messages">
             {% for message in messages %}
@@ -350,7 +411,8 @@ function toggleSection(name) {
 const sections = [
     'contacts', 'pipeline', 'quotations', 'projects',
     'meetings', 'tasks', 'lead', 'payment', 'followup',
-    'communications', 'support', 'activity', 'reports', 'documents'
+    'communications', 'support', 'activity', 'reports',
+    'documents', 'contracts'
 ];
 
 sections.forEach(name => {

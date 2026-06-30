@@ -1,0 +1,57 @@
+{% extends 'leads/base.html' %}
+{% block title %}Notifications - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">
+        Notifications
+        {% if sidebar_counts.unread_notifications > 0 %}
+        <span class="badge badge-red" style="font-size:14px; vertical-align:middle;">
+            {{ sidebar_counts.unread_notifications }} unread
+        </span>
+        {% endif %}
+    </h1>
+    {% if sidebar_counts.unread_notifications > 0 %}
+    <a href="{% url 'notification_read_all' %}" class="btn btn-small">
+        &#10003; Mark All Read
+    </a>
+    {% endif %}
+</div>
+
+<div class="card">
+    {% for notif in notifications %}
+    <div class="notif-item {% if not notif.is_read %}unread{% endif %}">
+        <div class="notif-icon">
+            {% if notif.notif_type == 'followup_due' %}&#9742;
+            {% elif notif.notif_type == 'meeting_today' %}&#128197;
+            {% elif notif.notif_type == 'task_overdue' %}&#9888;
+            {% elif notif.notif_type == 'ticket_assigned' %}&#127917;
+            {% elif notif.notif_type == 'payment_received' %}&#128176;
+            {% elif notif.notif_type == 'contract_signed' %}&#128221;
+            {% else %}&#128276;{% endif %}
+        </div>
+        <div class="notif-body">
+            <div class="notif-title">{{ notif.title }}</div>
+            <div class="notif-message">{{ notif.message }}</div>
+            <div class="notif-time">{{ notif.created_at|date:"d M Y, h:i A" }}</div>
+        </div>
+        <div class="notif-actions">
+            {% if not notif.is_read %}
+            <a href="{% url 'notification_read' notif.pk %}"
+               class="btn btn-small">
+                {% if notif.link %}Go &#8594;{% else %}Mark Read{% endif %}
+            </a>
+            {% else %}
+            {% if notif.link %}
+            <a href="{{ notif.link }}" class="btn btn-small btn-outline">View</a>
+            {% endif %}
+            {% endif %}
+            <a href="{% url 'notification_delete' notif.pk %}"
+               style="font-size:12px; color:var(--red);"
+               onclick="return confirm('Delete this notification?')">✕</a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">No notifications yet.</div>
+    {% endfor %}
+</div>
+{% endblock %}

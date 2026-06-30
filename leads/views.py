@@ -14,7 +14,7 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      Quotation, QuotationItem,
                      Project, Milestone, Task,
                      Meeting, GeneralTask, CommunicationLog,
-                     Ticket, TicketReply, ActivityLog, Document,
+                     Ticket, TicketReply, ActivityLog, Document, Contract, Notification,
                      OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES,
                      QUOTATION_STATUS_CHOICES,
                      PROJECT_STATUS_CHOICES, PROJECT_PRIORITY_CHOICES,
@@ -24,7 +24,18 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      GENERAL_TASK_STATUS_CHOICES, GENERAL_TASK_PRIORITY_CHOICES,
                      COMMUNICATION_TYPE_CHOICES, COMMUNICATION_DIRECTION_CHOICES,
                      TICKET_STATUS_CHOICES, TICKET_PRIORITY_CHOICES,
-                     TICKET_CATEGORY_CHOICES, DOCUMENT_TYPE_CHOICES)
+                     TICKET_CATEGORY_CHOICES, DOCUMENT_TYPE_CHOICES, CONTRACT_STATUS_CHOICES)
+
+
+def create_notification(user, notif_type, title, message, link=None):
+    Notification.objects.create(
+        user=user,
+        notif_type=notif_type,
+        title=title,
+        message=message,
+        link=link,
+    )
+
 
 def login_view(request):
     if request.method == 'POST':
@@ -896,6 +907,7 @@ def project_detail(request, pk):
         'task_priority_choices': TASK_PRIORITY_CHOICES,
         'milestone_status_choices': MILESTONE_STATUS_CHOICES,
         'users': User.objects.all(),
+        'today': timezone.localdate(),
     }
     return render(request, 'leads/project_detail.html', context)
 
@@ -1650,6 +1662,14 @@ def ticket_create(request):
         ticket.contact_id = contact_id if contact_id else None
         ticket.project_id = project_id if project_id else None
         ticket.save()
+        if ticket.assigned_to:
+            create_notification(
+                user=ticket.assigned_to,
+                notif_type='ticket_assigned',
+                title=f'New ticket assigned: #{ticket.pk}',
+                message=f'You have been assigned ticket "{ticket.title}".',
+                link=f'/tickets/{ticket.pk}/',
+            )
         messages.success(request, f'Ticket #{ticket.pk} created.')
         return redirect('ticket_detail', pk=ticket.pk)
 
@@ -1880,3 +1900,187 @@ def document_delete(request, pk):
     doc.delete()
     messages.success(request, 'Document deleted.')
     return redirect(request.META.get('HTTP_REFERER', 'document_list'))
+
+# ── CONTRACT VIEWS ─────────────────────────────────────────
+
+@login_required
+def contract_list(request):
+    contracts = Contract.objects.select_related(
+        'company', 'opportunity', 'created_by'
+    ).all()
+
+    status = request.GET.get('status')
+    if status:
+        contracts = contracts.filter(status=status)
+
+    q = request.GET.get('q')
+    if q:
+        contracts = contracts.filter(Q(title__icontains=q))
+
+    context = {
+        'contracts': contracts,
+        'active': 'contracts',
+        'title': 'Contracts',
+        'status_choices': CONTRACT_STATUS_CHOICES,
+        'selected_status': status,
+    }
+    return render(request, 'leads/contract_list.html', context)
+
+
+@login_required
+def contract_create(request):
+    if request.method == 'POST':
+        contract = Contract(
+            title=request.POST.get('title'),
+            status=request.POST.get('status', 'draft'),
+            value=request.POST.get('value') or 0,
+            start_date=request.POST.get('start_date') or None,
+            end_date=request.POST.get('end_date') or None,
+            signed_date=request.POST.get('signed_date') or None,
+            terms=request.POST.get('terms'),
+            notes=request.POST.get('notes'),
+            created_by=request.user,
+        )
+        opp_id = request.POST.get('opportunity')
+        quot_id = request.POST.get('quotation')
+        company_id = request.POST.get('company')
+        contact_id = request.POST.get('contact')
+        contract.opportunity_id = opp_id if opp_id else None
+        contract.quotation_id = quot_id if quot_id else None
+        contract.company_id = company_id if company_id else None
+        contract.contact_id = contact_id if contact_id else None
+
+        if request.FILES.get('signed_file'):
+            contract.signed_file = request.FILES['signed_file']
+
+        contract.save()
+        messages.success(request, f'Contract "{contract.title}" created.')
+        return redirect('contract_detail', pk=contract.pk)
+
+    context = {
+        'active': 'contracts',
+        'title': 'Create Contract',
+        'status_choices': CONTRACT_STATUS_CHOICES,
+        'opportunities': Opportunity.objects.filter(stage='won'),
+        'quotations': Quotation.objects.all(),
+        'companies': Company.objects.all(),
+        'contacts': Contact.objects.all(),
+    }
+    return render(request, 'leads/contract_form.html', context)
+
+
+@login_required
+def contract_detail(request, pk):
+    contract = get_object_or_404(Contract, pk=pk)
+    context = {
+        'contract': contract,
+        'active': 'contracts',
+        'status_choices': CONTRACT_STATUS_CHOICES,
+    }
+    return render(request, 'leads/contract_detail.html', context)
+
+
+@login_required
+def contract_edit(request, pk):
+    contract = get_object_or_404(Contract, pk=pk)
+    if request.method == 'POST':
+        contract.title = request.POST.get('title')
+        contract.status = request.POST.get('status', 'draft')
+        contract.value = request.POST.get('value') or 0
+        contract.start_date = request.POST.get('start_date') or None
+        contract.end_date = request.POST.get('end_date') or None
+        contract.signed_date = request.POST.get('signed_date') or None
+        contract.terms = request.POST.get('terms')
+        contract.notes = request.POST.get('notes')
+        opp_id = request.POST.get('opportunity')
+        quot_id = request.POST.get('quotation')
+        company_id = request.POST.get('company')
+        contact_id = request.POST.get('contact')
+        contract.opportunity_id = opp_id if opp_id else None
+        contract.quotation_id = quot_id if quot_id else None
+        contract.company_id = company_id if company_id else None
+        contract.contact_id = contact_id if contact_id else None
+        if request.FILES.get('signed_file'):
+            contract.signed_file = request.FILES['signed_file']
+        contract.save()
+        messages.success(request, 'Contract updated.')
+        return redirect('contract_detail', pk=pk)
+
+    context = {
+        'active': 'contracts',
+        'title': 'Edit Contract',
+        'contract': contract,
+        'status_choices': CONTRACT_STATUS_CHOICES,
+        'opportunities': Opportunity.objects.filter(stage='won'),
+        'quotations': Quotation.objects.all(),
+        'companies': Company.objects.all(),
+        'contacts': Contact.objects.all(),
+    }
+    return render(request, 'leads/contract_form.html', context)
+
+
+@login_required
+def contract_delete(request, pk):
+    contract = get_object_or_404(Contract, pk=pk)
+    contract.delete()
+    messages.success(request, 'Contract deleted.')
+    return redirect('contract_list')
+
+
+@login_required
+def contract_status(request, pk, status):
+    contract = get_object_or_404(Contract, pk=pk)
+    valid = dict(CONTRACT_STATUS_CHOICES)
+    if status in valid:
+        contract.status = status
+        if status == 'signed':
+            contract.signed_date = timezone.localdate()
+        contract.save()
+        if status == 'signed':
+            for admin_user in User.objects.filter(profile__role__in=['admin', 'ceo']):
+                create_notification(
+                    user=admin_user,
+                    notif_type='contract_signed',
+                    title=f'Contract signed: {contract.title}',
+                    message=f'Contract "{contract.title}" has been signed.',
+                    link=f'/contracts/{contract.pk}/',
+                )
+        messages.success(request, f'Contract marked as {valid[status]}.')
+    return redirect('contract_detail', pk=pk)
+
+
+# ── NOTIFICATION VIEWS ─────────────────────────────────────
+
+@login_required
+def notification_list(request):
+    notifications = Notification.objects.filter(user=request.user)
+    context = {
+        'notifications': notifications,
+        'active': 'notifications',
+        'title': 'Notifications'
+    }
+    return render(request, 'leads/notification_list.html', context)
+
+
+@login_required
+def notification_read(request, pk):
+    notif = get_object_or_404(Notification, pk=pk, user=request.user)
+    notif.is_read = True
+    notif.save()
+    if notif.link:
+        return redirect(notif.link)
+    return redirect('notification_list')
+
+
+@login_required
+def notification_read_all(request):
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    messages.success(request, 'All notifications marked as read.')
+    return redirect('notification_list')
+
+
+@login_required
+def notification_delete(request, pk):
+    notif = get_object_or_404(Notification, pk=pk, user=request.user)
+    notif.delete()
+    return redirect('notification_list')

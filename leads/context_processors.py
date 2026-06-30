@@ -1,17 +1,28 @@
 from django.utils import timezone
+from .permissions import get_allowed_sections
 from .models import (Lead, FollowUp, Payment, ScheduledPayment,
                      Company, Contact, Opportunity, Quotation,
                      Project, Meeting, GeneralTask,
-                     CommunicationLog, Ticket, ActivityLog, Document)
+                     CommunicationLog, Ticket, ActivityLog,
+                     Document, Contract, Notification)
 
 
 def sidebar_counts(request):
     if not request.user.is_authenticated:
         return {}
     today = timezone.localdate()
+    if request.user.is_superuser:
+        allowed_sections = ['*']
+    else:
+        try:
+            role = request.user.profile.role
+        except Exception:
+            role = None
+        allowed_sections = get_allowed_sections(role)
     leads = Lead.objects.all()
     followups = FollowUp.objects.all()
     return {
+        'allowed_sections': allowed_sections,
         'sidebar_counts': {
             'total': leads.count(),
             'new': leads.filter(status='new').count(),
@@ -40,6 +51,9 @@ def sidebar_counts(request):
             'tickets_open': Ticket.objects.filter(status__in=['open', 'in_progress']).count(),
             'tickets_critical': Ticket.objects.filter(priority='critical', status__in=['open', 'in_progress']).count(),
             'activity_today': ActivityLog.objects.filter(created_at__date=today).count(),
+            'contracts_active': Contract.objects.filter(status__in=['active', 'signed']).count(),
+            'contracts_draft': Contract.objects.filter(status='draft').count(),
             'documents': Document.objects.count(),
+            'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
         }
     }

@@ -1,0 +1,87 @@
+{% extends 'leads/base.html' %}
+{% block title %}{{ contract.title }} - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <div>
+        <h1 class="page-title" style="margin:0;">{{ contract.title }}</h1>
+        <span class="pill
+            {% if contract.status == 'active' or contract.status == 'signed' %}pill-converted
+            {% elif contract.status == 'expired' or contract.status == 'cancelled' %}pill-lost
+            {% elif contract.status == 'sent' %}pill-positive
+            {% else %}pill-new{% endif %}"
+            style="margin-top:8px; display:inline-block;">
+            {{ contract.get_status_display }}
+        </span>
+    </div>
+    <div class="action-links">
+        <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-small">Edit</a>
+        <a href="{% url 'contract_delete' contract.pk %}"
+           class="btn btn-small" style="background:#e2574c;"
+           onclick="return confirm('Delete contract?')">Delete</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Contract Details</h2>
+    <table>
+        <tr><td><strong>Value</strong></td><td>{{ contract.value }}</td></tr>
+        <tr><td><strong>Start Date</strong></td>
+            <td>{{ contract.start_date|date:"d M Y"|default:"-" }}</td></tr>
+        <tr><td><strong>End Date</strong></td>
+            <td>{{ contract.end_date|date:"d M Y"|default:"-" }}</td></tr>
+        <tr><td><strong>Signed Date</strong></td>
+            <td>{{ contract.signed_date|date:"d M Y"|default:"-" }}</td></tr>
+        <tr><td><strong>Created By</strong></td>
+            <td>{{ contract.created_by.username|default:"-" }}</td></tr>
+        {% if contract.company %}
+        <tr><td><strong>Company</strong></td>
+            <td><a href="{% url 'company_detail' contract.company.pk %}">
+                {{ contract.company.name }}</a></td></tr>
+        {% endif %}
+        {% if contract.contact %}
+        <tr><td><strong>Contact</strong></td>
+            <td>{{ contract.contact.get_full_name }}</td></tr>
+        {% endif %}
+        {% if contract.opportunity %}
+        <tr><td><strong>Opportunity</strong></td>
+            <td><a href="{% url 'opportunity_detail' contract.opportunity.pk %}">
+                {{ contract.opportunity.title }}</a></td></tr>
+        {% endif %}
+        {% if contract.quotation %}
+        <tr><td><strong>Quotation</strong></td>
+            <td><a href="{% url 'quotation_detail' contract.quotation.pk %}">
+                {{ contract.quotation.title }}</a></td></tr>
+        {% endif %}
+        {% if contract.signed_file %}
+        <tr><td><strong>Signed Contract</strong></td>
+            <td><a href="{{ contract.signed_file.url }}" target="_blank"
+                   class="btn btn-small">&#11015; Download Signed Contract</a></td></tr>
+        {% endif %}
+    </table>
+</div>
+
+{% if contract.terms %}
+<div class="card">
+    <h2 class="section-heading">Terms & Conditions</h2>
+    <p style="white-space:pre-line; color:var(--text-muted);">{{ contract.terms }}</p>
+</div>
+{% endif %}
+
+{% if contract.notes %}
+<div class="card">
+    <h2 class="section-heading">Internal Notes</h2>
+    <p style="white-space:pre-line; color:var(--text-muted);">{{ contract.notes }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2 class="section-heading">Update Status</h2>
+    <div class="action-links">
+        {% for value, label in status_choices %}
+        {% if value != contract.status %}
+        <a href="{% url 'contract_status' contract.pk value %}">→ {{ label }}</a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

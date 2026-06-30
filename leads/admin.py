@@ -5,14 +5,21 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      Quotation, QuotationItem,
                      Project, Milestone, Task,
                      Meeting, GeneralTask, CommunicationLog,
-                     Ticket, TicketReply, ActivityLog, Document)
+                     Ticket, TicketReply, ActivityLog, 
+                     Document, Contract, Notification)
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'title', 'notif_type', 'is_read', 'created_at')
+    list_filter  = ('notif_type', 'is_read')
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
     list_display = ('title', 'doc_type', 'uploaded_by', 'created_at')
     list_filter = ('doc_type',)
 
-    
+
 @admin.register(ActivityLog)
 class ActivityLogAdmin(admin.ModelAdmin):
     list_display = ('action', 'entity_type', 'entity_name', 'user', 'created_at')
@@ -164,3 +171,10 @@ class TicketAdmin(admin.ModelAdmin):
 @admin.register(TicketReply)
 class TicketReplyAdmin(admin.ModelAdmin):
     list_display = ('ticket', 'author', 'created_at')
+
+
+@admin.register(Contract)
+class ContractAdmin(admin.ModelAdmin):
+    list_display = ('title', 'status', 'company', 'value', 'start_date', 'end_date')
+    list_filter = ('status',)
+    search_fields = ('title',)

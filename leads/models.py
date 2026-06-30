@@ -794,6 +794,88 @@ class Document(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+CONTRACT_STATUS_CHOICES = [
+    ('draft', 'Draft'),
+    ('sent', 'Sent to Client'),
+    ('signed', 'Signed'),
+    ('active', 'Active'),
+    ('expired', 'Expired'),
+    ('cancelled', 'Cancelled'),
+]
+
+
+class Contract(models.Model):
+    title = models.CharField(max_length=200)
+    status = models.CharField(max_length=20, choices=CONTRACT_STATUS_CHOICES, default='draft')
+    opportunity = models.ForeignKey(
+        Opportunity, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='contracts'
+    )
+    quotation = models.ForeignKey(
+        Quotation, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='contracts'
+    )
+    company = models.ForeignKey(
+        Company, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='contracts'
+    )
+    contact = models.ForeignKey(
+        Contact, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='contracts'
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='contracts'
+    )
+    value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    signed_date = models.DateField(blank=True, null=True)
+    terms = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    signed_file = models.FileField(
+        upload_to='contracts/%Y/%m/',
+        blank=True, null=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.get_status_display()})"
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class Notification(models.Model):
+    NOTIF_TYPE_CHOICES = [
+        ('followup_due', 'Follow Up Due'),
+        ('meeting_today', 'Meeting Today'),
+        ('task_overdue',  'Task Overdue'),
+        ('ticket_assigned', 'Ticket Assigned'),
+        ('lead_assigned', 'Lead Assigned'),
+        ('payment_received', 'Payment_received'),
+        ('contract_signed', 'Project Update'),
+        ('general', 'General'),
+    ]
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    notif_type = models.CharField(max_length=30, choices=NOTIF_TYPE_CHOICES, default='general')
+    title      = models.CharField(max_length=200)
+    message    = models.TextField()
+    link       = models.CharField(max_length=255, blank=True, null=True)
+    is_read    = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+    
+    class Meta:
+        ordering = ['-created_at']
+
 # ── Lead signals ───────────────────────────────────────────
 @receiver(post_save, sender=Lead)
 def log_lead_save(sender, instance, created, **kwargs):
@@ -846,5 +928,9 @@ def log_followup_save(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Meeting)
 def log_meeting_save(sender, instance, created, **kwargs):
     if created:
-        description = f'Meeting "{instance.title}" scheduled for {instance.scheduled_at:%d %b %Y %H:%M}.'
+        try:
+            scheduled = instance.scheduled_at.strftime('%d %b %Y %H:%M')
+        except Exception:
+            scheduled = str(instance.scheduled_at)
+        description = f'Meeting "{instance.title}" scheduled for {scheduled}.'
         log_activity(None, 'created', 'Meeting', instance.pk, instance.title, description)
