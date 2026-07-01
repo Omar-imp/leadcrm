@@ -6,6 +6,30 @@
         <h2>Lead Form</h2>
         <span class="spo-badge">SPO Name : {{ spo_name|default:"Null" }}</span>
     </div>
+
+    <div style="padding: 20px 32px 0;">
+        <div class="card" style="margin-bottom:0; border:1px dashed var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div>
+                    <strong>Bulk Import Leads</strong>
+                    <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">
+                        Upload a CSV or Excel file with 60-100 leads — they'll be created automatically.
+                        Required columns: <code>name</code>, <code>contact_number</code>.
+                        Optional: <code>email</code>, <code>city</code>, <code>country</code>, <code>address</code>,
+                        <code>lead_source</code>, <code>quotation</code>, <code>detail</code>.
+                    </p>
+                </div>
+                <form method="post" action="{% url 'bulk_import_leads' %}" enctype="multipart/form-data"
+                      style="display:flex; align-items:center; gap:10px;">
+                    {% csrf_token %}
+                    <input type="file" name="import_file" accept=".csv,.xlsx,.xls" required
+                            style="font-size:13px;">
+                     <button type="submit" class="btn btn-small">&#11014; Upload & Import</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="form-card-body">
         <form method="post" novalidate>
             {% csrf_token %}

@@ -6,13 +6,21 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      Project, Milestone, Task,
                      Meeting, GeneralTask, CommunicationLog,
                      Ticket, TicketReply, ActivityLog, 
-                     Document, Contract, Notification)
+                     Document, Contract, Notification, BotpressTriggerLog)
+
+
+@admin.register(BotpressTriggerLog)
+class BotpressTriggerLogAdmin(admin.ModelAdmin):
+    list_display = ('lead', 'success', 'status_code', 'created_at')
+    list_filter = ('success',)
+    readonly_fields = ('lead', 'success', 'status_code', 'response_text', 'created_at')
 
 
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('user', 'title', 'notif_type', 'is_read', 'created_at')
     list_filter  = ('notif_type', 'is_read')
+
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):

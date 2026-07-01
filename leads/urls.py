@@ -134,4 +134,6 @@ urlpatterns = [
     path('notifications/<int:pk>/read/', views.notification_read, name='notification_read'),
     path('notifications/read-all/', views.notification_read_all, name='notification_read_all'),
     path('notifications/<int:pk>/delete/', views.notification_delete, name='notification_delete'),
+
+    path('leads/bulk-import/', views.bulk_import_leads, name='bulk_import_leads'),
 ]

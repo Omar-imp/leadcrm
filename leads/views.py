@@ -8,14 +8,18 @@ from .forms import LeadForm, FollowUpForm, PaymentForm, ScheduledPaymentForm, In
 from django.contrib.auth.models import User
 from .decorators import role_required
 from django.db.models import Sum, Count
+import csv
+import io
+import openpyxl
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
                      Quotation, QuotationItem,
                      Project, Milestone, Task,
                      Meeting, GeneralTask, CommunicationLog,
-                     Ticket, TicketReply, ActivityLog, Document, Contract, Notification,
-                     OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES,
+                     Ticket, TicketReply, ActivityLog, Document,
+                     Contract, Notification,
+                     LEAD_SOURCE_CHOICES, OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES,
                      QUOTATION_STATUS_CHOICES,
                      PROJECT_STATUS_CHOICES, PROJECT_PRIORITY_CHOICES,
                      METHODOLOGY_CHOICES, MILESTONE_STATUS_CHOICES,
@@ -116,6 +120,101 @@ def create_lead(request):
     if hasattr(request.user, 'salesperson'):
         spo_name = request.user.salesperson.name
     return render(request, 'leads/lead_form.html', {'form': form, 'active': 'create_lead', 'spo_name': spo_name})
+
+
+@login_required
+def bulk_import_leads(request):
+    if request.method == 'POST':
+        file = request.FILES.get('import_file')
+        if not file:
+            messages.error(request, 'Please select a CSV or Excel file.')
+            return redirect('create_lead')
+
+        filename = file.name.lower()
+        rows = []
+
+        try:
+            if filename.endswith('.csv'):
+                decoded = file.read().decode('utf-8-sig')
+                reader = csv.DictReader(io.StringIO(decoded))
+                rows = list(reader)
+            elif filename.endswith('.xlsx') or filename.endswith('.xls'):
+                wb = openpyxl.load_workbook(file, data_only=True)
+                ws = wb.active
+                headers = [str(cell.value).strip() if cell.value else '' for cell in ws[1]]
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    row_dict = dict(zip(headers, row))
+                    rows.append(row_dict)
+            else:
+                messages.error(request, 'Unsupported file type. Please upload a .csv or .xlsx file.')
+                return redirect('create_lead')
+        except Exception as e:
+            messages.error(request, f'Could not read the file: {e}')
+            return redirect('create_lead')
+
+        valid_sources = dict(LEAD_SOURCE_CHOICES)
+        spo = request.user.salesperson if hasattr(request.user, 'salesperson') else None
+
+        created_count = 0
+        skipped_count = 0
+        errors = []
+
+        for i, row in enumerate(rows, start=2):
+            # normalize keys to lowercase, no spaces, for flexible header matching
+            normalized = {
+                str(k).strip().lower().replace(' ', '_'): v
+                for k, v in row.items() if k
+            }
+
+            name = str(normalized.get('name', '')).strip()
+            contact_number = str(normalized.get('contact_number')
+                                  or normalized.get('phone')
+                                  or normalized.get('contact') or '').strip()
+            email = str(normalized.get('email', '')).strip()
+            city = str(normalized.get('city', '')).strip()
+            country = str(normalized.get('country', '')).strip()
+            address = str(normalized.get('address', '')).strip()
+            detail = str(normalized.get('detail') or normalized.get('notes') or '').strip()
+            quotation = normalized.get('quotation') or 0
+
+            source_raw = str(normalized.get('lead_source') or normalized.get('source') or '').strip().lower()
+            lead_source = 'advertisement'
+            for key, label in LEAD_SOURCE_CHOICES:
+                if source_raw == key or source_raw == label.lower():
+                    lead_source = key
+                    break
+
+            if not name or not contact_number:
+                skipped_count += 1
+                errors.append(f'Row {i}: missing name or contact number, skipped.')
+                continue
+
+            try:
+                lead = Lead.objects.create(
+                    name=name,
+                    contact_number=contact_number,
+                    email=email or None,
+                    city=city or None,
+                    country=country or None,
+                    address=address or None,
+                    detail=detail or None,
+                    quotation=quotation or 0,
+                    lead_source=lead_source,
+                    spo=spo,
+                )
+                created_count += 1
+            except Exception as e:
+                skipped_count += 1
+                errors.append(f'Row {i}: {e}')
+
+        if created_count:
+            messages.success(request, f'{created_count} leads imported successfully.')
+        if skipped_count:
+            messages.error(request, f'{skipped_count} rows skipped. ' + ' '.join(errors[:5]))
+
+        return redirect('all_leads')
+
+    return redirect('create_lead')
 
 
 @login_required
