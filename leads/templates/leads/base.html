@@ -331,6 +331,16 @@
         </nav>
 {% endif %}
 
+{% if '*' in allowed_sections %}
+<div class="section-label">WHATSAPP</div>
+<nav>
+    <a href="{% url 'bulk_whatsapp_sender' %}"
+       class="{% if active == 'bulk_whatsapp' %}active{% endif %}">
+        <span class="left"><span class="icon">&#128172;</span> Bulk Sender</span>
+    </a>
+</nav>
+{% endif %}
+
         <!-- CONTRACTS -->
 {% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('contracts')">

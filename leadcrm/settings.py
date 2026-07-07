@@ -10,7 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'leads',
+    'chatbot',
 ]
 
 MIDDLEWARE = [
@@ -125,3 +130,11 @@ LOGIN_REDIRECT_URL = '/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Meta WhatsApp Cloud API
+META_WHATSAPP_TOKEN = os.getenv('META_WHATSAPP_TOKEN', '')
+META_PHONE_NUMBER_ID = os.getenv('META_PHONE_NUMBER_ID', '')
+META_VERIFY_TOKEN = os.getenv('META_VERIFY_TOKEN', 'leadcrm123')
+
+# Groq AI
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')

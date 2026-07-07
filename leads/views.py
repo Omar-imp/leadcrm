@@ -112,6 +112,7 @@ def create_lead(request):
             if hasattr(request.user, 'salesperson'):
                 lead.spo = request.user.salesperson
             lead.save()
+            _send_whatsapp_welcome(lead)
             messages.success(request, 'Lead created successfully.')
             return redirect('all_leads')
     else:
@@ -119,7 +120,132 @@ def create_lead(request):
     spo_name = None
     if hasattr(request.user, 'salesperson'):
         spo_name = request.user.salesperson.name
-    return render(request, 'leads/lead_form.html', {'form': form, 'active': 'create_lead', 'spo_name': spo_name})
+    return render(request, 'leads/lead_form.html', {
+        'form': form,
+        'active': 'create_lead',
+        'spo_name': spo_name,
+    })
+
+
+def _send_whatsapp_welcome(lead):
+    """
+    Sends WhatsApp welcome message to a newly created lead.
+    Never raises — failure is logged but does not break lead creation.
+    """
+    try:
+        from chatbot.services.whatsapp import send_welcome_message
+        from chatbot.models import ChatSession, ChatMessage
+
+        success, result = send_welcome_message(
+            name=lead.name,
+            phone=lead.contact_number,
+        )
+
+        # create a chat session for this lead
+        if success:
+            from chatbot.services.utils import normalize_phone
+            from chatbot.services.prompts import WELCOME_MESSAGE_TEMPLATE
+
+            normalized = normalize_phone(lead.contact_number)
+            session, _ = ChatSession.objects.get_or_create(
+                phone_number=normalized,
+                defaults={'lead_name': lead.name}
+            )
+            if not session.lead_name:
+                session.lead_name = lead.name
+                session.save(update_fields=['lead_name'])
+
+            welcome_text = WELCOME_MESSAGE_TEMPLATE.format(name=lead.name)
+            ChatMessage.objects.create(
+                session=session,
+                direction='outbound',
+                message=welcome_text,
+                whatsapp_message_id=result,
+                delivered=True,
+            )
+            import logging
+            logging.getLogger(__name__).info(
+                'Welcome message sent to lead #%s (%s)', lead.pk, lead.name
+            )
+        else:
+            import logging
+            logging.getLogger(__name__).warning(
+                'Welcome message failed for lead #%s: %s', lead.pk, result
+            )
+
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).exception(
+            'WhatsApp welcome error for lead #%s: %s', lead.pk, exc
+        )
+
+
+@login_required
+def bulk_whatsapp_sender(request):
+    """
+    Upload an Excel file containing Name and Phone columns.
+    Sends a welcome WhatsApp message to every number in the file.
+    Does NOT create leads — purely for sending messages.
+    """
+    if request.method == 'POST':
+        file = request.FILES.get('file')
+        if not file:
+            messages.error(request, 'Please select an Excel file.')
+            return redirect('bulk_whatsapp_sender')
+
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(file, data_only=True)
+            ws = wb.active
+            headers = [
+                str(cell.value).strip().lower() if cell.value else ''
+                for cell in ws[1]
+            ]
+        except Exception as e:
+            messages.error(request, f'Could not read file: {e}')
+            return redirect('bulk_whatsapp_sender')
+
+        from chatbot.services.whatsapp import send_welcome_message
+
+        sent = 0
+        failed = 0
+        errors = []
+
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            row_dict = dict(zip(headers, row))
+
+            name = str(row_dict.get('name', '') or '').strip()
+            phone = str(
+                row_dict.get('phone') or
+                row_dict.get('contact_number') or
+                row_dict.get('number') or ''
+            ).strip()
+
+            if not name or not phone:
+                failed += 1
+                continue
+
+            success, result = send_welcome_message(name=name, phone=phone)
+            if success:
+                sent += 1
+            else:
+                failed += 1
+                errors.append(f'{name} ({phone}): {result}')
+
+        if sent:
+            messages.success(request, f'{sent} messages sent successfully.')
+        if failed:
+            messages.error(
+                request,
+                f'{failed} failed. ' + ' | '.join(errors[:5])
+            )
+
+        return redirect('bulk_whatsapp_sender')
+
+    return render(request, 'leads/bulk_whatsapp_sender.html', {
+        'active': 'bulk_whatsapp',
+        'title': 'Bulk WhatsApp Sender',
+    })
 
 
 @login_required
@@ -202,6 +328,7 @@ def bulk_import_leads(request):
                     lead_source=lead_source,
                     spo=spo,
                 )
+                _send_whatsapp_welcome(lead)
                 created_count += 1
             except Exception as e:
                 skipped_count += 1

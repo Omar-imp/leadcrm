@@ -1,0 +1,47 @@
+{% extends 'leads/base.html' %}
+{% block title %}Bulk WhatsApp Sender - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">Bulk WhatsApp Sender</h1>
+
+<div class="card">
+    <h2 class="section-heading">Upload Excel File</h2>
+    <p style="color:var(--text-muted); margin-bottom:20px;">
+        Upload an Excel file (.xlsx) with at least two columns:
+        <code>name</code> and <code>phone</code> (or <code>contact_number</code>).
+        A personalized welcome message will be sent to every number.
+    </p>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-row" style="grid-template-columns: 1fr auto;">
+            <div class="form-group">
+                <label class="field-label">Excel File (.xlsx)</label>
+                <input type="file" name="file" accept=".xlsx,.xls"
+                       class="form-control" required>
+            </div>
+            <div class="form-group" style="display:flex; align-items:flex-end;">
+                <button type="submit" class="btn">&#128172; Send Messages</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Expected File Format</h2>
+    <table>
+        <thead>
+            <tr><th>name</th><th>phone</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Ahmed Khan</td><td>+923001234567</td></tr>
+            <tr><td>Sara Ali</td><td>03007654321</td></tr>
+            <tr><td>John Smith</td><td>+447911123456</td></tr>
+        </tbody>
+    </table>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:12px;">
+        Phone numbers can be in any format — local (03001234567),
+        international (+923001234567), or with country code (923001234567).
+        They will be converted automatically.
+    </p>
+</div>
+{% endblock %}

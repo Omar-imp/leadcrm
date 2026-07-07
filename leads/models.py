@@ -877,22 +877,6 @@ class Notification(models.Model):
         ordering = ['-created_at']
 
 
-class BotpressTriggerLog(models.Model):
-    """Records every attempt to notify Botpress about a new lead, success or failure."""
-    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name='botpress_logs')
-    success = models.BooleanField(default=False)
-    status_code = models.IntegerField(null=True, blank=True)
-    response_text = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        status = 'OK' if self.success else 'FAILED'
-        return f"Botpress trigger for Lead #{self.lead_id} — {status}"
-
-    class Meta:
-        ordering = ['-created_at']
-
-        
 # ── Lead signals ───────────────────────────────────────────
 @receiver(post_save, sender=Lead)
 def log_lead_save(sender, instance, created, **kwargs):
