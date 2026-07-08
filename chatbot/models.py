@@ -50,3 +50,38 @@ class ChatMessage(models.Model):
 
     class Meta:
         ordering = ['created_at']
+
+
+class DemoBooking(models.Model):
+    """
+    Stores demo booking requests collected by the WhatsApp chatbot.
+    Automatically creates a Meeting in the CRM when saved.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending Confirmation'),
+        ('confirmed', 'Confirmed'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    session = models.ForeignKey(
+        ChatSession,
+        on_delete=models.CASCADE,
+        related_name='demo_bookings'
+    )
+    client_name = models.CharField(max_length=150)
+    company_name = models.CharField(max_length=200, blank=True, null=True)
+    business_type = models.CharField(max_length=100, blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    whatsapp_number = models.CharField(max_length=20)
+    preferred_day = models.CharField(max_length=50, blank=True, null=True)
+    preferred_time = models.CharField(max_length=50, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    crm_meeting_id = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Demo: {self.client_name} — {self.company_name} — {self.status}"
+
+    class Meta:
+        ordering = ['-created_at']
