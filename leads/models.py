@@ -67,7 +67,17 @@ class Lead(models.Model):
     spo            = models.ForeignKey(SalesPerson, on_delete=models.SET_NULL, null=True, blank=True, related_name='leads')
     created_at     = models.DateTimeField(default=timezone.now)
     updated_at     = models.DateTimeField(auto_now=True)
-
+    is_duplicate   = models.BooleanField(default=False)
+    duplicate_of   = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='duplicates'
+    )
+    ai_score       = models.IntegerField(default=0, help_text='AI lead score 0-100')
+    ai_score_reason = models.TextField(blank=True, null=True)
+    ai_score_updated = models.DateTimeField(blank=True, null=True)
+    
     def __str__(self):
         return f"{self.name} ({self.get_status_display()})"
     

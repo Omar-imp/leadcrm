@@ -11,6 +11,8 @@ from django.db.models import Sum, Count
 import csv
 import io
 import openpyxl
+from .duplicate_detector import check_and_mark_duplicate
+from .ai_scorer import update_lead_score
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
@@ -112,6 +114,12 @@ def create_lead(request):
             if hasattr(request.user, 'salesperson'):
                 lead.spo = request.user.salesperson
             lead.save()
+            is_dup = check_and_mark_duplicate(lead)
+            if is_dup:
+                messages.warning(
+                    request,
+                    f'Warning: This lead may be a duplicate of an existing lead.'
+                )
             _send_whatsapp_welcome(lead)
             messages.success(request, 'Lead created successfully.')
             return redirect('all_leads')
@@ -328,6 +336,7 @@ def bulk_import_leads(request):
                     lead_source=lead_source,
                     spo=spo,
                 )
+                check_and_mark_duplicate(lead)
                 _send_whatsapp_welcome(lead)
                 created_count += 1
             except Exception as e:
@@ -2310,3 +2319,30 @@ def notification_delete(request, pk):
     notif = get_object_or_404(Notification, pk=pk, user=request.user)
     notif.delete()
     return redirect('notification_list')
+
+
+@login_required
+def score_lead_view(request, pk):
+    """Manually trigger AI scoring for a lead."""
+    lead = get_object_or_404(Lead, pk=pk)
+    success = update_lead_score(lead)
+    if success:
+        messages.success(
+            request,
+            f'Lead scored: {lead.ai_score}/100 — {lead.ai_score_reason}'
+        )
+    else:
+        messages.error(request, 'Scoring failed. Check Groq API key.')
+    return redirect('lead_detail', pk=pk)
+
+
+@login_required
+def score_all_leads(request):
+    """Score all leads in bulk — admin only."""
+    leads = Lead.objects.all()
+    count = 0
+    for lead in leads:
+        if update_lead_score(lead):
+            count += 1
+    messages.success(request, f'{count} leads scored successfully.')
+    return redirect('all_leads')

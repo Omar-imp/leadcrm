@@ -1,6 +1,18 @@
 {% extends 'leads/base.html' %}
 {% block title %}{{ lead.name }} - Lead CRM{% endblock %}
 {% block content %}
+{% if lead.is_duplicate %}
+<div class="alert alert-error" style="display:flex; align-items:center; gap:12px;">
+    ⚠️ <div>
+        This lead is flagged as a possible duplicate.
+        {% if lead.duplicate_of %}
+        <a href="{% url 'lead_detail' lead.duplicate_of.pk %}" style="font-weight:700;">
+            View original lead →
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 <h1 class="page-title">{{ lead.name }} <span class="pill pill-{{ lead.status }}">{{ lead.get_status_display }}</span></h1>
 
 <div class="card">
@@ -20,7 +32,47 @@
         <a href="{% url 'update_lead_status' lead.pk 'lost' %}">Mark Lost</a>
         <a href="{% url 'update_lead_status' lead.pk 'quotation' %}">Mark Quotation</a>
         <a href="{% url 'update_lead_status' lead.pk 'converted' %}">Mark Converted</a>
+        <a href="{% url 'score_lead' lead.pk %}" class="btn btn-small">🤖 AI Score</a>
     </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">AI Lead Score</h2>
+    {% if lead.ai_score_updated %}
+    <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+        <div style="text-align:center;">
+            <div style="font-size:48px; font-weight:800;
+                color:{% if lead.ai_score >= 80 %}var(--green)
+                {% elif lead.ai_score >= 60 %}#2196f3
+                {% elif lead.ai_score >= 40 %}var(--orange)
+                {% else %}var(--red){% endif %};">
+                {{ lead.ai_score }}
+            </div>
+            <div style="font-size:13px; color:var(--text-muted);">out of 100</div>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size:15px; margin-bottom:8px;">{{ lead.ai_score_reason }}</div>
+            <div style="font-size:12px; color:var(--text-muted);">
+                Last scored: {{ lead.ai_score_updated|date:"d M Y, h:i A" }}
+            </div>
+            <!-- progress bar -->
+            <div class="progress-bar-wrap" style="margin-top:10px;">
+                <div class="progress-bar-fill
+                    {% if lead.ai_score >= 80 %}done
+                    {% elif lead.ai_score < 40 %}warning{% endif %}"
+                    style="width:{{ lead.ai_score }}%">
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        No score yet.
+        <a href="{% url 'score_lead' lead.pk %}" class="btn btn-small" style="margin-left:12px;">
+            🤖 Score This Lead
+        </a>
+    </div>
+    {% endif %}
 </div>
 
 <div class="card">

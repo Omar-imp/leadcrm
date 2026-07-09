@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ChatSession, ChatMessage
+from .models import ChatSession, ChatMessage, DemoBooking
 
 
 class ChatMessageInline(admin.TabularInline):
@@ -23,10 +23,18 @@ class ChatSessionAdmin(admin.ModelAdmin):
 
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):
-    list_display = (
-        'session', 'direction', 'message',
-        'delivered', 'created_at'
-    )
+    list_display = ('session', 'direction', 'message', 'delivered', 'created_at')
     list_filter = ('direction', 'delivered')
     search_fields = ('session__phone_number', 'message')
     readonly_fields = ('created_at',)
+
+
+@admin.register(DemoBooking)
+class DemoBookingAdmin(admin.ModelAdmin):
+    list_display = (
+        'client_name', 'company_name', 'business_type',
+        'preferred_day', 'preferred_time', 'status', 'created_at'
+    )
+    list_filter = ('status', 'business_type')
+    search_fields = ('client_name', 'company_name', 'whatsapp_number')
+    readonly_fields = ('created_at', 'crm_meeting_id')

@@ -137,4 +137,7 @@ urlpatterns = [
 
     path('leads/bulk-import/', views.bulk_import_leads, name='bulk_import_leads'),
     path('whatsapp/bulk/', views.bulk_whatsapp_sender, name='bulk_whatsapp_sender'),
+
+    path('leads/<int:pk>/score/', views.score_lead_view, name='score_lead'),
+    path('leads/score-all/', views.score_all_leads, name='score_all_leads'),
 ]
