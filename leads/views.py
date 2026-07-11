@@ -15,6 +15,10 @@ from .ai_assignment import assign_lead_with_ai
 from .duplicate_detector import check_and_mark_duplicate
 from .ai_scorer import update_lead_score
 from .ai_next_action import get_next_action
+from .ai_closing import update_closing_probability
+from .ai_followup_messages import generate_followup_message
+from .ai_meeting_summary import save_meeting_summary
+from .ai_forecasting import generate_sales_forecast
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
@@ -2462,3 +2466,53 @@ def salesperson_delete(request, pk):
     spo.delete()
     messages.success(request, 'Sales Person deleted.')
     return redirect('salesperson_list')
+
+
+@login_required
+def closing_probability_view(request, pk):
+    lead = get_object_or_404(Lead, pk=pk)
+    success = update_closing_probability(lead)
+    if success:
+        messages.success(
+            request,
+            f'Closing probability: {lead.closing_probability}% — {lead.closing_probability_reason}'
+        )
+    else:
+        messages.error(request, 'Prediction failed.')
+    return redirect('lead_detail', pk=pk)
+
+
+@login_required
+def ai_followup_message_view(request, pk):
+    lead = get_object_or_404(Lead, pk=pk)
+    channel = request.GET.get('channel', 'whatsapp')
+    message = generate_followup_message(lead, channel=channel)
+    context = {
+        'lead': lead,
+        'message': message,
+        'channel': channel,
+        'active': 'all_leads',
+    }
+    return render(request, 'leads/ai_followup_message.html', context)
+
+
+@login_required
+def ai_meeting_summary_view(request, pk):
+    meeting = get_object_or_404(Meeting, pk=pk)
+    success = save_meeting_summary(meeting)
+    if success:
+        messages.success(request, 'Meeting summary generated.')
+    else:
+        messages.error(request, 'Summary generation failed.')
+    return redirect('meeting_detail', pk=pk)
+
+
+@login_required
+def sales_forecast_view(request):
+    forecast = generate_sales_forecast()
+    context = {
+        'forecast': forecast,
+        'active': 'reports',
+        'title': 'AI Sales Forecast',
+    }
+    return render(request, 'leads/sales_forecast.html', context)

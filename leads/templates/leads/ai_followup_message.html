@@ -1,0 +1,73 @@
+{% extends 'leads/base.html' %}
+{% block title %}AI Follow-up Message - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">
+        🤖 AI Follow-up Message — {{ lead.name }}
+    </h1>
+    <a href="{% url 'lead_detail' lead.pk %}" class="btn btn-small btn-outline">
+        ← Back to Lead
+    </a>
+</div>
+
+<div class="card">
+    <div style="display:flex; gap:12px; margin-bottom:20px;">
+        <a href="?channel=whatsapp"
+           class="btn btn-small {% if channel == 'whatsapp' %}{% else %}btn-outline{% endif %}">
+            💬 WhatsApp
+        </a>
+        <a href="?channel=email"
+           class="btn btn-small {% if channel == 'email' %}{% else %}btn-outline{% endif %}">
+            📧 Email
+        </a>
+    </div>
+
+    {% if message %}
+    <div style="background:#f3f4f8; border-radius:8px; padding:20px;
+                font-size:15px; line-height:1.6; white-space:pre-wrap;
+                border-left:4px solid var(--teal);">
+        {{ message }}
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:16px; flex-wrap:wrap;">
+        <button onclick="copyMessage()" class="btn btn-small">
+            📋 Copy Message
+        </button>
+        <a href="{% url 'ai_followup_message' lead.pk %}?channel={{ channel }}"
+           class="btn btn-small btn-outline">
+            🔄 Regenerate
+        </a>
+    </div>
+
+    <div id="copy-confirm" style="display:none; color:var(--green);
+         font-size:13px; margin-top:8px;">
+        ✅ Copied to clipboard!
+    </div>
+    {% else %}
+    <div class="empty-state">Could not generate message. Check Groq API key.</div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Log This Communication</h2>
+    <p style="color:var(--text-muted); font-size:14px; margin-bottom:16px;">
+        After sending this message, log it in the communication history.
+    </p>
+    <a href="{% url 'communication_create' %}?lead={{ lead.pk }}"
+       class="btn btn-small">
+        + Log Communication
+    </a>
+</div>
+
+<script>
+function copyMessage() {
+    const text = `{{ message|escapejs }}`;
+    navigator.clipboard.writeText(text).then(() => {
+        document.getElementById('copy-confirm').style.display = 'block';
+        setTimeout(() => {
+            document.getElementById('copy-confirm').style.display = 'none';
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

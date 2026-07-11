@@ -149,4 +149,9 @@ urlpatterns = [
     path('salespersons/create/', views.salesperson_create, name='salesperson_create'),
     path('salespersons/<int:pk>/edit/', views.salesperson_edit, name='salesperson_edit'),
     path('salespersons/<int:pk>/delete/', views.salesperson_delete, name='salesperson_delete'),
+
+    path('leads/<int:pk>/closing-probability/', views.closing_probability_view, name='closing_probability'),
+    path('leads/<int:pk>/ai-message/', views.ai_followup_message_view, name='ai_followup_message'),
+    path('meetings/<int:pk>/summarize/', views.ai_meeting_summary_view, name='ai_meeting_summary'),
+    path('forecast/', views.sales_forecast_view, name='sales_forecast'),
 ]

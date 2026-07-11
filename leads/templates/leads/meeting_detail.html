@@ -18,6 +18,7 @@
         <a href="{% url 'meeting_delete' meeting.pk %}"
            class="btn btn-small" style="background:#e2574c;"
            onclick="return confirm('Delete meeting?')">Delete</a>
+        <a href="{% url 'ai_meeting_summary' meeting.pk %}" class="btn btn-small">🤖 AI Summary</a>
     </div>
 </div>
 
@@ -78,4 +79,34 @@
         {% endfor %}
     </div>
 </div>
+
+{% if meeting.ai_summary %}
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 class="section-heading" style="margin:0;">🤖 AI Meeting Summary</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <span style="font-size:12px; color:var(--text-muted);">
+                {{ meeting.ai_summary_updated|date:"d M Y, h:i A" }}
+            </span>
+            <a href="{% url 'ai_meeting_summary' meeting.pk %}" class="btn btn-small">
+                Regenerate
+            </a>
+        </div>
+    </div>
+    <div style="background:#f3f4f8; border-radius:8px; padding:20px;
+            font-size:14px; line-height:1.7; white-space:pre-wrap;
+            border-left:4px solid var(--teal); color:var(--text-dark);">
+        {{ meeting.ai_summary }}
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <h2 class="section-heading">🤖 AI Meeting Summary</h2>
+    <div class="empty-state">
+        <a href="{% url 'ai_meeting_summary' meeting.pk %}">
+            Generate AI Summary
+        </a>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

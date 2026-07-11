@@ -77,7 +77,10 @@ class Lead(models.Model):
     ai_score       = models.IntegerField(default=0, help_text='AI lead score 0-100')
     ai_score_reason = models.TextField(blank=True, null=True)
     ai_score_updated = models.DateTimeField(blank=True, null=True)
-    
+    closing_probability = models.IntegerField(default=0)
+    closing_probability_updated = models.DateTimeField(blank=True, null=True)
+    closing_probability_reason = models.TextField(blank=True, null=True)
+
     def __str__(self):
         return f"{self.name} ({self.get_status_display()})"
     
@@ -431,6 +434,8 @@ class Meeting(models.Model):
         User, blank=True, related_name='meetings'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    ai_summary = models.TextField(blank=True, null=True)
+    ai_summary_updated = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} — {self.scheduled_at:%d %b %Y %H:%M}"
