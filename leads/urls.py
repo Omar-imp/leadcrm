@@ -140,4 +140,13 @@ urlpatterns = [
 
     path('leads/<int:pk>/score/', views.score_lead_view, name='score_lead'),
     path('leads/score-all/', views.score_all_leads, name='score_all_leads'),
+
+    path('leads/<int:pk>/ai-assign/', views.ai_assign_lead, name='ai_assign_lead'),
+    path('leads/<int:pk>/next-action/', views.next_action_view, name='next_action'),
+
+    # Sales Persons
+    path('salespersons/', views.salesperson_list, name='salesperson_list'),
+    path('salespersons/create/', views.salesperson_create, name='salesperson_create'),
+    path('salespersons/<int:pk>/edit/', views.salesperson_edit, name='salesperson_edit'),
+    path('salespersons/<int:pk>/delete/', views.salesperson_delete, name='salesperson_delete'),
 ]

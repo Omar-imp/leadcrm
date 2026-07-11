@@ -11,8 +11,10 @@ from django.db.models import Sum, Count
 import csv
 import io
 import openpyxl
+from .ai_assignment import assign_lead_with_ai
 from .duplicate_detector import check_and_mark_duplicate
 from .ai_scorer import update_lead_score
+from .ai_next_action import get_next_action
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
@@ -120,6 +122,13 @@ def create_lead(request):
                     request,
                     f'Warning: This lead may be a duplicate of an existing lead.'
                 )
+            else:
+                assigned = assign_lead_with_ai(lead)
+                if assigned:
+                    messages.info(
+                        request,
+                        f'Lead auto-assigned to {lead.spo.name} by AI'
+                    )
             _send_whatsapp_welcome(lead)
             messages.success(request, 'Lead created successfully.')
             return redirect('all_leads')
@@ -254,6 +263,18 @@ def bulk_whatsapp_sender(request):
         'active': 'bulk_whatsapp',
         'title': 'Bulk WhatsApp Sender',
     })
+
+
+@login_required
+def ai_assign_lead(request, pk):
+    """Manually trigger AI assignment for a lead."""
+    lead = get_object_or_404(Lead, pk=pk)
+    success = assign_lead_with_ai(lead)
+    if success:
+        messages.success(request, f'Lead assigned to {lead.spo.name} by AI.')
+    else:
+        messages.error(request, 'AI assignment failed. No salespersons available.')
+    return redirect('lead_detail', pk=pk)
 
 
 @login_required
@@ -396,13 +417,33 @@ def lead_detail(request, pk):
             messages.success(request, 'Follow-up scheduled.')
             return redirect('lead_detail', pk=pk)
 
+    # get AI next action
+    next_action = request.session.get(f'next_action_{pk}')
+
+    if not next_action and lead.ai_score_updated:
+        next_action = get_next_action(lead)
+
     context = {
         'lead': lead,
         'followup_form': followup_form,
         'followups': lead.followups.all(),
         'active': 'all_leads',
+        'next_action': next_action,
     }
     return render(request, 'leads/lead_detail.html', context)
+
+
+@login_required
+def next_action_view(request, pk):
+    """Get AI next action recommendation for a lead."""
+    lead = get_object_or_404(Lead, pk=pk)
+    next_action = get_next_action(lead)
+    request.session[f'next_action_{pk}'] = next_action
+    messages.success(
+        request,
+        f'Next Action: {next_action["action"]} — {next_action["deadline"]}'
+    )
+    return redirect('lead_detail', pk=pk)
 
 
 @login_required
@@ -2346,3 +2387,78 @@ def score_all_leads(request):
             count += 1
     messages.success(request, f'{count} leads scored successfully.')
     return redirect('all_leads')
+
+
+@login_required
+def salesperson_list(request):
+    salespersons = SalesPerson.objects.select_related('user').all()
+
+    spo_data = []
+    for spo in salespersons:
+        total = spo.leads.count()
+        converted = spo.leads.filter(status='converted').count()
+        rate = round((converted / total * 100), 1) if total > 0 else 0
+        spo_data.append({
+            'spo': spo,
+            'total': total,
+            'converted': converted,
+            'rate': rate,
+        })
+
+    context = {
+        'spo_data': spo_data,
+        'active': 'salespersons',
+        'title': 'Sales Persons',
+    }
+    return render(request, 'leads/salesperson_list.html', context)
+
+
+@login_required
+def salesperson_create(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        user_id = request.POST.get('user')
+        if not name:
+            messages.error(request, 'Name is required.')
+            return redirect('salesperson_create')
+        spo = SalesPerson(name=name)
+        if user_id:
+            spo.user_id = user_id
+        spo.save()
+        messages.success(request, f'Sales Person "{name}" created.')
+        return redirect('salesperson_list')
+
+    users = User.objects.all()
+    return render(request, 'leads/salesperson_form.html', {
+        'active': 'salespersons',
+        'title': 'Add Sales Person',
+        'users': users,
+    })
+
+
+@login_required
+def salesperson_edit(request, pk):
+    spo = get_object_or_404(SalesPerson, pk=pk)
+    if request.method == 'POST':
+        spo.name = request.POST.get('name')
+        user_id = request.POST.get('user')
+        spo.user_id = user_id if user_id else None
+        spo.save()
+        messages.success(request, 'Sales Person updated.')
+        return redirect('salesperson_list')
+
+    users = User.objects.all()
+    return render(request, 'leads/salesperson_form.html', {
+        'active': 'salespersons',
+        'title': 'Edit Sales Person',
+        'spo': spo,
+        'users': users,
+    })
+
+
+@login_required
+def salesperson_delete(request, pk):
+    spo = get_object_or_404(SalesPerson, pk=pk)
+    spo.delete()
+    messages.success(request, 'Sales Person deleted.')
+    return redirect('salesperson_list')

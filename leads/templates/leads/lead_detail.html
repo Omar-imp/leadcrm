@@ -32,7 +32,7 @@
         <a href="{% url 'update_lead_status' lead.pk 'lost' %}">Mark Lost</a>
         <a href="{% url 'update_lead_status' lead.pk 'quotation' %}">Mark Quotation</a>
         <a href="{% url 'update_lead_status' lead.pk 'converted' %}">Mark Converted</a>
-        <a href="{% url 'score_lead' lead.pk %}" class="btn btn-small">🤖 AI Score</a>
+        <a href="{% url 'score_lead' lead.pk %}">🤖 AI Score</a>
     </div>
 </div>
 
@@ -76,6 +76,43 @@
 </div>
 
 <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 class="section-heading" style="margin:0;">🤖 Next Best Action</h2>
+        <a href="{% url 'next_action' lead.pk %}" class="btn btn-small">Refresh</a>
+    </div>
+
+    {% if next_action %}
+    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+        <div style="flex:1; background:#f3f4f8; border-radius:8px; padding:16px;">
+            <div style="font-size:18px; font-weight:700; margin-bottom:8px;">
+                {{ next_action.action }}
+            </div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
+                {{ next_action.reason }}
+            </div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <span class="pill
+                    {% if next_action.priority == 'High' %}pill-lost
+                    {% elif next_action.priority == 'Medium' %}pill-quotation
+                    {% else %}pill-new{% endif %}">
+                    {{ next_action.priority }} Priority
+                </span>
+                <span class="pill pill-positive" style="background:var(--teal);">
+                    ⏰ {{ next_action.deadline }}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <a href="{% url 'next_action' lead.pk %}" class="btn btn-small">
+            🤖 Get AI Recommendation
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
     <h2 class="section-heading">Follow Ups</h2>
     <table>
         <thead><tr><th>Date</th><th>Status</th><th>Notes</th><th>Action</th></tr></thead>
@@ -85,7 +122,7 @@
                 <td>{{ f.follow_up_date|date:"d M Y, h:i A" }}</td>
                 <td><span class="pill {% if f.status == 'done' %}pill-converted{% else %}pill-quotation{% endif %}">{{ f.get_status_display }}</span></td>
                 <td>{{ f.notes|default:"-" }}</td>
-                <td>{% if f.status == 'pending' %}<div class="action-links"><a href="{% url 'followup_done' f.pk %}">Mark Done</a></div>{% endif %}</td>
+                <td>{% if f.status == 'pending' %}<div class="action-links"><a href="{% url 'followup_done' f.pk %}">Mark Done</a><a href="{% url 'ai_assign_lead' lead.pk %}" >🤖 AI Assign</a></div>{% endif %}</td>
             </tr>
             {% empty %}
             <tr><td colspan="4" class="empty-state">No follow ups scheduled.</td></tr>

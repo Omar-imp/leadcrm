@@ -1,0 +1,43 @@
+{% extends 'leads/base.html' %}
+{% block title %}Sales Persons - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">Sales Persons</h1>
+    <a href="{% url 'salesperson_create' %}" class="btn">+ Add Sales Person</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Linked User</th>
+                <th>Total Leads</th>
+                <th>Converted</th>
+                <th>Conversion Rate</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in spo_data %}
+            <tr>
+                <td>{{ item.spo.name }}</td>
+                <td>{{ item.spo.user.username|default:"Not linked" }}</td>
+                <td>{{ item.total }}</td>
+                <td>{{ item.converted }}</td>
+                <td>{% if item.total > 0 %}{{ item.rate }}%{% else %}-{% endif %}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'salesperson_edit' item.spo.pk %}">Edit</a>
+                        <a href="{% url 'salesperson_delete' item.spo.pk %}"
+                            onclick="return confirm('Delete {{ item.spo.name }}?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No sales persons yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

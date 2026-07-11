@@ -151,6 +151,20 @@
         </nav>
 {% endif %}
 
+{% if '*' in allowed_sections or 'leads' in allowed_sections %}
+        <div class="section-label dropdown-toggle" onclick="toggleSection('salespersons')">
+            SALES PERSONS <span class="arrow" id="arrow-salespersons">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-salespersons">
+            <a href="{% url 'salesperson_list' %}" class="{% if active == 'salespersons' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128100;</span> All SPOs</span>
+            </a>
+            <a href="{% url 'salesperson_create' %}">
+                <span class="left"><span class="icon">&#43;</span> Add SPO</span>
+            </a>
+        </nav>
+{% endif %}
+
         <!-- LEAD -->
 {% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('lead')">
@@ -422,7 +436,7 @@ const sections = [
     'contacts', 'pipeline', 'quotations', 'projects',
     'meetings', 'tasks', 'lead', 'payment', 'followup',
     'communications', 'support', 'activity', 'reports',
-    'documents', 'contracts'
+    'documents', 'contracts', 'salespersons'
 ];
 
 sections.forEach(name => {
