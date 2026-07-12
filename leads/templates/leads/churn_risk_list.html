@@ -1,0 +1,36 @@
+{% extends 'leads/base.html' %}
+{% block title %}Churn Risk - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">⚠️ High Churn Risk Leads</h1>
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Lead</th><th>Status</th><th>Risk</th>
+                <th>Reason</th><th>SPO</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lead in leads %}
+            <tr>
+                <td><a href="{% url 'lead_detail' lead.pk %}">{{ lead.name }}</a></td>
+                <td><span class="pill pill-{{ lead.status }}">{{ lead.get_status_display }}</span></td>
+                <td><span class="pill pill-lost">High Risk</span></td>
+                <td style="font-size:13px; color:var(--text-muted);">
+                    {{ lead.churn_risk_reason|truncatechars:80 }}
+                </td>
+                <td>{{ lead.spo.name|default:"Unassigned" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'lead_detail' lead.pk %}">View</a>
+                        <a href="{% url 'ai_followup_message' lead.pk %}">Send Message</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No high churn risk leads.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

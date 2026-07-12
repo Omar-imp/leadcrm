@@ -154,4 +154,10 @@ urlpatterns = [
     path('leads/<int:pk>/ai-message/', views.ai_followup_message_view, name='ai_followup_message'),
     path('meetings/<int:pk>/summarize/', views.ai_meeting_summary_view, name='ai_meeting_summary'),
     path('forecast/', views.sales_forecast_view, name='sales_forecast'),
+
+    path('leads/<int:pk>/churn-risk/', views.churn_risk_view, name='churn_risk'),
+    path('leads/churn-risk/all/', views.churn_risk_all_view, name='churn_risk_all'),
+    path('leads/<int:pk>/upsell/', views.upsell_recommendations_view, name='upsell_recommendations'),
+    path('leads/<int:pk>/lifetime-value/', views.lifetime_value_view, name='lifetime_value'),
+    path('leads/<int:pk>/360/', views.customer_360_view, name='customer_360'),
 ]

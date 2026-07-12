@@ -19,6 +19,9 @@ from .ai_closing import update_closing_probability
 from .ai_followup_messages import generate_followup_message
 from .ai_meeting_summary import save_meeting_summary
 from .ai_forecasting import generate_sales_forecast
+from .ai_churn import update_churn_risk, get_high_churn_leads
+from .ai_upsell import get_upsell_recommendations
+from .ai_ltv import update_lifetime_value
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
@@ -2516,3 +2519,75 @@ def sales_forecast_view(request):
         'title': 'AI Sales Forecast',
     }
     return render(request, 'leads/sales_forecast.html', context)
+
+
+@login_required
+def churn_risk_view(request, pk):
+    lead = get_object_or_404(Lead, pk=pk)
+    success = update_churn_risk(lead)
+    if success:
+        messages.success(
+            request,
+            f'Churn risk: {lead.churn_risk} — {lead.churn_risk_reason}'
+        )
+    else:
+        messages.error(request, 'Churn prediction failed.')
+    return redirect('lead_detail', pk=pk)
+
+
+@login_required
+def churn_risk_all_view(request):
+    """Shows all leads with high churn risk."""
+    high_risk = get_high_churn_leads(limit=50)
+    context = {
+        'leads': high_risk,
+        'active': 'churn',
+        'title': 'High Churn Risk Leads',
+    }
+    return render(request, 'leads/churn_risk_list.html', context)
+
+
+@login_required
+def upsell_recommendations_view(request, pk):
+    lead = get_object_or_404(Lead, pk=pk)
+    recommendations = get_upsell_recommendations(lead)
+    context = {
+        'lead': lead,
+        'recommendations': recommendations,
+        'active': 'all_leads',
+        'title': f'Upsell Opportunities — {lead.name}',
+    }
+    return render(request, 'leads/upsell_recommendations.html', context)
+
+
+@login_required
+def lifetime_value_view(request, pk):
+    lead = get_object_or_404(Lead, pk=pk)
+    success = update_lifetime_value(lead)
+    if success:
+        messages.success(
+            request,
+            f'Lifetime value estimated: {lead.lifetime_value}'
+        )
+    else:
+        messages.error(request, 'LTV estimation failed.')
+    return redirect('lead_detail', pk=pk)
+
+
+@login_required
+def customer_360_view(request, pk):
+    lead = get_object_or_404(Lead, pk=pk)
+    context = {
+        'lead': lead,
+        'followups': lead.followups.all(),
+        'payments': lead.payments.all(),
+        'communications': lead.communications.all(),
+        'meetings': lead.meetings.all(),
+        'tickets': lead.tickets.all(),
+        'documents': lead.documents.all(),
+        'quotations': lead.quotations.all(),
+        'scheduled_payments': lead.scheduled_payments.all(),
+        'active': 'all_leads',
+        'title': f'360° View — {lead.name}',
+    }
+    return render(request, 'leads/customer_360.html', context)

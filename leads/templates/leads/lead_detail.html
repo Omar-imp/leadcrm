@@ -35,6 +35,10 @@
         <a href="{% url 'score_lead' lead.pk %}">🤖 AI Score</a>
         <a href="{% url 'closing_probability' lead.pk %}">📊 Close Probability</a>
         <a href="{% url 'ai_followup_message' lead.pk %}">✉️ AI Message</a>
+        <a href="{% url 'churn_risk' lead.pk %}">⚠️ Churn Risk</a>
+        <a href="{% url 'upsell_recommendations' lead.pk %}">💰 Upsell Ideas</a>
+        <a href="{% url 'lifetime_value' lead.pk %}">💎 Lifetime Value</a>
+        <a href="{% url 'customer_360' lead.pk %}">🔮 360° View</a>
     </div>
 </div>
 
@@ -154,6 +158,57 @@
     </div>
     {% endif %}
 </div>
+
+{% if lead.churn_risk %}
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 class="section-heading" style="margin:0;">⚠️ Churn Risk</h2>
+        <a href="{% url 'churn_risk' lead.pk %}" class="btn btn-small">Refresh</a>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px;">
+        <span class="pill
+            {% if lead.churn_risk == 'High' %}pill-lost
+            {% elif lead.churn_risk == 'Medium' %}pill-quotation
+            {% else %}pill-converted{% endif %}"
+            style="font-size:16px; padding:8px 20px;">
+            {{ lead.churn_risk }} Risk
+        </span>
+        <div>
+            <div style="font-size:14px; color:var(--text-dark);">
+                {{ lead.churn_risk_reason }}
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                Updated: {{ lead.churn_risk_updated|date:"d M Y, h:i A" }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if lead.lifetime_value_updated %}
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 class="section-heading" style="margin:0;">💎 Customer Lifetime Value</h2>
+        <a href="{% url 'lifetime_value' lead.pk %}" class="btn btn-small">Refresh</a>
+    </div>
+    <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+        <div style="text-align:center;">
+            <div style="font-size:36px; font-weight:800; color:var(--teal-dark);">
+                {{ lead.lifetime_value }}
+            </div>
+            <div style="font-size:13px; color:var(--text-muted);">estimated LTV</div>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size:14px; color:var(--text-dark); margin-bottom:8px;">
+                {{ lead.lifetime_value_reason }}
+            </div>
+            <div style="font-size:12px; color:var(--text-muted);">
+                Updated: {{ lead.lifetime_value_updated|date:"d M Y, h:i A" }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <div class="card">
     <h2 class="section-heading">Follow Ups</h2>

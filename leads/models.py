@@ -80,6 +80,12 @@ class Lead(models.Model):
     closing_probability = models.IntegerField(default=0)
     closing_probability_updated = models.DateTimeField(blank=True, null=True)
     closing_probability_reason = models.TextField(blank=True, null=True)
+    churn_risk = models.CharField(max_length=10, blank=True, null=True)
+    churn_risk_reason = models.TextField(blank=True, null=True)
+    churn_risk_updated = models.DateTimeField(blank=True, null=True)
+    lifetime_value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    lifetime_value_updated = models.DateTimeField(blank=True, null=True)
+    lifetime_value_reason = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.name} ({self.get_status_display()})"

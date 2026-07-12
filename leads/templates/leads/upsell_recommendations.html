@@ -1,0 +1,57 @@
+{% extends 'leads/base.html' %}
+{% block title %}Upsell Opportunities - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">💰 Upsell Opportunities — {{ lead.name }}</h1>
+    <a href="{% url 'lead_detail' lead.pk %}" class="btn btn-small btn-outline">← Back</a>
+</div>
+
+{% if recommendations.upsells %}
+<div class="card">
+    <h2 class="section-heading">Recommended Services</h2>
+    {% for item in recommendations.upsells %}
+    <div style="display:flex; gap:16px; padding:16px 0;
+                border-bottom:1px solid var(--border); align-items:flex-start;">
+        <div style="background:var(--teal); color:#fff; border-radius:50%;
+                    width:32px; height:32px; display:flex; align-items:center;
+                    justify-content:center; font-weight:700; flex-shrink:0;">
+            {{ forloop.counter }}
+        </div>
+        <div>
+            <div style="font-size:15px; font-weight:700; color:var(--text-dark); margin-bottom:4px;">
+                {{ item.service }}
+            </div>
+            <div style="font-size:13px; color:var(--text-muted);">
+                {{ item.reason }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <h2 class="section-heading">How to Approach</h2>
+    {% if recommendations.timing %}
+    <div style="margin-bottom:12px;">
+        <strong>Best Timing:</strong>
+        <span style="color:var(--text-muted);">{{ recommendations.timing }}</span>
+    </div>
+    {% endif %}
+    {% if recommendations.approach %}
+    <div>
+        <strong>Pitch Strategy:</strong>
+        <span style="color:var(--text-muted);">{{ recommendations.approach }}</span>
+    </div>
+    {% endif %}
+    <div style="margin-top:16px;">
+        <a href="{% url 'ai_followup_message' lead.pk %}?channel=whatsapp"
+           class="btn btn-small">✉️ Generate Upsell Message</a>
+    </div>
+</div>
+
+{% else %}
+<div class="card">
+    <div class="empty-state">Could not generate recommendations. Check Groq API key.</div>
+</div>
+{% endif %}
+{% endblock %}

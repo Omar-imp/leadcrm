@@ -1,0 +1,198 @@
+{% extends 'leads/base.html' %}
+{% block title %}360° View - {{ lead.name }}{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <div>
+        <h1 class="page-title" style="margin:0;">🔮 {{ lead.name }}</h1>
+        <span class="pill pill-{{ lead.status }}" style="margin-top:8px; display:inline-block;">
+            {{ lead.get_status_display }}
+        </span>
+    </div>
+    <a href="{% url 'lead_detail' lead.pk %}" class="btn btn-small btn-outline">← Back</a>
+</div>
+
+<!-- Quick Stats -->
+<div class="report-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">AI Score</div>
+        <div class="kpi-value">{{ lead.ai_score }}/100</div>
+    </div>
+    <div class="kpi-card green">
+        <div class="kpi-label">Lifetime Value</div>
+        <div class="kpi-value" style="font-size:22px;">{{ lead.lifetime_value }}</div>
+    </div>
+    <div class="kpi-card {% if lead.churn_risk == 'High' %}red{% elif lead.churn_risk == 'Medium' %}orange{% else %}green{% endif %}">
+        <div class="kpi-label">Churn Risk</div>
+        <div class="kpi-value" style="font-size:22px;">{{ lead.churn_risk|default:"Unknown" }}</div>
+    </div>
+    <div class="kpi-card purple">
+        <div class="kpi-label">Closing Probability</div>
+        <div class="kpi-value">{{ lead.closing_probability }}%</div>
+    </div>
+</div>
+
+<!-- Contact Info -->
+<div class="card">
+    <h2 class="section-heading">Contact Information</h2>
+    <table>
+        <tr><td><strong>Phone</strong></td><td>{{ lead.contact_number }}</td></tr>
+        <tr><td><strong>Email</strong></td><td>{{ lead.email|default:"-" }}</td></tr>
+        <tr><td><strong>Source</strong></td><td>{{ lead.get_lead_source_display }}</td></tr>
+        <tr><td><strong>City</strong></td><td>{{ lead.city|default:"-" }}</td></tr>
+        <tr><td><strong>SPO</strong></td><td>{{ lead.spo.name|default:"Unassigned" }}</td></tr>
+        <tr><td><strong>Quotation</strong></td><td>{{ lead.quotation }}</td></tr>
+    </table>
+</div>
+
+<!-- Timeline of all interactions -->
+<div class="card">
+    <h2 class="section-heading">Communication History ({{ communications.count }})</h2>
+    {% if communications %}
+    <div class="timeline">
+        {% for log in communications %}
+        <div class="timeline-item">
+            <div class="timeline-dot {{ log.comm_type }}"></div>
+            <div class="timeline-card">
+                <div class="timeline-card-header">
+                    <span class="comm-type-badge comm-type-{{ log.comm_type }}">
+                        {{ log.get_comm_type_display }}
+                    </span>
+                    <span class="timeline-card-meta">
+                        {{ log.created_at|date:"d M Y, h:i A" }}
+                    </span>
+                </div>
+                {% if log.subject %}
+                <div class="timeline-card-subject">{{ log.subject }}</div>
+                {% endif %}
+                <div class="timeline-card-body">{{ log.body|truncatechars:150 }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">No communications logged.</div>
+    {% endif %}
+</div>
+
+<!-- Meetings -->
+<div class="card">
+    <h2 class="section-heading">Meetings ({{ meetings.count }})</h2>
+    {% if meetings %}
+    <table>
+        <thead><tr><th>Title</th><th>Type</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>
+            {% for m in meetings %}
+            <tr>
+                <td><a href="{% url 'meeting_detail' m.pk %}">{{ m.title }}</a></td>
+                <td>{{ m.get_meeting_type_display }}</td>
+                <td>{{ m.scheduled_at|date:"d M Y" }}</td>
+                <td><span class="pill pill-{% if m.status == 'completed' %}converted{% elif m.status == 'cancelled' %}lost{% else %}new{% endif %}">
+                    {{ m.get_status_display }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">No meetings.</div>
+    {% endif %}
+</div>
+
+<!-- Payments -->
+<div class="card">
+    <h2 class="section-heading">Payments ({{ payments.count }})</h2>
+    {% if payments %}
+    <table>
+        <thead><tr><th>Type</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody>
+            {% for p in payments %}
+            <tr>
+                <td>{{ p.get_payment_type_display }}</td>
+                <td>{{ p.amount }}</td>
+                <td>{{ p.date|date:"d M Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">No payments.</div>
+    {% endif %}
+</div>
+
+<!-- Support Tickets -->
+<div class="card">
+    <h2 class="section-heading">Support Tickets ({{ tickets.count }})</h2>
+    {% if tickets %}
+    <table>
+        <thead><tr><th>Title</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+            {% for t in tickets %}
+            <tr>
+                <td><a href="{% url 'ticket_detail' t.pk %}">{{ t.title }}</a></td>
+                <td><span class="priority-{{ t.priority }}">{{ t.get_priority_display }}</span></td>
+                <td><span class="pill pill-{% if t.status == 'resolved' %}converted{% elif t.status == 'open' %}new{% else %}quotation{% endif %}">
+                    {{ t.get_status_display }}</span></td>
+                <td>{{ t.created_at|date:"d M Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">No support tickets.</div>
+    {% endif %}
+</div>
+
+<!-- Documents -->
+<div class="card">
+    <h2 class="section-heading">Documents ({{ documents.count }})</h2>
+    {% if documents %}
+    {% for doc in documents %}
+    <div class="doc-row">
+        <div class="doc-icon">&#128196;</div>
+        <div class="doc-info">
+            <div class="doc-title">{{ doc.title }}</div>
+            <div class="doc-meta">{{ doc.get_doc_type_display }} · {{ doc.created_at|date:"d M Y" }}</div>
+        </div>
+        <div class="action-links">
+            <a href="{{ doc.file.url }}" target="_blank">Download</a>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">No documents.</div>
+    {% endif %}
+</div>
+
+<!-- Followups -->
+<div class="card">
+    <h2 class="section-heading">Follow Ups ({{ followups.count }})</h2>
+    {% if followups %}
+    <table>
+        <thead><tr><th>Date</th><th>Status</th><th>Notes</th></tr></thead>
+        <tbody>
+            {% for f in followups %}
+            <tr>
+                <td>{{ f.follow_up_date|date:"d M Y, h:i A" }}</td>
+                <td><span class="pill {% if f.status == 'done' %}pill-converted{% else %}pill-quotation{% endif %}">
+                    {{ f.get_status_display }}</span></td>
+                <td>{{ f.notes|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">No followups.</div>
+    {% endif %}
+</div>
+
+<!-- Quick Actions -->
+<div class="card">
+    <h2 class="section-heading">Quick Actions</h2>
+    <div class="action-links">
+        <a href="{% url 'ai_followup_message' lead.pk %}" class="btn btn-small">✉️ AI Message</a>
+        <a href="{% url 'upsell_recommendations' lead.pk %}" class="btn btn-small">💰 Upsell</a>
+        <a href="{% url 'communication_create' %}?lead={{ lead.pk }}" class="btn btn-small">+ Log Comm</a>
+        <a href="{% url 'quotation_create' %}?lead={{ lead.pk }}" class="btn btn-small">Send Quotation</a>
+        <a href="{% url 'churn_risk' lead.pk %}" class="btn btn-small">⚠️ Check Churn</a>
+    </div>
+</div>
+{% endblock %}
