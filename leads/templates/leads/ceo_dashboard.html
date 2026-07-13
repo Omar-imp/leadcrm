@@ -1,0 +1,284 @@
+{% extends 'leads/base.html' %}
+{% block title %}CEO Dashboard - Lead CRM{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">👑 CEO Dashboard</h1>
+    <div style="font-size:13px; color:var(--text-muted);">
+        Live data · Updated now
+    </div>
+</div>
+
+<!-- Revenue KPIs -->
+<div class="report-grid">
+    <div class="kpi-card green">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value">{{ total_revenue }}</div>
+        <div class="kpi-sub">all time</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">This Month Revenue</div>
+        <div class="kpi-value">{{ this_month_revenue }}</div>
+        <div class="kpi-sub">so far this month</div>
+    </div>
+    <div class="kpi-card purple">
+        <div class="kpi-label">Pipeline Value</div>
+        <div class="kpi-value">{{ pipeline_value }}</div>
+        <div class="kpi-sub">active deals</div>
+    </div>
+    <div class="kpi-card orange">
+        <div class="kpi-label">Conversion Rate</div>
+        <div class="kpi-value">{{ conversion_rate }}%</div>
+        <div class="kpi-sub">leads to customers</div>
+    </div>
+</div>
+
+<!-- Activity Alerts -->
+<div class="report-grid">
+    <div class="kpi-card {% if meetings_today > 0 %}{% else %}red{% endif %}">
+        <div class="kpi-label">Meetings Today</div>
+        <div class="kpi-value">{{ meetings_today }}</div>
+    </div>
+    <div class="kpi-card {% if followups_today > 0 %}orange{% endif %}">
+        <div class="kpi-label">Followups Due Today</div>
+        <div class="kpi-value">{{ followups_today }}</div>
+    </div>
+    <div class="kpi-card {% if tasks_overdue > 0 %}red{% endif %}">
+        <div class="kpi-label">Overdue Tasks</div>
+        <div class="kpi-value">{{ tasks_overdue }}</div>
+    </div>
+    <div class="kpi-card {% if tickets_open > 0 %}orange{% endif %}">
+        <div class="kpi-label">Open Tickets</div>
+        <div class="kpi-value">{{ tickets_open }}</div>
+    </div>
+</div>
+
+<!-- Pipeline Summary + AI Forecast -->
+<div class="report-row">
+    <div class="card">
+        <h2 class="section-heading">Pipeline Summary</h2>
+        <div class="bar-chart">
+            <div class="bar-row">
+                <div class="bar-label">New</div>
+                <div class="bar-track">
+                    <div class="bar-fill blue"
+                         style="width:{% if total_leads %}{% widthratio new_leads total_leads 100 %}{% else %}0{% endif %}%">
+                    </div>
+                </div>
+                <div class="bar-count">{{ new_leads }}</div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label">Positive</div>
+                <div class="bar-track">
+                    <div class="bar-fill purple"
+                         style="width:{% if total_leads %}{% widthratio positive_leads total_leads 100 %}{% else %}0{% endif %}%">
+                    </div>
+                </div>
+                <div class="bar-count">{{ positive_leads }}</div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label">Quotation</div>
+                <div class="bar-track">
+                    <div class="bar-fill orange"
+                         style="width:{% if total_leads %}{% widthratio quotation_leads total_leads 100 %}{% else %}0{% endif %}%">
+                    </div>
+                </div>
+                <div class="bar-count">{{ quotation_leads }}</div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label">Converted</div>
+                <div class="bar-track">
+                    <div class="bar-fill green"
+                         style="width:{% if total_leads %}{% widthratio converted_leads total_leads 100 %}{% else %}0{% endif %}%">
+                    </div>
+                </div>
+                <div class="bar-count">{{ converted_leads }}</div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label">Lost</div>
+                <div class="bar-track">
+                    <div class="bar-fill red"
+                         style="width:{% if total_leads %}{% widthratio lost_leads total_leads 100 %}{% else %}0{% endif %}%">
+                    </div>
+                </div>
+                <div class="bar-count">{{ lost_leads }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="section-heading">📈 AI Revenue Forecast</h2>
+        {% if forecast.error %}
+        <div class="empty-state">{{ forecast.error }}</div>
+        {% else %}
+        <div style="margin-bottom:16px;">
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:4px;">
+                Predicted Next Month Revenue
+            </div>
+            <div style="font-size:28px; font-weight:700; color:var(--teal-dark);">
+                {{ forecast.revenue_min }} – {{ forecast.revenue_max }}
+            </div>
+        </div>
+        <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+            <div>
+                <div style="font-size:12px; color:var(--text-muted);">Expected Conversions</div>
+                <div style="font-size:20px; font-weight:700;">{{ forecast.expected_conversions }}</div>
+            </div>
+            <div>
+                <div style="font-size:12px; color:var(--text-muted);">Pipeline Health</div>
+                <div style="font-size:16px; font-weight:700;
+                    color:{% if forecast.pipeline_health == 'Excellent' %}var(--green)
+                    {% elif forecast.pipeline_health == 'Good' %}var(--teal)
+                    {% elif forecast.pipeline_health == 'Fair' %}var(--orange)
+                    {% else %}var(--red){% endif %};">
+                    {{ forecast.pipeline_health }}
+                </div>
+            </div>
+        </div>
+        {% if forecast.summary %}
+        <p style="font-size:13px; color:var(--text-muted);">{{ forecast.summary }}</p>
+        {% endif %}
+        <a href="{% url 'sales_forecast' %}" class="btn btn-small" style="margin-top:8px;">
+            Full Forecast →
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Team Performance -->
+<div class="card">
+    <h2 class="section-heading">👥 Team Performance</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Sales Person</th>
+                <th>Total Leads</th>
+                <th>Converted</th>
+                <th>Conversion Rate</th>
+                <th>Revenue Generated</th>
+                <th>Performance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for spo in spo_performance %}
+            <tr>
+                <td><strong>{{ spo.name }}</strong></td>
+                <td>{{ spo.total }}</td>
+                <td style="color:var(--green); font-weight:700;">{{ spo.converted }}</td>
+                <td>{{ spo.rate }}%</td>
+                <td style="font-weight:700;">{{ spo.revenue }}</td>
+                <td style="min-width:120px;">
+                    <div class="progress-bar-wrap" style="height:10px;">
+                        <div class="progress-bar-fill done"
+                             style="width:{{ spo.rate }}%">
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="empty-state">
+                    No sales persons yet.
+                    <a href="{% url 'salesperson_create' %}">Add one →</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Top Scored Leads + High Churn Risk side by side -->
+<div class="report-row">
+    <div class="card">
+        <h2 class="section-heading">🏆 Top Scored Leads</h2>
+        <table>
+            <thead>
+                <tr><th>Lead</th><th>Score</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for lead in top_leads %}
+                <tr>
+                    <td>
+                        <a href="{% url 'lead_detail' lead.pk %}">{{ lead.name }}</a>
+                    </td>
+                    <td>
+                        <span style="font-weight:700;
+                            color:{% if lead.ai_score >= 80 %}var(--green)
+                            {% elif lead.ai_score >= 60 %}#2196f3
+                            {% elif lead.ai_score >= 40 %}var(--orange)
+                            {% else %}var(--red){% endif %};">
+                            {{ lead.ai_score }}/100
+                        </span>
+                    </td>
+                    <td>
+                        <span class="pill pill-{{ lead.status }}">
+                            {{ lead.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="empty-state">
+                        No scored leads yet.
+                        <a href="{% url 'score_all_leads' %}">Score all →</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2 class="section-heading">⚠️ High Churn Risk</h2>
+        <table>
+            <thead>
+                <tr><th>Lead</th><th>SPO</th><th>Risk</th></tr>
+            </thead>
+            <tbody>
+                {% for lead in high_churn_leads %}
+                <tr>
+                    <td>
+                        <a href="{% url 'lead_detail' lead.pk %}">{{ lead.name }}</a>
+                    </td>
+                    <td>{{ lead.spo.name|default:"Unassigned" }}</td>
+                    <td><span class="pill pill-lost">High</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="empty-state">No high risk leads.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if high_churn_leads %}
+        <div style="margin-top:12px;">
+            <a href="{% url 'churn_risk_all' %}" class="btn btn-small">
+                View All Churn Risk →
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- AI Recommendations -->
+{% if forecast.recommendations %}
+<div class="card">
+    <h2 class="section-heading">🤖 AI Business Recommendations</h2>
+    {% for rec in forecast.recommendations %}
+    <div style="display:flex; gap:12px; align-items:flex-start;
+                padding:12px 0; border-bottom:1px solid var(--border);">
+        <span style="background:var(--teal); color:#fff; border-radius:50%;
+                     width:28px; height:28px; display:flex; align-items:center;
+                     justify-content:center; font-size:13px; font-weight:700;
+                     flex-shrink:0;">
+            {{ forloop.counter }}
+        </span>
+        <span style="font-size:14px; color:var(--text-dark); padding-top:4px;">
+            {{ rec }}
+        </span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

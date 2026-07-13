@@ -22,6 +22,8 @@ from .ai_forecasting import generate_sales_forecast
 from .ai_churn import update_churn_risk, get_high_churn_leads
 from .ai_upsell import get_upsell_recommendations
 from .ai_ltv import update_lifetime_value
+from .ai_forecasting import generate_sales_forecast
+from .ai_churn import get_high_churn_leads
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
@@ -2591,3 +2593,139 @@ def customer_360_view(request, pk):
         'title': f'360° View — {lead.name}',
     }
     return render(request, 'leads/customer_360.html', context)
+
+
+@login_required
+def ceo_dashboard(request):
+    from django.db.models import Sum, Count
+    from django.utils import timezone
+
+    today = timezone.localdate()
+    this_month = today.replace(day=1)
+
+    # ── Revenue ────────────────────────────────────────────
+    total_revenue = Payment.objects.aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+
+    this_month_revenue = Payment.objects.filter(
+        date__date__gte=this_month
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    advance_revenue = Payment.objects.filter(
+        payment_type='advance'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    full_revenue = Payment.objects.filter(
+        payment_type='full'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    # ── Pipeline ───────────────────────────────────────────
+    leads = Lead.objects.all()
+    total_leads = leads.count()
+    new_leads = leads.filter(status='new').count()
+    positive_leads = leads.filter(status='positive').count()
+    converted_leads = leads.filter(status='converted').count()
+    lost_leads = leads.filter(status='lost').count()
+    quotation_leads = leads.filter(status='quotation').count()
+
+    conversion_rate = round(
+        (converted_leads / total_leads * 100)
+        if total_leads > 0 else 0, 1
+    )
+
+    pipeline_value = leads.filter(
+        status__in=['positive', 'quotation']
+    ).aggregate(total=Sum('quotation'))['total'] or 0
+
+    # ── Team Performance ───────────────────────────────────
+    spo_performance = []
+    for spo in SalesPerson.objects.all():
+        spo_leads = leads.filter(spo=spo)
+        spo_total = spo_leads.count()
+        spo_converted = spo_leads.filter(status='converted').count()
+        spo_rate = round(
+            (spo_converted / spo_total * 100)
+            if spo_total > 0 else 0, 1
+        )
+        spo_revenue = Payment.objects.filter(
+            lead__spo=spo
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        spo_performance.append({
+            'name': spo.name,
+            'total': spo_total,
+            'converted': spo_converted,
+            'rate': spo_rate,
+            'revenue': spo_revenue,
+        })
+
+    # sort by revenue descending
+    spo_performance.sort(key=lambda x: x['revenue'], reverse=True)
+
+    # ── Churn Alerts ───────────────────────────────────────
+    high_churn_leads = get_high_churn_leads(limit=5)
+
+    # ── Top Scored Leads ───────────────────────────────────
+    top_leads = leads.filter(
+        ai_score__gt=0
+    ).order_by('-ai_score')[:5]
+
+    # ── Activity Today ─────────────────────────────────────
+    meetings_today = Meeting.objects.filter(
+        scheduled_at__date=today,
+        status='scheduled'
+    ).count()
+
+    tasks_overdue = GeneralTask.objects.filter(
+        due_date__lt=today,
+        status__in=['todo', 'in_progress']
+    ).count()
+
+    tickets_open = Ticket.objects.filter(
+        status__in=['open', 'in_progress']
+    ).count()
+
+    followups_today = FollowUp.objects.filter(
+        follow_up_date__date=today,
+        status='pending'
+    ).count()
+
+    # ── AI Forecast ────────────────────────────────────────
+    forecast = generate_sales_forecast()
+
+    context = {
+        'active': 'ceo_dashboard',
+        'title': 'CEO Dashboard',
+
+        # revenue
+        'total_revenue': total_revenue,
+        'this_month_revenue': this_month_revenue,
+        'advance_revenue': advance_revenue,
+        'full_revenue': full_revenue,
+
+        # pipeline
+        'total_leads': total_leads,
+        'new_leads': new_leads,
+        'positive_leads': positive_leads,
+        'converted_leads': converted_leads,
+        'lost_leads': lost_leads,
+        'quotation_leads': quotation_leads,
+        'conversion_rate': conversion_rate,
+        'pipeline_value': pipeline_value,
+
+        # team
+        'spo_performance': spo_performance,
+
+        # ai
+        'high_churn_leads': high_churn_leads,
+        'top_leads': top_leads,
+        'forecast': forecast,
+
+        # activity
+        'meetings_today': meetings_today,
+        'tasks_overdue': tasks_overdue,
+        'tickets_open': tickets_open,
+        'followups_today': followups_today,
+    }
+    return render(request, 'leads/ceo_dashboard.html', context)

@@ -160,4 +160,5 @@ urlpatterns = [
     path('leads/<int:pk>/upsell/', views.upsell_recommendations_view, name='upsell_recommendations'),
     path('leads/<int:pk>/lifetime-value/', views.lifetime_value_view, name='lifetime_value'),
     path('leads/<int:pk>/360/', views.customer_360_view, name='customer_360'),
+    path('ceo/', views.ceo_dashboard, name='ceo_dashboard'),
 ]
