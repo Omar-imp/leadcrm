@@ -24,6 +24,8 @@ from .ai_upsell import get_upsell_recommendations
 from .ai_ltv import update_lifetime_value
 from .ai_forecasting import generate_sales_forecast
 from .ai_churn import get_high_churn_leads
+from django.views.decorators.http import require_POST
+from .decorators import role_required, block_view_only
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
@@ -117,6 +119,7 @@ def dashboard(request):
 
 
 @login_required
+@block_view_only
 def create_lead(request):
     if request.method == 'POST':
         form = LeadForm(request.POST)
@@ -153,6 +156,17 @@ def create_lead(request):
     })
 
 
+@login_required
+def lead_delete(request, pk):
+    lead = get_object_or_404(Lead, pk=pk)
+
+    lead_name = lead.name
+    lead.delete()
+
+    messages.success(request, f'Lead "{lead_name}" deleted successfully.')
+    return redirect('all_leads')
+
+    
 def _send_whatsapp_welcome(lead):
     """
     Sends WhatsApp welcome message to a newly created lead.
@@ -287,6 +301,7 @@ def ai_assign_lead(request, pk):
 
 
 @login_required
+@block_view_only
 def bulk_import_leads(request):
     if request.method == 'POST':
         file = request.FILES.get('import_file')
@@ -402,6 +417,7 @@ def lead_list(request, status=None):
 
 
 @login_required
+@block_view_only
 def update_lead_status(request, pk, status):
     lead = get_object_or_404(Lead, pk=pk)
     valid_statuses = dict(Lead._meta.get_field('status').choices)
@@ -413,6 +429,7 @@ def update_lead_status(request, pk, status):
 
 
 @login_required
+@block_view_only
 def lead_detail(request, pk):
     lead = get_object_or_404(Lead, pk=pk)
     followup_form = FollowUpForm()
@@ -456,6 +473,7 @@ def next_action_view(request, pk):
 
 
 @login_required
+@block_view_only
 def followup_done(request, pk):
     followup = get_object_or_404(FollowUp, pk=pk)
     followup.status = 'done'
@@ -494,6 +512,7 @@ def payment_list(request, ptype):
 
 
 @login_required
+@block_view_only
 def add_payment(request, pk):
     lead = get_object_or_404(Lead, pk=pk)
     if request.method == 'POST':
@@ -514,6 +533,7 @@ def scheduled_payment_list(request):
 
 
 @login_required
+@block_view_only
 def scheduled_payment_create(request):
     if request.method == 'POST':
         form = ScheduledPaymentForm(request.POST)
@@ -528,6 +548,7 @@ def scheduled_payment_create(request):
 
 
 @login_required
+@block_view_only
 def scheduled_payment_detail(request, pk):
     schedule = get_object_or_404(ScheduledPayment, pk=pk)
     installment_form = InstallmentForm()
@@ -558,20 +579,35 @@ def scheduled_payment_detail(request, pk):
     }
     return render(request, 'leads/scheduled_payment_detail.html', context)
 
+SECTION_LABELS = {
+    'dashboard': 'Dashboard',
+    'leads': 'Leads',
+    'contacts': 'Contacts & Companies',
+    'pipeline': 'Pipeline & Opportunities',
+    'quotations': 'Quotations',
+    'projects': 'Projects',
+    'meetings': 'Meetings',
+    'tasks': 'Tasks',
+    'payments': 'Payments',
+    'followups': 'Follow Ups',
+    'communications': 'Communications',
+    'support': 'Support Tickets',
+    'activity': 'Activity Logs',
+    'reports': 'Reports & Analytics',
+    'documents': 'Documents',
+    'contracts': 'Contracts',
+    'salespersons': 'Sales Persons',
+    'users': 'User Management',
+    'ceo_dashboard': 'CEO Dashboard',
+    'whatsapp': 'WhatsApp Sender',
+}
+
+
 @login_required
 @role_required('admin')
 def user_list(request):
-    # Build a safe list of users and their profiles (profile may be missing)
-    users_qs = User.objects.all().order_by('username')
-    users_safe = []
-    for u in users_qs:
-        try:
-            profile = u.profile
-        except Exception:
-            profile = None
-        users_safe.append({'user': u, 'profile': profile})
-
-    context = {'users': users_safe, 'active': 'users', 'title': 'Users'}
+    users = User.objects.select_related('profile').all().order_by('username')
+    context = {'users': users, 'active': 'users', 'title': 'Users'}
     return render(request, 'leads/user_list.html', context)
 
 
@@ -588,11 +624,17 @@ def user_create(request):
         if User.objects.filter(username=username).exists():
             messages.error(request, 'Username already exists.')
         else:
-            user = User.objects.create_user(username=username, email=email, password=password)
+            user = User.objects.create_user(
+                username=username, email=email, password=password
+            )
             user.profile.role = role
             user.profile.phone = phone
             user.profile.save()
-            messages.success(request, f'User {username} created successfully.')
+
+            # save custom permissions
+            _save_user_permissions(user, request.POST)
+
+            messages.success(request, f'User {username} created.')
             return redirect('user_list')
 
     from .models import ROLE_CHOICES
@@ -600,6 +642,8 @@ def user_create(request):
         'active': 'users',
         'title': 'Create User',
         'role_choices': ROLE_CHOICES,
+        'section_labels': SECTION_LABELS,
+        'permission_choices': ['full', 'view', 'none'],
     })
 
 
@@ -615,16 +659,43 @@ def user_edit(request, pk):
         user.profile.role = request.POST.get('role')
         user.profile.phone = request.POST.get('phone')
         user.profile.save()
+
+        # save custom permissions
+        _save_user_permissions(user, request.POST)
+
         messages.success(request, 'User updated.')
         return redirect('user_list')
 
     from .models import ROLE_CHOICES
+    # get current permissions
+    try:
+        perms = user.custom_permissions
+    except Exception:
+        from .models import UserPermissions
+        perms, _ = UserPermissions.objects.get_or_create(user=user)
+
     return render(request, 'leads/user_form.html', {
         'active': 'users',
         'title': 'Edit User',
         'edit_user': user,
         'role_choices': ROLE_CHOICES,
+        'section_labels': SECTION_LABELS,
+        'permission_choices': ['full', 'view', 'none'],
+        'current_perms': perms,
     })
+
+
+def _save_user_permissions(user, post_data):
+    """Saves custom section permissions from form POST data."""
+    from .models import UserPermissions
+    perms, _ = UserPermissions.objects.get_or_create(user=user)
+
+    for section in UserPermissions.ALL_SECTIONS:
+        value = post_data.get(f'perm_{section}', 'none')
+        if value in ['full', 'view', 'none']:
+            setattr(perms, section, value)
+
+    perms.save()
 
 
 @login_required
@@ -652,6 +723,7 @@ def company_list(request):
     return render(request, 'leads/company_list.html', context)
 
 @login_required
+@block_view_only
 def company_create(request):
     if request.method == 'POST':
         company = Company(
@@ -676,6 +748,7 @@ def company_create(request):
     })
 
 @login_required
+@block_view_only
 def company_edit(request, pk):
     company = get_object_or_404(Company, pk=pk)
     if request.method == 'POST':
@@ -700,6 +773,7 @@ def company_edit(request, pk):
     })
 
 @login_required
+@block_view_only
 def company_delete(request, pk):
     company = get_object_or_404(Company, pk=pk)
     company.delete()
@@ -727,6 +801,7 @@ def contact_list(request):
     return render(request, 'leads/contact_list.html', context)
 
 @login_required
+@block_view_only
 def contact_create(request):
     if request.method == 'POST':
         company_id = request.POST.get('company')
@@ -752,6 +827,7 @@ def contact_create(request):
     })
 
 @login_required
+@block_view_only
 def contact_edit(request, pk):
     contact = get_object_or_404(Contact, pk=pk)
     if request.method == 'POST':
@@ -776,6 +852,7 @@ def contact_edit(request, pk):
     })
 
 @login_required
+@block_view_only
 def contact_delete(request, pk):
     contact = get_object_or_404(Contact, pk=pk)
     contact.delete()
@@ -830,6 +907,7 @@ def opportunity_list(request):
 
 
 @login_required
+@block_view_only
 def opportunity_create(request):
     if request.method == 'POST':
         opp = Opportunity(
@@ -881,6 +959,7 @@ def opportunity_detail(request, pk):
 
 
 @login_required
+@block_view_only
 def opportunity_edit(request, pk):
     opp = get_object_or_404(Opportunity, pk=pk)
     if request.method == 'POST':
@@ -918,6 +997,7 @@ def opportunity_edit(request, pk):
 
 
 @login_required
+@block_view_only
 def opportunity_delete(request, pk):
     opp = get_object_or_404(Opportunity, pk=pk)
     opp.delete()
@@ -926,6 +1006,7 @@ def opportunity_delete(request, pk):
 
 
 @login_required
+@block_view_only
 def opportunity_move(request, pk, stage):
     """Quick stage move — called from pipeline card buttons."""
     opp = get_object_or_404(Opportunity, pk=pk)
@@ -966,6 +1047,7 @@ def quotation_list(request):
 
 
 @login_required
+@block_view_only
 def quotation_create(request):
     if request.method == 'POST':
         quotation = Quotation(
@@ -1031,6 +1113,7 @@ def quotation_detail(request, pk):
 
 
 @login_required
+@block_view_only
 def quotation_edit(request, pk):
     quotation = get_object_or_404(Quotation, pk=pk)
     if request.method == 'POST':
@@ -1081,6 +1164,7 @@ def quotation_edit(request, pk):
 
 
 @login_required
+@block_view_only
 def quotation_delete(request, pk):
     quotation = get_object_or_404(Quotation, pk=pk)
     quotation.delete()
@@ -1089,6 +1173,7 @@ def quotation_delete(request, pk):
 
 
 @login_required
+@block_view_only
 def quotation_status(request, pk, status):
     quotation = get_object_or_404(Quotation, pk=pk)
     valid = dict(QUOTATION_STATUS_CHOICES)
@@ -1120,6 +1205,7 @@ def project_list(request):
 
 
 @login_required
+@block_view_only
 def project_create(request, opp_pk=None):
     opportunity = None
     if opp_pk:
@@ -1198,6 +1284,7 @@ def project_detail(request, pk):
 
 
 @login_required
+@block_view_only
 def project_edit(request, pk):
     project = get_object_or_404(Project, pk=pk)
     if request.method == 'POST':
@@ -1240,6 +1327,7 @@ def project_edit(request, pk):
 
 
 @login_required
+@block_view_only
 def project_delete(request, pk):
     project = get_object_or_404(Project, pk=pk)
     project.delete()
@@ -1250,6 +1338,7 @@ def project_delete(request, pk):
 # ── MILESTONE VIEWS ────────────────────────────────────────
 
 @login_required
+@block_view_only
 def milestone_create(request, project_pk):
     project = get_object_or_404(Project, pk=project_pk)
     if request.method == 'POST':
@@ -1271,6 +1360,7 @@ def milestone_create(request, project_pk):
 
 
 @login_required
+@block_view_only
 def milestone_edit(request, pk):
     milestone = get_object_or_404(Milestone, pk=pk)
     if request.method == 'POST':
@@ -1287,6 +1377,7 @@ def milestone_edit(request, pk):
 
 
 @login_required
+@block_view_only
 def milestone_delete(request, pk):
     milestone = get_object_or_404(Milestone, pk=pk)
     project_pk = milestone.project.pk
@@ -1298,6 +1389,7 @@ def milestone_delete(request, pk):
 # ── TASK VIEWS ─────────────────────────────────────────────
 
 @login_required
+@block_view_only
 def task_create(request, milestone_pk):
     milestone = get_object_or_404(Milestone, pk=milestone_pk)
     if request.method == 'POST':
@@ -1319,6 +1411,7 @@ def task_create(request, milestone_pk):
 
 
 @login_required
+@block_view_only
 def task_edit(request, pk):
     task = get_object_or_404(Task, pk=pk)
     if request.method == 'POST':
@@ -1336,6 +1429,8 @@ def task_edit(request, pk):
 
 
 @login_required
+@block_view_only
+@require_POST
 def task_delete(request, pk):
     task = get_object_or_404(Task, pk=pk)
     project_pk = task.milestone.project.pk
@@ -1345,6 +1440,7 @@ def task_delete(request, pk):
 
 
 @login_required
+@block_view_only
 def task_status(request, pk, status):
     task = get_object_or_404(Task, pk=pk)
     valid = dict(TASK_STATUS_CHOICES)
@@ -1399,6 +1495,7 @@ def meeting_list(request):
 
 
 @login_required
+@block_view_only
 def meeting_create(request):
     if request.method == 'POST':
         scheduled_at = request.POST.get('scheduled_at')
@@ -1469,6 +1566,7 @@ def meeting_detail(request, pk):
 
 
 @login_required
+@block_view_only
 def meeting_edit(request, pk):
     meeting = get_object_or_404(Meeting, pk=pk)
     if request.method == 'POST':
@@ -1511,6 +1609,7 @@ def meeting_edit(request, pk):
 
 
 @login_required
+@block_view_only
 def meeting_delete(request, pk):
     meeting = get_object_or_404(Meeting, pk=pk)
     meeting.delete()
@@ -1519,6 +1618,7 @@ def meeting_delete(request, pk):
 
 
 @login_required
+@block_view_only
 def meeting_status(request, pk, status):
     meeting = get_object_or_404(Meeting, pk=pk)
     valid = dict(MEETING_STATUS_CHOICES)
@@ -1561,6 +1661,7 @@ def general_task_list(request):
 
 
 @login_required
+@block_view_only
 def general_task_create(request):
     if request.method == 'POST':
         task = GeneralTask(
@@ -1594,6 +1695,7 @@ def general_task_create(request):
 
 
 @login_required
+@block_view_only
 def general_task_edit(request, pk):
     task = get_object_or_404(GeneralTask, pk=pk)
     if request.method == 'POST':
@@ -1626,6 +1728,7 @@ def general_task_edit(request, pk):
 
 
 @login_required
+@block_view_only
 def general_task_delete(request, pk):
     task = get_object_or_404(GeneralTask, pk=pk)
     task.delete()
@@ -1634,6 +1737,7 @@ def general_task_delete(request, pk):
 
 
 @login_required
+@block_view_only
 def general_task_status(request, pk, status):
     task = get_object_or_404(GeneralTask, pk=pk)
     valid = dict(GENERAL_TASK_STATUS_CHOICES)
@@ -1671,6 +1775,7 @@ def communication_list(request):
 
 
 @login_required
+@block_view_only
 def communication_create(request):
     if request.method == 'POST':
         log = CommunicationLog(
@@ -1720,6 +1825,7 @@ def communication_create(request):
 
 
 @login_required
+@block_view_only
 def communication_delete(request, pk):
     log = get_object_or_404(CommunicationLog, pk=pk)
     log.delete()
@@ -1926,6 +2032,7 @@ def ticket_list(request):
 
 
 @login_required
+@block_view_only
 def ticket_create(request):
     if request.method == 'POST':
         ticket = Ticket(
@@ -2005,6 +2112,7 @@ def ticket_detail(request, pk):
 
 
 @login_required
+@block_view_only
 def ticket_edit(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     if request.method == 'POST':
@@ -2046,6 +2154,7 @@ def ticket_edit(request, pk):
 
 
 @login_required
+@block_view_only
 def ticket_delete(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     ticket.delete()
@@ -2054,6 +2163,7 @@ def ticket_delete(request, pk):
 
 
 @login_required
+@block_view_only
 def ticket_status(request, pk, status):
     ticket = get_object_or_404(Ticket, pk=pk)
     valid = dict(TICKET_STATUS_CHOICES)
@@ -2100,6 +2210,7 @@ def activity_log(request):
 # ── DOCUMENT VIEWS ─────────────────────────────────────────
 
 @login_required
+@block_view_only
 def document_upload(request):
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -2179,6 +2290,7 @@ def document_list(request):
 
 
 @login_required
+@block_view_only
 def document_delete(request, pk):
     doc = get_object_or_404(Document, pk=pk)
     doc.file.delete()
@@ -2213,6 +2325,7 @@ def contract_list(request):
 
 
 @login_required
+@block_view_only
 def contract_create(request):
     if request.method == 'POST':
         contract = Contract(
@@ -2266,6 +2379,7 @@ def contract_detail(request, pk):
 
 
 @login_required
+@block_view_only
 def contract_edit(request, pk):
     contract = get_object_or_404(Contract, pk=pk)
     if request.method == 'POST':
@@ -2305,6 +2419,7 @@ def contract_edit(request, pk):
 
 
 @login_required
+@block_view_only
 def contract_delete(request, pk):
     contract = get_object_or_404(Contract, pk=pk)
     contract.delete()
@@ -2313,6 +2428,7 @@ def contract_delete(request, pk):
 
 
 @login_required
+@block_view_only
 def contract_status(request, pk, status):
     contract = get_object_or_404(Contract, pk=pk)
     valid = dict(CONTRACT_STATUS_CHOICES)

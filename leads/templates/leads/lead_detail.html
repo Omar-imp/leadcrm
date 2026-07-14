@@ -1,4 +1,5 @@
 {% extends 'leads/base.html' %}
+{% load custom_filters %}
 {% block title %}{{ lead.name }} - Lead CRM{% endblock %}
 {% block content %}
 {% if lead.is_duplicate %}

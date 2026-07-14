@@ -1,6 +1,8 @@
 {% extends 'leads/base.html' %}
+{% load custom_filters %}
 {% block title %}Support Tickets - Lead CRM{% endblock %}
 {% block content %}
+{% load custom_filters %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Support Tickets</h1>
     <a href="{% url 'ticket_create' %}" class="btn">+ New Ticket</a>

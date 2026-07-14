@@ -1,6 +1,7 @@
 {% extends 'leads/base.html' %}
 {% block title %}Opportunities - Lead CRM{% endblock %}
 {% block content %}
+{% load custom_filters %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Opportunities</h1>
     <a href="{% url 'opportunity_create' %}" class="btn">+ New Opportunity</a>

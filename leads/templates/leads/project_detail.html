@@ -1,4 +1,5 @@
 {% extends 'leads/base.html' %}
+{% load custom_filters %}
 {% block title %}{{ project.name }} - Lead CRM{% endblock %}
 {% block content %}
 
@@ -149,8 +150,10 @@
                     <a href="{% url 'task_status' task.pk value %}" style="font-size:11px;">{{ label }}</a>
                     {% endif %}
                     {% endfor %}
-                    <a href="{% url 'task_delete' task.pk %}"
-                       onclick="return confirm('Delete task?')" style="font-size:11px;">Delete</a>
+                    <form method="post" action="{% url 'task_delete' t.pk %}" style="display:inline;" onsubmit="return confirm('Delete task?');">
+                        { % csrf_token %}
+                        <button type="submit" style="font-size:11px; background:none; border:none; padding:0; color:inherit; text-decoration:underline; cursor:pointer;">Delete</button>
+                    </form>
                 </div>
             </div>
             {% empty %}

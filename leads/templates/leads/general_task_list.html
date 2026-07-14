@@ -61,8 +61,10 @@
                         {% endif %}
                         {% endfor %}
                         <a href="{% url 'general_task_edit' t.pk %}">Edit</a>
-                        <a href="{% url 'general_task_delete' t.pk %}"
-                           onclick="return confirm('Delete task?')">Delete</a>
+                        <form method="post" action="{% url 'general_task_delete' t.pk %}" style="display:inline;" onsubmit="return confirm('Delete task?');">
+                            {% csrf_token %}
+                            <button type="submit" style="font-size:11px; background:none; border:none; padding:0; color:inherit; text-decoration:underline; cursor:pointer;">Delete</button>
+                        </form>
                     </div>
                 </td>
             </tr>

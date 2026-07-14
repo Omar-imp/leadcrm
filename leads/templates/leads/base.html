@@ -10,6 +10,11 @@
 <body>
 <div class="app">
     <aside class="sidebar">
+        <div class="brand">
+            <img src="{% static 'images/logo.png' %}"
+                 alt="Logo"
+                 style="max-width:140px !important; max-height:600px !important; width:auto !important; height:auto !important; object-fit:contain !important; display:block !important;">
+        </div>
         <div class="brand">Lead CRM</div>
 
         <!-- MENU -->
@@ -32,7 +37,11 @@
         <!-- CONTACTS -->
 {% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('contacts')">
-            CONTACTS <span class="arrow" id="arrow-contacts">&#9658;</span>
+            CONTACTS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-contacts">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-contacts">
             <a href="{% url 'company_list' %}" class="{% if active == 'companies' %}active{% endif %}">
@@ -47,9 +56,13 @@
 {% endif %}
 
         <!-- PIPELINE -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'pipeline' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('pipeline')">
-            PIPELINE <span class="arrow" id="arrow-pipeline">&#9660;</span>
+            PIPELINE
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-pipeline">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-pipeline">
             <a href="{% url 'opportunity_pipeline' %}" class="{% if active == 'pipeline' %}active{% endif %}">
@@ -67,9 +80,13 @@
 {% endif %}
 
         <!-- QUOTATIONS -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'quotations' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('quotations')">
-            QUOTATIONS <span class="arrow" id="arrow-quotations">&#9660;</span>
+            QUOTATIONS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-quotations">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-quotations">
             <a href="{% url 'quotation_list' %}" class="{% if active == 'quotations' %}active{% endif %}">
@@ -89,9 +106,13 @@
 {% endif %}
 
         <!-- PROJECTS -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'projects' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('projects')">
-            PROJECTS <span class="arrow" id="arrow-projects">&#9660;</span>
+            PROJECTS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-projects">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-projects">
             <a href="{% url 'project_list' %}" class="{% if active == 'projects' %}active{% endif %}">
@@ -111,9 +132,13 @@
 {% endif %}
 
         <!-- MEETINGS -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'meetings' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('meetings')">
-            MEETINGS <span class="arrow" id="arrow-meetings">&#9660;</span>
+            MEETINGS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-meetings">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-meetings">
             <a href="{% url 'meeting_list' %}" class="{% if active == 'meetings' %}active{% endif %}">
@@ -134,9 +159,13 @@
 {% endif %}
 
         <!-- TASKS -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'tasks' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('tasks')">
-            TASKS <span class="arrow" id="arrow-tasks">&#9660;</span>
+            TASKS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-tasks">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-tasks">
             <a href="{% url 'general_task_list' %}" class="{% if active == 'general_tasks' %}active{% endif %}">
@@ -156,9 +185,13 @@
         </nav>
 {% endif %}
 
-{% if '*' in allowed_sections or 'leads' in allowed_sections %}
+{% if '*' in allowed_sections or 'salesperson' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('salespersons')">
-            SALES PERSONS <span class="arrow" id="arrow-salespersons">&#9658;</span>
+            SALES PERSONS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-salespersons">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-salespersons">
             <a href="{% url 'salesperson_list' %}" class="{% if active == 'salespersons' %}active{% endif %}">
@@ -171,9 +204,13 @@
 {% endif %}
 
         <!-- LEAD -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'leads' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('lead')">
-            LEAD <span class="arrow" id="arrow-lead">&#9660;</span>
+            LEAD
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-lead">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-lead">
             <a href="{% url 'create_lead' %}" class="{% if active == 'create_lead' %}active{% endif %}">
@@ -207,9 +244,13 @@
 {% endif %}
 
         <!-- PAYMENT -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'payments' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('payment')">
-            PAYMENT <span class="arrow" id="arrow-payment">&#9660;</span>
+            PAYMENT 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-payment">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-payment">
             <a href="{% url 'payment_advance' %}" class="{% if active == 'advance' %}active{% endif %}">
@@ -228,9 +269,13 @@
 {% endif %}
 
         <!-- FOLLOWUP -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'followups' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('followup')">
-            FOLLOWUP <span class="arrow" id="arrow-followup">&#9660;</span>
+            FOLLOWUP 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-followup">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-followup">
             <a href="{% url 'followup_list' 'pending' %}" class="{% if active == 'pending' %}active{% endif %}">
@@ -253,9 +298,13 @@
 {% endif %}
 
         <!-- COMMUNICATIONS -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'communications' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('communications')">
-            COMMUNICATIONS <span class="arrow" id="arrow-communications">&#9660;</span>
+            COMMUNICATIONS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-communications">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-communications">
             <a href="{% url 'communication_list' %}" class="{% if active == 'communications' %}active{% endif %}">
@@ -278,9 +327,13 @@
 {% endif %}
 
         <!-- SUPPORT -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'support' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('support')">
-            SUPPORT <span class="arrow" id="arrow-support">&#9660;</span>
+            SUPPORT 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-support">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-support">
             <a href="{% url 'ticket_list' %}" class="{% if active == 'tickets' %}active{% endif %}">
@@ -304,9 +357,13 @@
 {% endif %}
 
         <!-- ACTIVITY -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'activity' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('activity')">
-            ACTIVITY <span class="arrow" id="arrow-activity">&#9660;</span>
+            ACTIVITY 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-activity">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-activity">
             <a href="{% url 'activity_log' %}" class="{% if active == 'activity_log' %}active{% endif %}">
@@ -317,9 +374,13 @@
 {% endif %}
 
         <!-- REPORTS -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'reports' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('reports')">
-            REPORTS <span class="arrow" id="arrow-reports">&#9660;</span>
+            REPORTS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-reports">&#9660;</span>
         </div>
         <nav class="dropdown-section" id="section-reports">
             <a href="{% url 'reports' %}" class="{% if active == 'reports' %}active{% endif %}">
@@ -332,9 +393,13 @@
 {% endif %}
 
         <!-- DOCUMENTS -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'documents' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('documents')">
-            DOCUMENTS <span class="arrow" id="arrow-documents">&#9658;</span>
+            DOCUMENTS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-documents">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-documents">
             <a href="{% url 'document_list' %}" class="{% if active == 'documents' %}active{% endif %}">
@@ -364,9 +429,13 @@
 {% endif %}
 
         <!-- CONTRACTS -->
-{% if '*' in allowed_sections or 'contacts' in allowed_sections %}
+{% if '*' in allowed_sections or 'contracts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('contracts')">
-            CONTRACTS <span class="arrow" id="arrow-contracts">&#9658;</span>
+            CONTRACTS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-contracts">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-contracts">
             <a href="{% url 'contract_list' %}" class="{% if active == 'contracts' %}active{% endif %}">

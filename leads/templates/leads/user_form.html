@@ -1,15 +1,15 @@
 {% extends 'leads/base.html' %}
 {% block title %}{{ title }} - Lead CRM{% endblock %}
 {% block content %}
+{% load custom_filters %}
 <h1 class="page-title">{{ title }}</h1>
-
 <div class="form-card">
-    <div class="form-card-header">
-        <h2>{{ title }}</h2>
-    </div>
+    <div class="form-card-header"><h2>{{ title }}</h2></div>
     <div class="form-card-body">
         <form method="post" novalidate>
             {% csrf_token %}
+
+            <h3 style="margin:0 0 16px; font-size:16px;">Account Details</h3>
 
             <div class="form-row">
                 {% if not edit_user %}
@@ -42,7 +42,7 @@
                            value="{{ edit_user.profile.phone|default:'' }}">
                 </div>
                 <div class="form-group">
-                    <label class="field-label">Role <span class="required">*</span></label>
+                    <label class="field-label">Role</label>
                     <select name="role" class="form-control">
                         {% for value, label in role_choices %}
                         <option value="{{ value }}"
@@ -63,9 +63,96 @@
             </div>
             {% endif %}
 
-            {% if form.errors %}
-            <div class="alert alert-error">Please correct the errors below.</div>
-            {% endif %}
+            <!-- Custom Permissions -->
+            <h3 style="margin:28px 0 8px; font-size:16px;">Section Access Permissions</h3>
+            <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">
+                Set exactly what this user can access.
+                <strong>Full</strong> = view and make changes.
+                <strong>View Only</strong> = can see but cannot edit/create/delete.
+                <strong>No Access</strong> = section hidden completely.
+            </p>
+
+            <table style="width:100%;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left; padding:10px 12px; border-bottom:2px solid var(--border);">
+                            Section
+                        </th>
+                        <th style="text-align:center; padding:10px 12px; border-bottom:2px solid var(--border); color:var(--green);">
+                            Full Access
+                        </th>
+                        <th style="text-align:center; padding:10px 12px; border-bottom:2px solid var(--border); color:var(--blue);">
+                            View Only
+                        </th>
+                        <th style="text-align:center; padding:10px 12px; border-bottom:2px solid var(--border); color:var(--red);">
+                            No Access
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for section, label in section_labels.items %}
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:12px;">
+                            <strong>{{ label }}</strong>
+                        </td>
+                        <td style="text-align:center; padding:12px;">
+                            <input type="radio"
+                                   name="perm_{{ section }}"
+                                   value="full"
+                                   style="width:18px; height:18px; accent-color:var(--green);"
+                                   {% if current_perms %}
+                                       {% if current_perms|getattr:section == 'full' %}checked{% endif %}
+                                   {% else %}
+                                       {% if section == 'dashboard' %}checked{% endif %}
+                                   {% endif %}>
+                        </td>
+                        <td style="text-align:center; padding:12px;">
+                            <input type="radio"
+                                   name="perm_{{ section }}"
+                                   value="view"
+                                   style="width:18px; height:18px; accent-color:#2196f3;"
+                                   {% if current_perms %}
+                                       {% if current_perms|getattr:section == 'view' %}checked{% endif %}
+                                   {% endif %}>
+                        </td>
+                        <td style="text-align:center; padding:12px;">
+                            <input type="radio"
+                                   name="perm_{{ section }}"
+                                   value="none"
+                                   style="width:18px; height:18px; accent-color:var(--red);"
+                                   {% if current_perms %}
+                                       {% if current_perms|getattr:section == 'none' %}checked{% endif %}
+                                   {% else %}
+                                       {% if section != 'dashboard' %}checked{% endif %}
+                                   {% endif %}>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Quick Presets -->
+            <div style="margin:20px 0; padding:16px; background:#f3f4f8; border-radius:8px;">
+                <div style="font-size:13px; font-weight:700; margin-bottom:12px;">
+                    Quick Presets — click to auto-fill permissions:
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button type="button" onclick="applyPreset('sales')"
+                            class="btn btn-small btn-outline">Sales Executive</button>
+                    <button type="button" onclick="applyPreset('manager')"
+                            class="btn btn-small btn-outline">Sales Manager</button>
+                    <button type="button" onclick="applyPreset('support')"
+                            class="btn btn-small btn-outline">Support Agent</button>
+                    <button type="button" onclick="applyPreset('finance')"
+                            class="btn btn-small btn-outline">Finance</button>
+                    <button type="button" onclick="applyPreset('pm')"
+                            class="btn btn-small btn-outline">Project Manager</button>
+                    <button type="button" onclick="applyPreset('all')"
+                            class="btn btn-small" style="background:var(--green);">Full Access</button>
+                    <button type="button" onclick="applyPreset('none')"
+                            class="btn btn-small" style="background:var(--red);">No Access</button>
+                </div>
+            </div>
 
             <div class="form-actions">
                 <a href="{% url 'user_list' %}"
@@ -77,4 +164,77 @@
         </form>
     </div>
 </div>
+
+<script>
+const presets = {
+    sales: {
+        dashboard: 'full', leads: 'full', contacts: 'full',
+        pipeline: 'full', quotations: 'view', followups: 'full',
+        meetings: 'full', tasks: 'full', communications: 'full',
+        payments: 'view', projects: 'none', support: 'none',
+        activity: 'view', reports: 'view', documents: 'view',
+        contracts: 'none', salespersons: 'none', users: 'none',
+        ceo_dashboard: 'none', whatsapp: 'none',
+    },
+    manager: {
+        dashboard: 'full', leads: 'full', contacts: 'full',
+        pipeline: 'full', quotations: 'full', followups: 'full',
+        meetings: 'full', tasks: 'full', communications: 'full',
+        payments: 'full', projects: 'view', support: 'view',
+        activity: 'full', reports: 'full', documents: 'full',
+        contracts: 'view', salespersons: 'full', users: 'none',
+        ceo_dashboard: 'none', whatsapp: 'full',
+    },
+    support: {
+        dashboard: 'full', leads: 'view', contacts: 'view',
+        pipeline: 'none', quotations: 'none', followups: 'none',
+        meetings: 'none', tasks: 'full', communications: 'full',
+        payments: 'none', projects: 'none', support: 'full',
+        activity: 'view', reports: 'none', documents: 'view',
+        contracts: 'none', salespersons: 'none', users: 'none',
+        ceo_dashboard: 'none', whatsapp: 'none',
+    },
+    finance: {
+        dashboard: 'full', leads: 'view', contacts: 'none',
+        pipeline: 'none', quotations: 'full', followups: 'none',
+        meetings: 'none', tasks: 'none', communications: 'none',
+        payments: 'full', projects: 'none', support: 'none',
+        activity: 'view', reports: 'full', documents: 'full',
+        contracts: 'full', salespersons: 'none', users: 'none',
+        ceo_dashboard: 'none', whatsapp: 'none',
+    },
+    pm: {
+        dashboard: 'full', leads: 'none', contacts: 'view',
+        pipeline: 'none', quotations: 'none', followups: 'none',
+        meetings: 'full', tasks: 'full', communications: 'full',
+        payments: 'none', projects: 'full', support: 'view',
+        activity: 'view', reports: 'view', documents: 'full',
+        contracts: 'view', salespersons: 'none', users: 'none',
+        ceo_dashboard: 'none', whatsapp: 'none',
+    },
+    all: Object.fromEntries(
+        ['dashboard','leads','contacts','pipeline','quotations','projects',
+         'meetings','tasks','payments','followups','communications','support',
+         'activity','reports','documents','contracts','salespersons','users',
+         'ceo_dashboard','whatsapp'].map(s => [s, 'full'])
+    ),
+    none: Object.fromEntries(
+        ['dashboard','leads','contacts','pipeline','quotations','projects',
+         'meetings','tasks','payments','followups','communications','support',
+         'activity','reports','documents','contracts','salespersons','users',
+         'ceo_dashboard','whatsapp'].map(s => [s, 'none'])
+    ),
+};
+
+function applyPreset(name) {
+    const preset = presets[name];
+    if (!preset) return;
+    for (const [section, value] of Object.entries(preset)) {
+        const radio = document.querySelector(
+            `input[name="perm_${section}"][value="${value}"]`
+        );
+        if (radio) radio.checked = true;
+    }
+}
+</script>
 {% endblock %}

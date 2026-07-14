@@ -10,19 +10,37 @@ from .models import (Lead, FollowUp, Payment, ScheduledPayment,
 def sidebar_counts(request):
     if not request.user.is_authenticated:
         return {}
+
     today = timezone.localdate()
-    if request.user.is_superuser:
-        allowed_sections = ['*']
-    else:
-        try:
-            role = request.user.profile.role
-        except Exception:
-            role = None
-        allowed_sections = get_allowed_sections(role)
     leads = Lead.objects.all()
     followups = FollowUp.objects.all()
+
+    # get allowed sections and view-only sections
+    if request.user.is_superuser:
+        allowed_sections = ['*']
+        view_only_sections = []
+    else:
+        try:
+            perms = request.user.custom_permissions
+            allowed_sections = [
+                s for s in perms.ALL_SECTIONS
+                if perms.has_access(s)
+            ]
+            view_only_sections = [
+                s for s in perms.ALL_SECTIONS
+                if perms.is_view_only(s)
+            ]
+        except Exception:
+            from .permissions import get_allowed_sections
+            role = getattr(
+                getattr(request.user, 'profile', None), 'role', None
+            )
+            allowed_sections = get_allowed_sections(role)
+            view_only_sections = []
+
     return {
         'allowed_sections': allowed_sections,
+        'view_only_sections': view_only_sections,
         'sidebar_counts': {
             'total': leads.count(),
             'new': leads.filter(status='new').count(),
@@ -54,6 +72,8 @@ def sidebar_counts(request):
             'contracts_active': Contract.objects.filter(status__in=['active', 'signed']).count(),
             'contracts_draft': Contract.objects.filter(status='draft').count(),
             'documents': Document.objects.count(),
-            'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+            'unread_notifications': Notification.objects.filter(
+                user=request.user, is_read=False
+            ).count(),
         }
     }

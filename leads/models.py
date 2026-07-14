@@ -31,6 +31,71 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.get_role_display()}"    
 
+
+class UserPermissions(models.Model):
+    """
+    Custom per-user permissions.
+    Each section can be: 'full', 'view', or 'none'
+    This overrides role-based permissions when set.
+    """
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='custom_permissions'
+    )
+
+    # CRM Sections
+    dashboard = models.CharField(max_length=10, default='full')
+    leads = models.CharField(max_length=10, default='none')
+    contacts = models.CharField(max_length=10, default='none')
+    pipeline = models.CharField(max_length=10, default='none')
+    quotations = models.CharField(max_length=10, default='none')
+    projects = models.CharField(max_length=10, default='none')
+    meetings = models.CharField(max_length=10, default='none')
+    tasks = models.CharField(max_length=10, default='none')
+    payments = models.CharField(max_length=10, default='none')
+    followups = models.CharField(max_length=10, default='none')
+    communications = models.CharField(max_length=10, default='none')
+    support = models.CharField(max_length=10, default='none')
+    activity = models.CharField(max_length=10, default='none')
+    reports = models.CharField(max_length=10, default='none')
+    documents = models.CharField(max_length=10, default='none')
+    contracts = models.CharField(max_length=10, default='none')
+    salespersons = models.CharField(max_length=10, default='none')
+    users = models.CharField(max_length=10, default='none')
+    ceo_dashboard = models.CharField(max_length=10, default='none')
+    whatsapp = models.CharField(max_length=10, default='none')
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # permission choices
+    PERMISSION_CHOICES = [
+        ('full', 'Full Access'),
+        ('view', 'View Only'),
+        ('none', 'No Access'),
+    ]
+
+    ALL_SECTIONS = [
+        'dashboard', 'leads', 'contacts', 'pipeline', 'quotations',
+        'projects', 'meetings', 'tasks', 'payments', 'followups',
+        'communications', 'support', 'activity', 'reports', 'documents',
+        'contracts', 'salespersons', 'users', 'ceo_dashboard', 'whatsapp',
+    ]
+
+    def get_section_permission(self, section: str) -> str:
+        return getattr(self, section, 'none')
+
+    def has_access(self, section: str) -> bool:
+        return self.get_section_permission(section) in ['full', 'view']
+
+    def is_view_only(self, section: str) -> bool:
+        return self.get_section_permission(section) == 'view'
+
+    def has_full_access(self, section: str) -> bool:
+        return self.get_section_permission(section) == 'full'
+
+    def __str__(self):
+        return f"Permissions for {self.user.username}"
+
+
 LEAD_SOURCE_CHOICES = [
     ('advertisement', 'Advertisement'),
     ('landline', 'Landline'),
@@ -732,6 +797,7 @@ from django.dispatch import receiver
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.get_or_create(user=instance)
+        UserPermissions.objects.get_or_create(user=instance)
 
 
 @receiver(post_save, sender=User)

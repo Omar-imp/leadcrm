@@ -32,6 +32,7 @@ urlpatterns = [
     path('leads/<int:pk>/', views.lead_detail, name='lead_detail'),
     path('leads/<int:pk>/status/<str:status>/', views.update_lead_status, name='update_lead_status'),
     path('leads/<int:pk>/payment/add/', views.add_payment, name='add_payment'),
+    path('leads/<int:pk>/delete/', views.lead_delete, name='lead_delete'),
 
     # Followups
     path('followups/<str:scope>/', views.followup_list, name='followup_list'),
@@ -90,11 +91,11 @@ urlpatterns = [
     path('meetings/<int:pk>/status/<str:status>/', views.meeting_status, name='meeting_status'),
 
     # General Tasks
-    path('tasks/', views.general_task_list, name='general_task_list'),
-    path('tasks/create/', views.general_task_create, name='general_task_create'),
-    path('tasks/<int:pk>/edit/', views.general_task_edit, name='general_task_edit'),
-    path('tasks/<int:pk>/delete/', views.general_task_delete, name='general_task_delete'),
-    path('tasks/<int:pk>/status/<str:status>/', views.general_task_status, name='general_task_status'),
+    path('general-tasks/', views.general_task_list, name='general_task_list'),
+    path('general-tasks/create/', views.general_task_create, name='general_task_create'),
+    path('general-tasks/<int:pk>/edit/', views.general_task_edit, name='general_task_edit'),
+    path('general-tasks/<int:pk>/delete/', views.general_task_delete, name='general_task_delete'),
+    path('general-tasks/<int:pk>/status/<str:status>/', views.general_task_status, name='general_task_status'),
 
     # Communication Log
     path('communications/', views.communication_list, name='communication_list'),

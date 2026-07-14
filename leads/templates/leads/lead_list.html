@@ -1,4 +1,5 @@
 {% extends 'leads/base.html' %}
+{% load custom_filters %}
 {% block title %}{{ title }} - Lead CRM{% endblock %}
 {% block content %}
 <h1 class="page-title">{{ title }}</h1>
@@ -64,6 +65,8 @@
                 <td>{{ lead.quotation }}</td>
                 <td>{{ lead.created_at|date:"d M Y" }}</td>
                 <td>
+
+                    {% if request.user|has_full_access:'leads' %}
                     <div class="action-links">
                         <a href="{% url 'lead_detail' lead.pk %}">View</a>
                         <a href="{% url 'update_lead_status' lead.pk 'positive' %}">Positive</a>
@@ -71,7 +74,17 @@
                         <a href="{% url 'update_lead_status' lead.pk 'quotation' %}">Quotation</a>
                         <a href="{% url 'update_lead_status' lead.pk 'converted' %}">Convert</a>
                         <a href="{% url 'quotation_create' %}?lead={{ lead.pk }}">Send Quotation</a>
+                        <a href="{% url 'lead_delete' lead.pk %}"
+                            onclick="return confirm('Delete {{ lead.name }}?')">
+                            Delete
+                        </a>
                     </div>
+                    {% else %}
+                    <div class="action-links">
+                        <a href="{% url 'lead_detail' lead.pk %}">View</a>
+                        <span style="font-size:11px; color:var(--text-muted);">👁 View Only</span>
+                    </div>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}

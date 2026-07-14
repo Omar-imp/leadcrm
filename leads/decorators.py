@@ -35,3 +35,31 @@ def sales_team(view_func):
 
 def managers_only(view_func):
     return role_required('admin', 'sales_manager', 'ceo')(view_func)
+
+
+def block_view_only(view_func):
+    """
+    Decorator that blocks write operations (POST/DELETE)
+    for users who only have view access to that section.
+    """
+    from functools import wraps
+    from django.shortcuts import redirect
+    from django.contrib import messages
+
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if request.method == 'POST' and request.user.is_authenticated \
+                and not request.user.is_superuser:
+            try:
+                from leads.middleware import is_view_only_request
+                if is_view_only_request(request.user, request.path):
+                    messages.error(
+                        request,
+                        'You have view-only access to this section. '
+                        'Contact your administrator to make changes.'
+                    )
+                    return redirect(request.META.get('HTTP_REFERER', '/'))
+            except Exception:
+                pass
+        return view_func(request, *args, **kwargs)
+    return wrapper
