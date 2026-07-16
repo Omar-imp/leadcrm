@@ -1,9 +1,12 @@
 {% extends 'leads/base.html' %}
+{% load custom_filters %}
 {% block title %}Quotations - Lead CRM{% endblock %}
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Quotations</h1>
+    {% if request.user|has_full_access:'quotations' %}
     <a href="{% url 'quotation_create' %}" class="btn">+ New Quotation</a>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -49,9 +52,11 @@
                 <td>
                     <div class="action-links">
                         <a href="{% url 'quotation_detail' q.pk %}">View</a>
-                        <a href="{% url 'quotation_edit' q.pk %}">Edit</a>
-                        <a href="{% url 'quotation_delete' q.pk %}"
-                           onclick="return confirm('Delete this quotation?')">Delete</a>
+                        {% if request.user|has_full_access:'quotations' %}
+                            <a href="{% url 'quotation_edit' q.pk %}">Edit</a>
+                            <a href="{% url 'quotation_delete' q.pk %}"
+                                onclick="return confirm('Delete this quotation?')">Delete</a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

@@ -24,7 +24,7 @@
         </div>
     </div>
     <div class="action-links">
-        <a href="{% url 'ticket_edit' ticket.pk %}" class="btn btn-small">Edit</a>
+        <a href="{% url 'ticket_edit' ticket.pk %}">Edit</a>
         <a href="{% url 'ticket_delete' ticket.pk %}"
            class="btn btn-small" style="background:#e2574c;"
            onclick="return confirm('Delete ticket?')">Delete</a>
@@ -129,7 +129,7 @@
         <h2 class="section-heading" style="margin:0;">Documents</h2>
         <a href="{% url 'document_upload' %}?ticket={{ ticket.pk }}" class="btn btn-small">&#11014; Upload</a>
     </div>
-    {% for doc ticket.documents.all %}
+    {% for doc in ticket.documents.all %}
     <div class="doc-row">
         <div class="doc-icon">&#128196;</div>
         <div class="doc-info">

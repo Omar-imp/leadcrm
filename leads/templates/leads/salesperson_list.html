@@ -1,9 +1,12 @@
 {% extends 'leads/base.html' %}
+{% load custom_filters %}
 {% block title %}Sales Persons - Lead CRM{% endblock %}
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Sales Persons</h1>
+    {% if request.user|has_full_access:'salespersons' %}
     <a href="{% url 'salesperson_create' %}" class="btn">+ Add Sales Person</a>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -28,9 +31,11 @@
                 <td>{% if item.total > 0 %}{{ item.rate }}%{% else %}-{% endif %}</td>
                 <td>
                     <div class="action-links">
-                        <a href="{% url 'salesperson_edit' item.spo.pk %}">Edit</a>
-                        <a href="{% url 'salesperson_delete' item.spo.pk %}"
-                            onclick="return confirm('Delete {{ item.spo.name }}?')">Delete</a>
+                        {% if request.user|has_full_access:'salespersons' %}
+                            <a href="{% url 'salesperson_edit' item.spo.pk %}">Edit</a>
+                            <a href="{% url 'salesperson_delete' item.spo.pk %}"
+                                onclick="return confirm('Delete {{ item.spo.name }}?')">Delete</a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

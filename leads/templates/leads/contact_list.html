@@ -2,10 +2,11 @@
 {% load custom_filters %}
 {% block title %}Contacts - Lead CRM{% endblock %}
 {% block content %}
-
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Contacts</h1>
+    {% if request.user|has_full_access:'contacts' %}
     <a href="{% url 'contact_create' %}" class="btn">+ Add Contact</a>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -40,9 +41,11 @@
                 </td>
                 <td>
                     <div class="action-links">
-                        <a href="{% url 'contact_edit' c.pk %}">Edit</a>
-                        <a href="{% url 'contact_delete' c.pk %}"
-                           onclick="return confirm('Delete this contact?')">Delete</a>
+                        {% if request.user|has_full_access:'contacts' %}
+                            <a href="{% url 'contact_edit' c.pk %}">Edit</a>
+                            <a href="{% url 'contact_delete' c.pk %}"
+                                onclick="return confirm('Delete this contact?')">Delete</a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

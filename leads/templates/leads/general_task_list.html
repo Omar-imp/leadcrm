@@ -1,9 +1,12 @@
 {% extends 'leads/base.html' %}
+{% load custom_filters %}
 {% block title %}Tasks - Lead CRM{% endblock %}
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Tasks</h1>
+    {% if request.user|has_full_access:'tasks' %}
     <a href="{% url 'general_task_create' %}" class="btn">+ New Task</a>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -60,11 +63,13 @@
                         <a href="{% url 'general_task_status' t.pk value %}">{{ label }}</a>
                         {% endif %}
                         {% endfor %}
-                        <a href="{% url 'general_task_edit' t.pk %}">Edit</a>
-                        <form method="post" action="{% url 'general_task_delete' t.pk %}" style="display:inline;" onsubmit="return confirm('Delete task?');">
-                            {% csrf_token %}
-                            <button type="submit" style="font-size:11px; background:none; border:none; padding:0; color:inherit; text-decoration:underline; cursor:pointer;">Delete</button>
-                        </form>
+                        {% if request.user|has_full_access:'tasks' %}
+                            <a href="{% url 'general_task_edit' t.pk %}">Edit</a>
+                            <form method="post" action="{% url 'general_task_delete' t.pk %}" style="display:inline;" onsubmit="return confirm('Delete task?');">
+                                {% csrf_token %}
+                                <button type="submit" style="font-size:11px; background:none; border:none; padding:0; color:inherit; text-decoration:underline; cursor:pointer;">Delete</button>
+                            </form>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

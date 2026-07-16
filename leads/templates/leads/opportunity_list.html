@@ -4,7 +4,9 @@
 {% load custom_filters %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Opportunities</h1>
+    {% if request.user|has_full_access:'contacts' %}
     <a href="{% url 'opportunity_create' %}" class="btn">+ New Opportunity</a>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -53,11 +55,13 @@
                 <td>
                     <div class="action-links">
                         <a href="{% url 'opportunity_detail' opp.pk %}">View</a>
-                        <a href="{% url 'opportunity_edit' opp.pk %}">Edit</a>
                         <a href="{% url 'opportunity_move' opp.pk 'won' %}">Won</a>
                         <a href="{% url 'opportunity_move' opp.pk 'lost' %}">Lost</a>
-                        <a href="{% url 'opportunity_delete' opp.pk %}"
-                           onclick="return confirm('Delete this opportunity?')">Delete</a>
+                        {% if request.user|has_full_access:'pipeline' %}
+                            <a href="{% url 'opportunity_edit' opp.pk %}">Edit</a>
+                            <a href="{% url 'opportunity_delete' opp.pk %}"
+                                onclick="return confirm('Delete this opportunity?')">Delete</a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

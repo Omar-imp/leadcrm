@@ -1,9 +1,13 @@
 {% extends 'leads/base.html' %}
+{% load custom_filters %}
 {% block title %}{{ company.name }} - Lead CRM{% endblock %}
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">{{ company.name }}</h1>
-    <a href="{% url 'company_edit' company.pk %}" class="btn">Edit Company</a>
+
+    {% if request.user|has_full_access:'contacts' %}
+        <a href="{% url 'company_edit' company.pk %}" class="btn">Edit Company</a>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -26,7 +30,11 @@
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <h2 class="section-heading" style="margin:0;">Contacts ({{ contacts.count }})</h2>
-        <a href="{% url 'contact_create' %}" class="btn btn-small">+ Add Contact</a>
+        {% if request.user|has_full_access:'contacts' %}
+        <a href="{% url 'contact_create' %}?company={{ company.pk }}">
+            Add Contact
+        </a>
+        {% endif %}
     </div>
     <table>
         <thead>
@@ -41,9 +49,11 @@
                 <td>{{ c.phone|default:"-" }}</td>
                 <td>
                     <div class="action-links">
-                        <a href="{% url 'contact_edit' c.pk %}">Edit</a>
-                        <a href="{% url 'contact_delete' c.pk %}"
-                           onclick="return confirm('Delete this contact?')">Delete</a>
+                        {% if request.user|has_full_access:'contacts' %}
+                            <a href="{% url 'contact_edit' c.pk %}">Edit</a>
+                            <a href="{% url 'contact_delete' c.pk %}"
+                            onclick="return confirm('Delete this contact?')">Delete</a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
@@ -56,7 +66,9 @@
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <h2 class="section-heading" style="margin:0;">Communication History</h2>
-        <a href="{% url 'communication_create' %}?company={{ company.pk }}" class="btn btn-small">+ Log Communication</a>
+        {% if request.user|has_full_access:'contacts' %}
+            <a href="{% url 'communication_create' %}?company={{ company.pk }}" class="btn btn-small">+ Log Communication</a>
+        {% endif %}
     </div>
     {% if company.communications.all %}
     <div class="timeline">

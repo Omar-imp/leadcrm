@@ -17,7 +17,7 @@
         </span>
     </div>
     <div class="action-links">
-        <a href="{% url 'project_edit' project.pk %}" class="btn btn-small">Edit Project</a>
+        <a href="{% url 'project_edit' project.pk %}">Edit Project</a>
     </div>
 </div>
 
@@ -150,8 +150,8 @@
                     <a href="{% url 'task_status' task.pk value %}" style="font-size:11px;">{{ label }}</a>
                     {% endif %}
                     {% endfor %}
-                    <form method="post" action="{% url 'task_delete' t.pk %}" style="display:inline;" onsubmit="return confirm('Delete task?');">
-                        { % csrf_token %}
+                    <form method="post" action="{% url 'task_delete' task.pk %}" style="display:inline;" onsubmit="return confirm('Delete task?');">
+                        {% csrf_token %}
                         <button type="submit" style="font-size:11px; background:none; border:none; padding:0; color:inherit; text-decoration:underline; cursor:pointer;">Delete</button>
                     </form>
                 </div>

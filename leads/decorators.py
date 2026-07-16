@@ -38,28 +38,45 @@ def managers_only(view_func):
 
 
 def block_view_only(view_func):
-    """
-    Decorator that blocks write operations (POST/DELETE)
-    for users who only have view access to that section.
-    """
     from functools import wraps
     from django.shortcuts import redirect
     from django.contrib import messages
 
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        if request.method == 'POST' and request.user.is_authenticated \
-                and not request.user.is_superuser:
+
+        if (
+            request.method == "POST"
+            and request.user.is_authenticated
+            and not request.user.is_superuser
+        ):
             try:
-                from leads.middleware import is_view_only_request
-                if is_view_only_request(request.user, request.path):
+                perms = request.user.custom_permissions
+
+                path = request.path
+
+                section = None
+
+                if path.startswith('/projects/'):
+                    section = 'projects'
+                elif path.startswith('/quotations/'):
+                    section = 'quotations'
+                elif path.startswith('/companies/'):
+                    section = 'contacts'
+                elif path.startswith('/contacts/'):
+                    section = 'contacts'
+                elif path.startswith('/leads/'):
+                    section = 'leads'
+
+                if section and perms.is_view_only(section):
                     messages.error(
                         request,
-                        'You have view-only access to this section. '
-                        'Contact your administrator to make changes.'
+                        f'You only have view access to {section}.'
                     )
-                    return redirect(request.META.get('HTTP_REFERER', '/'))
-            except Exception:
-                pass
+                    return redirect('/')
+            except Exception as e:
+                print("BLOCK ERROR:", e)
+
         return view_func(request, *args, **kwargs)
+
     return wrapper

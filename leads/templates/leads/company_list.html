@@ -4,7 +4,9 @@
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Companies</h1>
-    <a href="{% url 'company_create' %}" class="btn">+ Add Company</a>
+    {% if request.user|has_full_access:'contacts' %}
+        <a href="{% url 'company_create' %}" class="btn">+ Add Company</a>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -32,9 +34,14 @@
                 <td>
                     <div class="action-links">
                         <a href="{% url 'company_detail' c.pk %}">View</a>
-                        <a href="{% url 'company_edit' c.pk %}">Edit</a>
-                        <a href="{% url 'company_delete' c.pk %}"
-                           onclick="return confirm('Delete {{ c.name }}?')">Delete</a>
+
+                        {% if request.user|has_full_access:'contacts' %}
+                            <a href="{% url 'company_edit' c.pk %}">Edit</a>
+                            <a href="{% url 'company_delete' c.pk %}"
+                                onclick="return confirm('Delete {{ c.name }}?')">Delete</a>
+                        {% else %}
+                            <span style="font-size:11px;">👁 View Only</span>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

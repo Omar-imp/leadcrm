@@ -14,11 +14,11 @@
         </span>
     </div>
     <div class="action-links">
-        <a href="{% url 'meeting_edit' meeting.pk %}" class="btn btn-small">Edit</a>
+        <a href="{% url 'meeting_edit' meeting.pk %}">Edit</a>
         <a href="{% url 'meeting_delete' meeting.pk %}"
            class="btn btn-small" style="background:#e2574c;"
            onclick="return confirm('Delete meeting?')">Delete</a>
-        <a href="{% url 'ai_meeting_summary' meeting.pk %}" class="btn btn-small">🤖 AI Summary</a>
+        <a href="{% url 'ai_meeting_summary' meeting.pk %}">🤖 AI Summary</a>
     </div>
 </div>
 

@@ -74,14 +74,45 @@ class RoleAccessMiddleware:
 
     def is_view_only_request(user, path):
         """
-        Returns True if this user has view-only access to this path
-        and the request is a write operation.
+        Returns True if this user has view-only access to this path.
         """
         try:
             perms = user.custom_permissions
-            section = RoleAccessMiddleware()._get_section(path)
-            if section and perms.is_view_only(section):
-                return True
-        except Exception:
-            pass
-        return False
+
+            mapping = {
+                '/leads/': 'leads',
+                '/contacts/': 'contacts',
+                '/companies/': 'contacts',
+                '/pipeline/': 'pipeline',
+                '/opportunities/': 'pipeline',
+                '/quotations/': 'quotations',
+                '/projects/': 'projects',
+                '/milestones/': 'projects',
+                '/tasks/': 'tasks',
+                '/meetings/': 'meetings',
+                '/payments/': 'payments',
+                '/followups/': 'followups',
+                '/communications/': 'communications',
+                '/tickets/': 'support',
+                '/activity/': 'activity',
+                '/reports/': 'reports',
+                '/forecast/': 'reports',
+                '/documents/': 'documents',
+                '/contracts/': 'contracts',
+                '/salespersons/': 'salespersons',
+                '/users/': 'users',
+                '/ceo/': 'ceo_dashboard',
+                '/whatsapp/': 'whatsapp',
+            }
+
+            section = None
+            for prefix, sec in mapping.items():
+                if path.startswith(prefix):
+                    section = sec
+                    break
+
+            return section and perms.is_view_only(section)
+
+        except Exception as e:
+            print("VIEW ONLY ERROR:", e)
+            return False

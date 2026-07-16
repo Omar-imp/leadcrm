@@ -1,3 +1,4 @@
+{% load custom_filters %}
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -22,7 +23,7 @@
             <a href="{% url 'dashboard' %}" class="{% if active == 'dashboard' %}active{% endif %}">
                 <span class="left"><span class="icon">&#9632;</span> Dashboard</span>
             </a>
-            {% if '*' in allowed_sections or user.profile.role == 'ceo' %}
+            {% if '*' in allowed_sections or 'ceo_dashboard' in allowed_sections %}
             <a href="{% url 'ceo_dashboard' %}" class="{% if active == 'ceo_dashboard' %}active{% endif %}">
                 <span class="left"><span class="icon">👑</span> CEO Dashboard</span>
             </a>
@@ -99,9 +100,11 @@
             <a href="{% url 'quotation_list' %}?status=approved">
                 <span class="left"><span class="icon">&#10003;</span> Approved</span>
             </a>
+            {% if request.user|has_full_access:'quotations' %}
             <a href="{% url 'quotation_create' %}">
                 <span class="left"><span class="icon">&#43;</span> New Quotation</span>
             </a>
+            {% endif %}
         </nav>
 {% endif %}
 
@@ -125,9 +128,11 @@
             <a href="{% url 'project_list' %}?status=completed">
                 <span class="left"><span class="icon">&#10003;</span> Completed</span>
             </a>
+            {% if request.user|has_full_access:'projects' %}
             <a href="{% url 'project_create' %}">
                 <span class="left"><span class="icon">&#43;</span> New Project</span>
             </a>
+            {% endif %}
         </nav>
 {% endif %}
 
@@ -152,9 +157,11 @@
             <a href="{% url 'meeting_list' %}?scope=upcoming">
                 <span class="left"><span class="icon">&#128337;</span> Upcoming</span>
             </a>
+            {% if request.user|has_full_access:'meetings' %}
             <a href="{% url 'meeting_create' %}">
                 <span class="left"><span class="icon">&#43;</span> Schedule Meeting</span>
             </a>
+            {% endif %}
         </nav>
 {% endif %}
 
@@ -179,16 +186,18 @@
                 <span class="left"><span class="icon">&#9888;</span> Overdue</span>
                 <span class="badge badge-red">{{ sidebar_counts.tasks_overdue }}</span>
             </a>
+            {% if request.user|has_full_access:'tasks' %}
             <a href="{% url 'general_task_create' %}">
                 <span class="left"><span class="icon">&#43;</span> New Task</span>
             </a>
+            {% endif %}
         </nav>
 {% endif %}
 
-{% if '*' in allowed_sections or 'salesperson' in allowed_sections %}
+{% if '*' in allowed_sections or 'salespersons' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('salespersons')">
             SALES PERSONS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'salespersons' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-salespersons">&#9658;</span>
@@ -197,9 +206,11 @@
             <a href="{% url 'salesperson_list' %}" class="{% if active == 'salespersons' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128100;</span> All SPOs</span>
             </a>
+            {% if request.user|has_full_access:'salespersons' %}
             <a href="{% url 'salesperson_create' %}">
                 <span class="left"><span class="icon">&#43;</span> Add SPO</span>
             </a>
+            {% endif %}
         </nav>
 {% endif %}
 
@@ -213,9 +224,11 @@
             <span class="arrow" id="arrow-lead">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-lead">
+            {% if request.user|has_full_access:'leads' %}
             <a href="{% url 'create_lead' %}" class="{% if active == 'create_lead' %}active{% endif %}">
                 <span class="left"><span class="icon">&#43;</span> Create Lead</span>
             </a>
+            {% endif %}
             <a href="{% url 'all_leads' %}" class="{% if active == 'all_leads' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128276;</span> All Leads</span>
                 <span class="badge badge-blue">{{ sidebar_counts.total }}</span>
@@ -350,9 +363,11 @@
             <a href="{% url 'ticket_list' %}?status=resolved">
                 <span class="left"><span class="icon">&#10003;</span> Resolved</span>
             </a>
+            {% if request.user|has_full_access:'support' %}
             <a href="{% url 'ticket_create' %}">
                 <span class="left"><span class="icon">&#43;</span> New Ticket</span>
             </a>
+            {% endif %}
         </nav>
 {% endif %}
 
@@ -449,9 +464,11 @@
             <a href="{% url 'contract_list' %}?status=signed">
                 <span class="left"><span class="icon">&#10003;</span> Signed</span>
             </a>
+            {% if request.user|has_full_access:'contracts' %}
             <a href="{% url 'contract_create' %}">
                 <span class="left"><span class="icon">&#43;</span> New Contract</span>
             </a>
+            {% endif %}
         </nav>
 {% endif %}
 
