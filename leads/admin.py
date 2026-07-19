@@ -6,9 +6,16 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      Project, Milestone, Task,
                      Meeting, GeneralTask, CommunicationLog,
                      Ticket, TicketReply, ActivityLog, 
-                     Document, Contract, Notification)
+                     Document, Contract, Notification, Proposal)
 
 
+@admin.register(Proposal)
+class ProposalAdmin(admin.ModelAdmin):
+    list_display = ('title', 'lead', 'status', 'created_by', 'created_at')
+    list_filter = ('status',)
+    search_fields = ('title',)
+
+    
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('user', 'title', 'notif_type', 'is_read', 'created_at')

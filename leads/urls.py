@@ -162,4 +162,11 @@ urlpatterns = [
     path('leads/<int:pk>/lifetime-value/', views.lifetime_value_view, name='lifetime_value'),
     path('leads/<int:pk>/360/', views.customer_360_view, name='customer_360'),
     path('ceo/', views.ceo_dashboard, name='ceo_dashboard'),
+
+    # AI Proposal Writer
+    path('proposals/', views.proposal_list, name='proposal_list'),
+    path('proposals/write/', views.proposal_writer, name='proposal_writer'),
+    path('proposals/write/<int:lead_pk>/', views.proposal_writer, name='proposal_writer_lead'),
+    path('proposals/<int:pk>/', views.proposal_detail, name='proposal_detail'),
+    path('proposals/<int:pk>/delete/', views.proposal_delete, name='proposal_delete'),
 ]

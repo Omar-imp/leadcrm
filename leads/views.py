@@ -26,14 +26,17 @@ from .ai_forecasting import generate_sales_forecast
 from .ai_churn import get_high_churn_leads
 from django.views.decorators.http import require_POST
 from .decorators import role_required, block_view_only
+from django.db.models import Q
+from django.contrib.auth.models import User
+from .ai_proposal_writer import extract_pdf_text, generate_proposal
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
                      Quotation, QuotationItem,
                      Project, Milestone, Task,
                      Meeting, GeneralTask, CommunicationLog,
-                     Ticket, TicketReply, ActivityLog, Document,
-                     Contract, Notification,
+                      Ticket, TicketReply, ActivityLog, Document,
+                     Contract, Notification, Proposal,
                      LEAD_SOURCE_CHOICES, OPPORTUNITY_STAGE_CHOICES, PRIORITY_CHOICES,
                      QUOTATION_STATUS_CHOICES,
                      PROJECT_STATUS_CHOICES, PROJECT_PRIORITY_CHOICES,
@@ -166,7 +169,7 @@ def lead_delete(request, pk):
     messages.success(request, f'Lead "{lead_name}" deleted successfully.')
     return redirect('all_leads')
 
-    
+
 def _send_whatsapp_welcome(lead):
     """
     Sends WhatsApp welcome message to a newly created lead.
@@ -403,18 +406,53 @@ def lead_list(request, status=None):
     leads = Lead.objects.all()
     title = 'All Leads'
     active = 'all_leads'
+
     if status:
         leads = leads.filter(status=status)
-        title = dict(Lead._meta.get_field('status').choices).get(status, status.title())
+        title = dict(
+            Lead._meta.get_field('status').choices
+        ).get(status, status.title())
         active = status
 
+    # Existing search
     q = request.GET.get('q')
     if q:
-        leads = leads.filter(Q(name__icontains=q) | Q(contact_number__icontains=q) | Q(email__icontains=q))
+        leads = leads.filter(
+            Q(name__icontains=q) |
+            Q(contact_number__icontains=q) |
+            Q(email__icontains=q)
+        )
 
-    context = {'leads': leads, 'title': title, 'active': active}
-    return render(request, 'leads/lead_list.html', context)
+    # New filters
+    source = request.GET.get('source')
+    spo = request.GET.get('spo')
+    score = request.GET.get('score')
 
+    if source:
+        leads = leads.filter(lead_source=source)
+
+    if spo:
+        leads = leads.filter(spo_id=spo)
+
+    if score == 'high':
+        leads = leads.order_by('-ai_score')
+
+    elif score == 'low':
+        leads = leads.order_by('ai_score')
+
+    context = {
+    'leads': leads,
+    'title': title,
+    'active': active,
+    'lead_sources': LEAD_SOURCE_CHOICES,
+    'spos': SalesPerson.objects.all(),
+    }
+
+    return render(
+        request,
+        'leads/lead_list.html',
+        context
+    )
 
 @login_required
 @block_view_only
@@ -485,22 +523,49 @@ def followup_done(request, pk):
 @login_required
 def followup_list(request, scope):
     today = timezone.localdate()
+
     followups = FollowUp.objects.select_related('lead').all()
     title = 'Follow Ups'
+
     if scope == 'pending':
         followups = followups.filter(status='pending')
         title = 'Pending Follow Ups'
+
     elif scope == 'today':
-        followups = followups.filter(status='pending', follow_up_date__date=today)
+        followups = followups.filter(
+            status='pending',
+            follow_up_date__date=today
+        )
         title = "Today's Follow Ups"
+
     elif scope == 'next':
-        followups = followups.filter(status='pending', follow_up_date__date__gt=today)
+        followups = followups.filter(
+            status='pending',
+            follow_up_date__date__gt=today
+        )
         title = 'Next Follow Ups'
+
     elif scope == 'done':
         followups = followups.filter(status='done')
         title = 'Done Follow Ups'
 
-    context = {'followups': followups, 'title': title, 'active': scope}
+    followups = list(followups)  # <-- force evaluation ONCE, cache as a list
+
+    for f in followups:
+        if f.status == 'done':
+            f.display_status = 'Done'
+        elif f.follow_up_date.date() == today:
+            f.display_status = 'Today'
+        else:
+            f.display_status = 'Pending'
+
+    context = {
+        'followups': followups,
+        'title': title,
+        'active': scope,
+        'today': today,
+    }
+
     return render(request, 'leads/followup_list.html', context)
 
 @login_required
@@ -2845,3 +2910,156 @@ def ceo_dashboard(request):
         'followups_today': followups_today,
     }
     return render(request, 'leads/ceo_dashboard.html', context)
+
+
+# ── AI PROPOSAL WRITER ─────────────────────────────────────
+
+@login_required
+def proposal_writer(request, lead_pk=None):
+    """
+    Main proposal writer page.
+    Accepts optional lead_pk to pre-link the proposal to a lead.
+    """
+    lead = None
+    if lead_pk:
+        lead = get_object_or_404(Lead, pk=lead_pk)
+
+    if request.method == 'POST':
+        title = request.POST.get('title', 'Business Proposal')
+        manual_notes = request.POST.get('manual_notes', '')
+        pdf_file = request.FILES.get('pdf_file')
+        lead_id = request.POST.get('lead_id')
+
+        if lead_id:
+            lead = Lead.objects.filter(pk=lead_id).first()
+
+        # create proposal record
+        proposal = Proposal(
+            title=title,
+            lead=lead,
+            manual_notes=manual_notes,
+            created_by=request.user,
+            status='draft',
+        )
+
+        # handle PDF upload and extraction
+        pdf_text = ''
+        if pdf_file:
+            proposal.uploaded_pdf = pdf_file
+            proposal.save()  # save to disk first
+            pdf_path = proposal.uploaded_pdf.path
+            pdf_text = extract_pdf_text(pdf_path)
+            proposal.pdf_extracted_text = pdf_text
+        else:
+            proposal.save()
+
+        # build lead context for AI
+        lead_context = None
+        if lead:
+            lead_context = {
+                'name': lead.name,
+                'company': lead.city or '',
+                'email': lead.email or '',
+                'quotation': str(lead.quotation),
+                'source': lead.get_lead_source_display(),
+            }
+
+        # generate proposal with Groq
+        generated_text = generate_proposal(
+            manual_notes=manual_notes,
+            pdf_text=pdf_text,
+            lead_context=lead_context,
+        )
+
+        proposal.generated_proposal = generated_text
+        proposal.status = 'generated'
+        proposal.save()
+
+        return redirect('proposal_detail', pk=proposal.pk)
+
+    context = {
+        'lead': lead,
+        'leads': Lead.objects.all(),
+        'active': 'proposals',
+        'title': 'AI Proposal Writer',
+    }
+    return render(request, 'leads/proposal_writer.html', context)
+
+
+@login_required
+def proposal_detail(request, pk):
+    """View and edit the generated proposal."""
+    proposal = get_object_or_404(Proposal, pk=pk)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'save':
+            proposal.generated_proposal = request.POST.get(
+                'generated_proposal', proposal.generated_proposal
+            )
+            proposal.title = request.POST.get('title', proposal.title)
+            proposal.save()
+            messages.success(request, 'Proposal saved.')
+
+        elif action == 'approve':
+            proposal.generated_proposal = request.POST.get(
+                'generated_proposal', proposal.generated_proposal
+            )
+            proposal.status = 'approved'
+            proposal.save()
+            messages.success(request, 'Proposal approved.')
+
+        elif action == 'regenerate':
+            proposal.manual_notes = request.POST.get(
+                'manual_notes', proposal.manual_notes
+            )
+            pdf_text = proposal.pdf_extracted_text or ''
+
+            lead_context = None
+            if proposal.lead:
+                lead_context = {
+                    'name': proposal.lead.name,
+                    'email': proposal.lead.email or '',
+                    'quotation': str(proposal.lead.quotation),
+                    'source': proposal.lead.get_lead_source_display(),
+                }
+
+            generated_text = generate_proposal(
+                manual_notes=proposal.manual_notes or '',
+                pdf_text=pdf_text,
+                lead_context=lead_context,
+            )
+            proposal.generated_proposal = generated_text
+            proposal.status = 'generated'
+            proposal.save()
+            messages.success(request, 'Proposal regenerated.')
+
+        return redirect('proposal_detail', pk=pk)
+
+    context = {
+        'proposal': proposal,
+        'active': 'proposals',
+        'title': proposal.title,
+    }
+    return render(request, 'leads/proposal_detail.html', context)
+
+
+@login_required
+def proposal_list(request):
+    """List all proposals."""
+    proposals = Proposal.objects.select_related('lead', 'created_by').all()
+    context = {
+        'proposals': proposals,
+        'active': 'proposals',
+        'title': 'Proposals',
+    }
+    return render(request, 'leads/proposal_list.html', context)
+
+
+@login_required
+def proposal_delete(request, pk):
+    proposal = get_object_or_404(Proposal, pk=pk)
+    proposal.delete()
+    messages.success(request, 'Proposal deleted.')
+    return redirect('proposal_list')

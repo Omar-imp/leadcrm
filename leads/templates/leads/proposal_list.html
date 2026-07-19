@@ -1,0 +1,69 @@
+{% extends 'leads/base.html' %}
+{% block title %}Proposals - Lead CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between;
+            align-items:center; margin-bottom:24px;">
+    <h1 class="page-title" style="margin:0;">📄 Proposals</h1>
+    <a href="{% url 'proposal_writer' %}" class="btn">🤖 Write New Proposal</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Lead</th>
+                <th>Status</th>
+                <th>Created By</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in proposals %}
+            <tr>
+                <td>
+                    <a href="{% url 'proposal_detail' p.pk %}">
+                        {{ p.title }}
+                    </a>
+                </td>
+                <td>
+                    {% if p.lead %}
+                    <a href="{% url 'lead_detail' p.lead.pk %}">
+                        {{ p.lead.name }}
+                    </a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="pill
+                        {% if p.status == 'approved' %}pill-converted
+                        {% elif p.status == 'sent' %}pill-positive
+                        {% elif p.status == 'generated' %}pill-quotation
+                        {% else %}pill-new{% endif %}">
+                        {{ p.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ p.created_by.username|default:"-" }}</td>
+                <td>{{ p.created_at|date:"d M Y" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'proposal_detail' p.pk %}">View</a>
+                        <a href="{% url 'proposal_delete' p.pk %}"
+                           onclick="return confirm('Delete?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="empty-state">
+                    No proposals yet.
+                    <a href="{% url 'proposal_writer' %}">Write one with AI →</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -445,6 +445,7 @@ class Task(models.Model):
 
 MEETING_STATUS_CHOICES = [
     ('scheduled', 'Scheduled'),
+    ('re_scheduled', 'Re-Scheduled'),
     ('completed', 'Completed'),
     ('cancelled', 'Cancelled'),
     ('no_show', 'No Show'),
@@ -934,6 +935,43 @@ class Contract(models.Model):
         ordering = ['-created_at']
 
 
+class Proposal(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('generated', 'AI Generated'),
+        ('approved', 'Approved'),
+        ('sent', 'Sent to Client'),
+    ]
+
+    lead = models.ForeignKey(
+        Lead, on_delete=models.CASCADE,
+        related_name='proposals', null=True, blank=True
+    )
+    title = models.CharField(max_length=200, default='Business Proposal')
+    uploaded_pdf = models.FileField(
+        upload_to='proposals/pdfs/%Y/%m/',
+        blank=True, null=True
+    )
+    pdf_extracted_text = models.TextField(blank=True, null=True)
+    manual_notes = models.TextField(blank=True, null=True)
+    generated_proposal = models.TextField(blank=True, null=True)
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default='draft'
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='proposals'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} — {self.lead.name if self.lead else 'No Lead'}"
+
+    class Meta:
+        ordering = ['-created_at']
+
+        
 class Notification(models.Model):
     NOTIF_TYPE_CHOICES = [
         ('followup_due', 'Follow Up Due'),

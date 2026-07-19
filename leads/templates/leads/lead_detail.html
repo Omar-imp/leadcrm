@@ -28,18 +28,85 @@
         <tr><td><strong>Detail</strong></td><td>{{ lead.detail|default:"-" }}</td></tr>
         <tr><td><strong>SPO</strong></td><td>{{ lead.spo.name|default:"Unassigned" }}</td></tr>
     </table>
-    <div class="action-links" style="margin-top:16px;">
-        <a href="{% url 'update_lead_status' lead.pk 'positive' %}">Mark Positive</a>
-        <a href="{% url 'update_lead_status' lead.pk 'lost' %}">Mark Lost</a>
-        <a href="{% url 'update_lead_status' lead.pk 'quotation' %}">Mark Quotation</a>
-        <a href="{% url 'update_lead_status' lead.pk 'converted' %}">Mark Converted</a>
-        <a href="{% url 'score_lead' lead.pk %}">🤖 AI Score</a>
-        <a href="{% url 'closing_probability' lead.pk %}">📊 Close Probability</a>
-        <a href="{% url 'ai_followup_message' lead.pk %}">✉️ AI Message</a>
-        <a href="{% url 'churn_risk' lead.pk %}">⚠️ Churn Risk</a>
-        <a href="{% url 'upsell_recommendations' lead.pk %}">💰 Upsell Ideas</a>
-        <a href="{% url 'lifetime_value' lead.pk %}">💎 Lifetime Value</a>
-        <a href="{% url 'customer_360' lead.pk %}">🔮 360° View</a>
+    <div class="lead-toolbar">
+
+        <!-- Status -->
+        <div class="toolbar-dropdown">
+            <button class="toolbar-btn status-btn">
+                Status: {{ lead.get_status_display }} ▼
+            </button>
+
+            <div class="toolbar-menu">
+                <a href="{% url 'update_lead_status' lead.pk 'positive' %}">
+                    ✅ Positive
+                </a>
+
+                <a href="{% url 'update_lead_status' lead.pk 'quotation' %}">
+                    📄 Quotation
+                </a>
+
+                <a href="{% url 'update_lead_status' lead.pk 'converted' %}">
+                    🎉 Converted
+                </a>
+
+                <a href="{% url 'update_lead_status' lead.pk 'lost' %}">
+                    ❌ Lost
+                </a>
+            </div>
+        </div>
+
+        <!-- AI -->
+        <div class="toolbar-dropdown">
+            <button class="toolbar-btn">
+                🤖 AI Tools ▼
+            </button>
+
+            <div class="toolbar-menu">
+                <a href="{% url 'score_lead' lead.pk %}">
+                    AI Score
+                </a>
+
+                <a href="{% url 'closing_probability' lead.pk %}">
+                    Close Probability
+                </a>
+
+                <a href="{% url 'ai_followup_message' lead.pk %}">
+                    AI Message
+                </a>
+
+                <a href="{% url 'churn_risk' lead.pk %}">
+                    Churn Risk
+                </a>
+
+                <a href="{% url 'upsell_recommendations' lead.pk %}">
+                    Upsell Ideas
+                </a>
+            </div>
+        </div>
+
+        <!-- Customer Insights -->
+        <div class="toolbar-dropdown">
+            <button class="toolbar-btn">
+                📊 Customer Insights ▼
+            </button>
+
+            <div class="toolbar-menu">
+                <a href="{% url 'lifetime_value' lead.pk %}">
+                    Lifetime Value
+                </a>
+
+                <a href="{% url 'customer_360' lead.pk %}">
+                    360° View
+                </a>
+            </div>
+        </div>
+
+        <!-- Proposal -->
+        <a class="toolbar-btn"
+        href="{% url 'proposal_writer_lead' lead.pk %}">
+            📝 Write Proposal
+        </a>
+
     </div>
 </div>
 

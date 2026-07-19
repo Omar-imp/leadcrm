@@ -1,0 +1,118 @@
+{% extends 'leads/base.html' %}
+{% block title %}AI Proposal Writer - Lead CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">🤖 AI Proposal Writer</h1>
+
+<div class="form-card">
+    <div class="form-card-header">
+        <h2>Generate a Professional Proposal</h2>
+        {% if lead %}
+        <span class="spo-badge">{{ lead.name }}</span>
+        {% endif %}
+    </div>
+    <div class="form-card-body">
+        <form method="post" enctype="multipart/form-data" novalidate id="proposal-form">
+            {% csrf_token %}
+
+            {% if lead %}
+            <input type="hidden" name="lead_id" value="{{ lead.pk }}">
+            {% else %}
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Link to Lead (optional)</label>
+                <select name="lead_id" class="form-control">
+                    <option value="">-- No Lead --</option>
+                    {% for l in leads %}
+                    <option value="{{ l.pk }}">{{ l.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="form-group" style="margin-bottom:22px;">
+                <label class="field-label">Proposal Title</label>
+                <input type="text" name="title" class="form-control"
+                       value="{% if lead %}Proposal for {{ lead.name }}{% else %}Business Proposal{% endif %}"
+                       placeholder="e.g. Custom CRM Proposal for ABC Company">
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:22px;">
+
+                <!-- PDF Upload -->
+                <div>
+                    <label class="field-label">
+                        Upload Existing PDF
+                        <span style="font-weight:400; color:var(--text-muted);">(optional)</span>
+                    </label>
+                    <div class="file-upload-area" onclick="document.getElementById('pdf-input').click()"
+                         style="min-height:160px; display:flex; flex-direction:column;
+                                align-items:center; justify-content:center;">
+                        <div style="font-size:36px; margin-bottom:8px;">📄</div>
+                        <div class="file-upload-label">
+                            <span>Click to upload PDF</span>
+                        </div>
+                        <div id="pdf-name" style="font-size:13px; color:var(--teal);
+                                                   margin-top:8px; text-align:center;"></div>
+                        <input type="file" name="pdf_file" id="pdf-input"
+                               accept=".pdf"
+                               onchange="document.getElementById('pdf-name').textContent = this.files[0]?.name || ''">
+                    </div>
+                    <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">
+                        The AI will extract text from the PDF and use it as a base.
+                        Your manual notes always override the PDF content.
+                    </p>
+                </div>
+
+                <!-- Manual Notes -->
+                <div>
+                    <label class="field-label">
+                        Manual Notes / Rough Draft
+                        <span style="font-weight:400; color:var(--text-muted);">(optional)</span>
+                    </label>
+                    <textarea name="manual_notes" class="form-control"
+                              style="height:160px; resize:vertical;"
+                              placeholder="Write rough notes here... e.g:
+- Client needs a CRM system for 20 users
+- Budget is around 500,000 PKR
+- Timeline: 3 months
+- Must include WhatsApp integration
+- Payment: 50% upfront, 50% on delivery
+
+The AI will turn these into a professional proposal."></textarea>
+                    <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">
+                        These notes take highest priority. The AI will use them
+                        to override any conflicting information in the PDF.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tips box -->
+            <div style="background:#eef3ff; border-radius:8px; padding:16px;
+                        margin-bottom:24px; border-left:4px solid var(--teal);">
+                <strong style="font-size:13px;">💡 Tips for best results:</strong>
+                <ul style="font-size:13px; color:var(--text-muted); margin:8px 0 0; padding-left:20px;">
+                    <li>Include client name, company, and specific requirements in notes</li>
+                    <li>Add budget, timeline and key deliverables if known</li>
+                    <li>You can use just notes, just a PDF, or both together</li>
+                    <li>After generation you can edit the output before saving</li>
+                </ul>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn" id="generate-btn"
+                        style="padding:14px 36px; font-size:16px;">
+                    🤖 Generate Proposal with AI
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('proposal-form').addEventListener('submit', function() {
+    const btn = document.getElementById('generate-btn');
+    btn.textContent = '⏳ AI is writing your proposal...';
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+});
+</script>
+{% endblock %}

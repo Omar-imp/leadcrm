@@ -108,6 +108,20 @@
         </nav>
 {% endif %}
 
+{% if '*' in allowed_sections or 'quotations' in allowed_sections %}
+<div class="section-label dropdown-toggle" onclick="toggleSection('proposals')">
+    PROPOSALS <span class="arrow" id="arrow-proposals">&#9658;</span>
+</div>
+<nav class="dropdown-section" id="section-proposals">
+    <a href="{% url 'proposal_list' %}" class="{% if active == 'proposals' %}active{% endif %}">
+        <span class="left"><span class="icon">&#129302;</span> All Proposals</span>
+    </a>
+    <a href="{% url 'proposal_writer' %}">
+        <span class="left"><span class="icon">&#43;</span> Write with AI</span>
+    </a>
+</nav>
+{% endif %}
+
         <!-- PROJECTS -->
 {% if '*' in allowed_sections or 'projects' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('projects')">
@@ -148,7 +162,7 @@
         <nav class="dropdown-section" id="section-meetings">
             <a href="{% url 'meeting_list' %}" class="{% if active == 'meetings' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128197;</span> All Meetings</span>
-                <span class="badge badge-blue">{{ sidebar_counts.meetings_upcoming }}</span>
+                <span class="badge badge-blue">{{ sidebar_counts.meetings }}</span>
             </a>
             <a href="{% url 'meeting_list' %}?scope=today">
                 <span class="left"><span class="icon">&#9200;</span> Today</span>
@@ -527,7 +541,7 @@ function toggleSection(name) {
 
 // restore state on page load
 const sections = [
-    'contacts', 'pipeline', 'quotations', 'projects',
+    'contacts', 'pipeline', 'quotations', 'proposals', 'projects',
     'meetings', 'tasks', 'lead', 'payment', 'followup',
     'communications', 'support', 'activity', 'reports',
     'documents', 'contracts', 'salespersons'

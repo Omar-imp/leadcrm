@@ -61,6 +61,7 @@ def sidebar_counts(request):
             'won': Opportunity.objects.filter(stage='won').count(),
             'quotations': Quotation.objects.filter(status__in=['draft', 'sent']).count(),
             'projects': Project.objects.filter(status__in=['planning', 'active']).count(),
+            'meetings': Meeting.objects.count(),
             'meetings_today': Meeting.objects.filter(scheduled_at__date=today, status='scheduled').count(),
             'meetings_upcoming': Meeting.objects.filter(scheduled_at__date__gte=today, status='scheduled').count(),
             'tasks_pending': GeneralTask.objects.filter(status__in=['todo', 'in_progress']).count(),

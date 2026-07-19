@@ -6,10 +6,57 @@
 
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-        <form method="get" class="search-bar" style="margin:0; flex:1;">
-            <input type="text" name="q" class="form-control"
-                   placeholder="Search by name, phone or email" value="{{ request.GET.q }}">
-            <button type="submit" class="btn btn-small">Search</button>
+        <form method="get" class="search-bar"
+            style="margin:0; flex:1; display:flex; gap:10px; flex-wrap:wrap;">
+
+            <input type="text"
+                name="q"
+                class="form-control"
+                placeholder="Name, phone or email"
+                value="{{ request.GET.q }}">
+
+            <select name="source" class="form-control">
+                <option value="">All Sources</option>
+
+                {% for value, label in lead_sources %}
+                <option value="{{ value }}"
+                    {% if request.GET.source == value %}
+                        selected
+                    {% endif %}
+                >
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <select name="spo" class="form-control">
+                <option value="">All SPOs</option>
+
+                {% for spo in spos %}
+                <option value="{{ spo.id }}"
+                    {% if request.GET.spo == spo.id|stringformat:"s" %}
+                        selected
+                    {% endif %}
+                >
+                    {{ spo.name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <select name="score" class="form-control">
+                <option value="">Score</option>
+                <option value="high"
+                    {% if request.GET.score == 'high' %}selected{% endif %}>
+                    Highest First
+                </option>
+                <option value="low"
+                    {% if request.GET.score == 'low' %}selected{% endif %}>
+                    Lowest First
+                </option>
+            </select>
+
+            <button type="submit" class="btn btn-small">Filter</button>
+
         </form>
         <a href="{% url 'score_all_leads' %}" class="btn btn-small"
            style="margin-left:12px; white-space:nowrap;"
@@ -68,16 +115,44 @@
 
                     {% if request.user|has_full_access:'leads' %}
                     <div class="action-links">
-                        <a href="{% url 'lead_detail' lead.pk %}">View</a>
-                        <a href="{% url 'update_lead_status' lead.pk 'positive' %}">Positive</a>
-                        <a href="{% url 'update_lead_status' lead.pk 'lost' %}">Lost</a>
-                        <a href="{% url 'update_lead_status' lead.pk 'quotation' %}">Quotation</a>
-                        <a href="{% url 'update_lead_status' lead.pk 'converted' %}">Convert</a>
-                        <a href="{% url 'quotation_create' %}?lead={{ lead.pk }}">Send Quotation</a>
+
+                        <a href="{% url 'lead_detail' lead.pk %}">
+                            View
+                        </a>
+
+                        <div class="toolbar-dropdown">
+                            <button type="button" class="toolbar-btn">
+                                Status ▼
+                            </button>
+
+                            <div class="toolbar-menu">
+                                <a href="{% url 'update_lead_status' lead.pk 'positive' %}">
+                                    ✅ Positive
+                                </a>
+
+                                <a href="{% url 'update_lead_status' lead.pk 'quotation' %}">
+                                    📄 Quotation
+                                </a>
+
+                                <a href="{% url 'update_lead_status' lead.pk 'converted' %}">
+                                    🎉 Converted
+                                </a>
+
+                                <a href="{% url 'update_lead_status' lead.pk 'lost' %}">
+                                    ❌ Lost
+                                </a>
+                            </div>
+                        </div>
+
+                        <a href="{% url 'quotation_create' %}?lead={{ lead.pk }}">
+                            Send Quotation
+                        </a>
+
                         <a href="{% url 'lead_delete' lead.pk %}"
-                            onclick="return confirm('Delete {{ lead.name }}?')">
+                        onclick="return confirm('Delete {{ lead.name }}?')">
                             Delete
                         </a>
+
                     </div>
                     {% else %}
                     <div class="action-links">

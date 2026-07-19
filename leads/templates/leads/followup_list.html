@@ -12,12 +12,33 @@
                 <td><a href="{% url 'lead_detail' f.lead.pk %}">{{ f.lead.name }}</a></td>
                 <td>{{ f.lead.contact_number }}</td>
                 <td>{{ f.follow_up_date|date:"d M Y, h:i A" }}</td>
-                <td><span class="pill {% if f.status == 'done' %}pill-converted{% else %}pill-quotation{% endif %}">{{ f.get_status_display }}</span></td>
+
+                <td>
+                    {% if f.display_status == 'Done' %}
+                        <span class="pill pill-converted">Done</span>
+
+                    {% elif f.display_status == 'Today' %}
+                        <span class="pill pill-positive">Today</span>
+
+                    {% else %}
+                        <span class="pill pill-quotation">Pending</span>
+                    {% endif %}
+                </td>
+
                 <td>{{ f.notes|default:"-" }}</td>
-                <td>{% if f.status == 'pending' %}<div class="action-links"><a href="{% url 'followup_done' f.pk %}">Mark Done</a></div>{% endif %}</td>
+
+                <td>
+                    {% if f.status == 'pending' %}
+                    <div class="action-links">
+                        <a href="{% url 'followup_done' f.pk %}">Mark Done</a>
+                    </div>
+                    {% endif %}
+                </td>
             </tr>
             {% empty %}
-            <tr><td colspan="6" class="empty-state">No follow ups found.</td></tr>
+            <tr>
+                <td colspan="6" class="empty-state">No follow ups found.</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
