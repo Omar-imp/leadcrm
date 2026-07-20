@@ -49,7 +49,7 @@ def show_today_meetings(user, assistant_type, params):
     if assistant_type == 'sales':
         sp = _get_salesperson(user)
         if not sp:
-            return {'error': 'Your account is not linked to a salesperson profile, so I can only answer questions about the CRM as a whole via the CRM Assistant.'}
+            return {'error': 'Your account is not linked to a salesperson profile.'}
         qs = qs.filter(lead__spo=sp)
     return {'meetings': list(qs.values('id', 'title', 'scheduled_at', 'lead__name')[:20])}
 
@@ -126,6 +126,25 @@ def create_quotation(user, assistant_type, params):
         created_by=user,
     )
     return {'created': True, 'quotation_id': quotation.id}
+
+
+@register_tool('search_leads_by_name')
+def search_leads_by_name(user, assistant_type, params):
+    name = params.get('name', '').strip()
+    if not name:
+        return {'error': 'No name provided to search for.'}
+
+    qs = Lead.objects.filter(name__icontains=name)
+    if assistant_type == 'sales':
+        sp = _get_salesperson(user)
+        if not sp:
+            return {'error': 'Your account is not linked to a salesperson profile.'}
+        qs = qs.filter(spo=sp)
+
+    results = list(qs.values('id', 'name', 'contact_number', 'status')[:10])
+    if not results:
+        return {'leads': [], 'message': f'No leads found matching "{name}".'}
+    return {'leads': results}
 
 
 TOOL_SCHEMAS = {
@@ -217,6 +236,20 @@ TOOL_SCHEMAS = {
                     "lead_id": {"type": "integer", "description": "The ID of the lead"}
                 },
                 "required": ["lead_id"]
+            },
+        }
+    },
+    "search_leads_by_name": {
+        "type": "function",
+        "function": {
+            "name": "search_leads_by_name",
+            "description": "Search for leads by name (partial match). Use this whenever the user refers to a lead by name instead of ID, before calling create_followup/create_meeting/create_quotation, to find the correct lead_id first.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Full or partial lead name to search for"}
+                },
+                "required": ["name"]
             },
         }
     },

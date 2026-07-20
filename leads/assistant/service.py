@@ -12,6 +12,8 @@ You have access to CRM-wide data: all leads, tasks, meetings, quotations, and sa
 Answer naturally and conversationally, like a knowledgeable colleague — not a robotic command parser.
 Use the tools available to fetch real data before answering. Never make up numbers or names.
 If a follow-up question refers to something mentioned earlier in the conversation, use that context.
+Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail.
+Never write function calls as plain text in your response (e.g. never output things like <function=...> or similar). Only use the proper tool-calling mechanism provided to you.
 Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail."""
 
 SALES_SYSTEM_PROMPT = """You are the Sales Assistant for a Lead CRM system (Hajj/Umrah travel business).
@@ -19,7 +21,11 @@ You only have access to the logged-in salesperson's own leads, tasks, meetings, 
 Answer naturally and conversationally, like a helpful colleague — not a robotic command parser.
 Use the tools available to fetch real data before answering. Never make up numbers or names.
 If a follow-up question refers to something mentioned earlier in the conversation, use that context.
-Keep answers concise and useful."""
+If the user refers to a lead by name rather than ID, use search_leads_by_name first to find the correct lead before taking any action on it.
+If more than one lead matches a name search, list them and ask which one they mean before proceeding.
+Before creating a follow-up, meeting, or quotation, briefly confirm the details (lead name, date/time if relevant) in your response and only call the create tool once the user's message clearly confirms or the details were unambiguous and explicitly requested.
+Never write function calls as plain text in your response (e.g. never output things like <function=...> or similar). Only use the proper tool-calling mechanism provided to you.
+Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail."""
 
 # which tools each assistant type is allowed to see/call
 CRM_TOOLS = ['show_hot_leads', 'show_pending_tasks', 'show_today_meetings',
@@ -27,7 +33,8 @@ CRM_TOOLS = ['show_hot_leads', 'show_pending_tasks', 'show_today_meetings',
              'create_followup', 'create_meeting', 'create_quotation']
 
 SALES_TOOLS = ['show_hot_leads', 'show_pending_tasks', 'show_today_meetings',
-               'show_quotations_above', 'create_followup', 'create_meeting', 'create_quotation']
+               'show_quotations_above', 'search_leads_by_name',
+               'create_followup', 'create_meeting', 'create_quotation']
 
 
 class AssistantService:
@@ -70,18 +77,30 @@ class AssistantService:
 
         max_iterations = 4
         for _ in range(max_iterations):
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                max_tokens=600,
-                messages=messages,
-                tools=tool_schemas,
-                tool_choice="auto",
-            )
+            try:
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    max_tokens=600,
+                    messages=messages,
+                    tools=tool_schemas,
+                    tool_choice="auto",
+                    parallel_tool_calls=False,
+                )
+            except Exception as e:
+                self._audit(latest_message, 'llm_call', False, str(e))
+                return "I'm having trouble reaching the assistant service right now. Please try again in a moment."
+
             choice = response.choices[0]
             msg = choice.message
 
             if not msg.tool_calls:
-                return msg.content or "I'm not sure how to answer that."
+                content = msg.content or ""
+                if '<function=' in content or '</function>' in content:
+                    # model leaked a pseudo tool-call as text instead of using tool_calls — retry once
+                    messages.append({"role": "assistant", "content": "Let me try that again properly."})
+                    messages.append({"role": "user", "content": "Please use the proper tool-calling mechanism, not text."})
+                    continue
+                return content or "I'm not sure how to answer that."
 
             messages.append({"role": "assistant", "content": msg.content or "", "tool_calls": msg.tool_calls})
 

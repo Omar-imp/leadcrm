@@ -34,6 +34,10 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from leads.assistant.service import AssistantService
 from leads.models import AssistantPermission, AssistantConversation
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib import messages
+from .models import EmailLog
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
@@ -3105,3 +3109,57 @@ def assistant_history(request, conversation_id):
         return JsonResponse({'messages': []})
     messages = list(conversation.messages.values('role', 'content', 'created_at'))
     return JsonResponse({'messages': messages})
+
+
+@login_required
+def email_inbox(request):
+    emails = EmailLog.objects.all().order_by('-created_at')
+    return render(request, 'leads/email_inbox.html', {
+        'emails': emails,
+        'active': 'emails',
+    })
+
+
+@login_required
+def email_compose(request, lead_id=None):
+    lead = None
+
+    if lead_id:
+        lead = get_object_or_404(Lead, id=lead_id)
+
+    if request.method == 'POST':
+        to_email = request.POST.get('to_email')
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+
+        status = 'sent'
+
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [to_email],
+                fail_silently=False,
+            )
+            messages.success(request, 'Email sent successfully.')
+
+        except Exception as e:
+            status = 'failed'
+            messages.error(request, f'Email failed: {e}')
+
+        EmailLog.objects.create(
+            lead=lead,
+            sent_by=request.user,
+            to_email=to_email,
+            subject=subject,
+            message=message,
+            status=status,
+        )
+
+        return redirect('email_inbox')
+
+    return render(request, 'leads/email_compose.html', {
+        'lead': lead,
+        'active': 'emails',
+    })

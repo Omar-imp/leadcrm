@@ -54,6 +54,7 @@ class UserPermissions(models.Model):
     payments = models.CharField(max_length=10, default='none')
     followups = models.CharField(max_length=10, default='none')
     communications = models.CharField(max_length=10, default='none')
+    emails = models.CharField(max_length=10, default='none')
     support = models.CharField(max_length=10, default='none')
     activity = models.CharField(max_length=10, default='none')
     reports = models.CharField(max_length=10, default='none')
@@ -76,7 +77,7 @@ class UserPermissions(models.Model):
     ALL_SECTIONS = [
         'dashboard', 'leads', 'contacts', 'pipeline', 'quotations',
         'projects', 'meetings', 'tasks', 'payments', 'followups',
-        'communications', 'support', 'activity', 'reports', 'documents',
+        'communications', 'emails', 'support', 'activity', 'reports', 'documents',
         'contracts', 'salespersons', 'users', 'ceo_dashboard', 'whatsapp',
     ]
 
@@ -1049,7 +1050,7 @@ class AssistantAuditLog(models.Model):
     class Meta:
         ordering = ['-timestamp']
 
-        
+
 # ── Lead signals ───────────────────────────────────────────
 @receiver(post_save, sender=Lead)
 def log_lead_save(sender, instance, created, **kwargs):
@@ -1108,3 +1109,26 @@ def log_meeting_save(sender, instance, created, **kwargs):
             scheduled = str(instance.scheduled_at)
         description = f'Meeting "{instance.title}" scheduled for {scheduled}.'
         log_activity(None, 'created', 'Meeting', instance.pk, instance.title, description)
+
+
+class EmailLog(models.Model):
+    lead = models.ForeignKey(
+        'Lead',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='emails'
+    )
+    sent_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    to_email = models.EmailField()
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    status = models.CharField(max_length=20, default='sent')  # sent / failed
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.subject} → {self.to_email}"

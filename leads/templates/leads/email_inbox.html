@@ -1,0 +1,54 @@
+{% extends 'leads/base.html' %}
+{% load static %}
+
+{% block title %}Emails - Lead CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h2>All Emails</h2>
+    <a href="{% url 'email_compose' %}" class="btn btn-primary">+ Compose Email</a>
+</div>
+
+<div class="table-wrapper">
+    <table class="data-table" style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr>
+                <th>To</th>
+                <th>Subject</th>
+                <th>Lead</th>
+                <th>Sent By</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for email in emails %}
+            <tr>
+                <td>{{ email.to_email }}</td>
+                <td>{{ email.subject }}</td>
+                <td>
+                    {% if email.lead %}
+                        {{ email.lead }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>{{ email.sent_by.username|default:"—" }}</td>
+                <td>
+                    {% if email.status == 'sent' %}
+                        <span class="badge badge-green">Sent</span>
+                    {% else %}
+                        <span class="badge badge-red">Failed</span>
+                    {% endif %}
+                </td>
+                <td>{{ email.created_at|date:"d M Y, h:i A" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align:center; padding:20px;">No emails sent yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

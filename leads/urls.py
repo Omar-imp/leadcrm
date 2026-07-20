@@ -171,6 +171,11 @@ urlpatterns = [
     path('proposals/<int:pk>/delete/', views.proposal_delete, name='proposal_delete'),
 
     path('assistant/config/', views.assistant_config, name='assistant_config'),
-path('assistant/chat/', views.assistant_chat, name='assistant_chat'),
-path('assistant/history/<int:conversation_id>/', views.assistant_history, name='assistant_history'),
-]
+    path('assistant/chat/', views.assistant_chat, name='assistant_chat'),
+    path('assistant/history/<int:conversation_id>/', views.assistant_history, name='assistant_history'),
+
+    # Emails
+    path('emails/', views.email_inbox, name='email_inbox'),
+    path('emails/compose/', views.email_compose, name='email_compose'),
+    path('emails/compose/<int:lead_id>/', views.email_compose, name='email_compose_lead'),
+    ]

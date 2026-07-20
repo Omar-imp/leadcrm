@@ -11,10 +11,19 @@
 <body>
 <div class="app">
     <aside class="sidebar">
-        <div class="brand">
-            <img src="{% static 'images/logo.png' %}"
-                 alt="Logo"
-                 style="max-width:140px !important; max-height:600px !important; width:auto !important; height:auto !important; object-fit:contain !important; display:block !important;">
+        <div class="brand" style="display:flex; justify-content:center; padding: 20px 0;">
+            <div style="
+                width: 140px;
+                height: 140px;
+                border-radius: 20px;
+                overflow: hidden;
+                -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%);
+                mask-image: radial-gradient(circle, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%);
+            ">
+                <img src="{% static 'images/logo.png' %}"
+                    alt="Logo"
+                    style="width:100% !important; height:100% !important; object-fit:cover !important; display:block !important;">
+            </div>
         </div>
         <div class="brand">Lead CRM</div>
 
@@ -353,6 +362,26 @@
         </nav>
 {% endif %}
 
+        <!-- EMAILS -->
+{% if '*' in allowed_sections or 'emails' in allowed_sections %}
+        <div class="section-label dropdown-toggle" onclick="toggleSection('emails')">
+            EMAILS 
+            {% if 'leads' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-emails">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-emails">
+            <a href="{% url 'email_inbox' %}" class="{% if active == 'emails' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128231;</span> All Emails</span>
+                <span class="badge badge-blue">{{ sidebar_counts.emails }}</span>
+            </a>
+            <a href="{% url 'email_compose' %}">
+                <span class="left"><span class="icon">&#43;</span> Compose Email</span>
+            </a>
+        </nav>
+{% endif %}
+
         <!-- SUPPORT -->
 {% if '*' in allowed_sections or 'support' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('support')">
@@ -543,7 +572,7 @@ function toggleSection(name) {
 const sections = [
     'contacts', 'pipeline', 'quotations', 'proposals', 'projects',
     'meetings', 'tasks', 'lead', 'payment', 'followup',
-    'communications', 'support', 'activity', 'reports',
+    'communications', 'emails', 'support', 'activity', 'reports',
     'documents', 'contracts', 'salespersons'
 ];
 

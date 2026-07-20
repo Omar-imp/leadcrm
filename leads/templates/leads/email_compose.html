@@ -1,0 +1,36 @@
+{% extends 'leads/base.html' %}
+{% load static %}
+
+{% block title %}Compose Email - Lead CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom:20px;">
+    <h2>Compose Email{% if lead %} to {{ lead }}{% endif %}</h2>
+</div>
+
+<form method="post" class="form-box" style="max-width:700px;">
+    {% csrf_token %}
+
+    <div class="form-group" style="margin-bottom:15px;">
+        <label for="to_email">To</label>
+        <input type="email" id="to_email" name="to_email"
+               value="{% if lead %}{{ lead.email }}{% endif %}"
+               required class="form-control" style="width:100%; padding:8px;">
+    </div>
+
+    <div class="form-group" style="margin-bottom:15px;">
+        <label for="subject">Subject</label>
+        <input type="text" id="subject" name="subject" required
+               class="form-control" style="width:100%; padding:8px;">
+    </div>
+
+    <div class="form-group" style="margin-bottom:15px;">
+        <label for="message">Message</label>
+        <textarea id="message" name="message" rows="10" required
+                  class="form-control" style="width:100%; padding:8px;"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Send Email</button>
+    <a href="{% url 'email_inbox' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}
