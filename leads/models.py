@@ -971,7 +971,7 @@ class Proposal(models.Model):
     class Meta:
         ordering = ['-created_at']
 
-        
+
 class Notification(models.Model):
     NOTIF_TYPE_CHOICES = [
         ('followup_due', 'Follow Up Due'),
@@ -1002,6 +1002,54 @@ class Notification(models.Model):
         ordering = ['-created_at']
 
 
+class AssistantPermission(models.Model):
+    ACCESS_CHOICES = [
+        ('none', 'No Access'),
+        ('view', 'View Only'),
+        ('full', 'Full Access'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='assistant_permission')
+    crm_assistant = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    sales_assistant = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+
+    def can_query(self, assistant_type):
+        level = self.crm_assistant if assistant_type == 'crm' else self.sales_assistant
+        return level in ('view', 'full')
+
+    def can_act(self, assistant_type):
+        level = self.crm_assistant if assistant_type == 'crm' else self.sales_assistant
+        return level == 'full'
+
+
+class AssistantConversation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assistant_conversations')
+    assistant_type = models.CharField(max_length=10, choices=[('crm', 'CRM'), ('sales', 'Sales')])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class AssistantMessage(models.Model):
+    ROLE_CHOICES = [('user', 'User'), ('assistant', 'Assistant')]
+    conversation = models.ForeignKey(AssistantConversation, on_delete=models.CASCADE, related_name='messages')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    tool_used = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class AssistantAuditLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    assistant_type = models.CharField(max_length=10)
+    query = models.TextField()
+    action_executed = models.CharField(max_length=100, blank=True, null=True)
+    success = models.BooleanField(default=True)
+    response = models.TextField(blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+        
 # ── Lead signals ───────────────────────────────────────────
 @receiver(post_save, sender=Lead)
 def log_lead_save(sender, instance, created, **kwargs):

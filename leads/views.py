@@ -29,6 +29,11 @@ from .decorators import role_required, block_view_only
 from django.db.models import Q
 from django.contrib.auth.models import User
 from .ai_proposal_writer import extract_pdf_text, generate_proposal
+import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from leads.assistant.service import AssistantService
+from leads.models import AssistantPermission, AssistantConversation
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
@@ -3063,3 +3068,40 @@ def proposal_delete(request, pk):
     proposal.delete()
     messages.success(request, 'Proposal deleted.')
     return redirect('proposal_list')
+
+
+@login_required
+def assistant_config(request):
+    perm, _ = AssistantPermission.objects.get_or_create(user=request.user)
+    return JsonResponse({
+        'crm_access': perm.crm_assistant,
+        'sales_access': perm.sales_assistant,
+        'show_selector': perm.crm_assistant != 'none' and perm.sales_assistant != 'none',
+    })
+
+
+@login_required
+@require_POST
+def assistant_chat(request):
+    data = json.loads(request.body)
+    assistant_type = data.get('assistant_type')
+    message = data.get('message', '').strip()
+    conversation_id = data.get('conversation_id')
+
+    if assistant_type not in ('crm', 'sales'):
+        return JsonResponse({'error': 'Invalid assistant type'}, status=400)
+    if not message:
+        return JsonResponse({'error': 'Empty message'}, status=400)
+
+    service = AssistantService(request.user, assistant_type)
+    result = service.handle_message(message, conversation_id)
+    return JsonResponse(result)
+
+
+@login_required
+def assistant_history(request, conversation_id):
+    conversation = AssistantConversation.objects.filter(id=conversation_id, user=request.user).first()
+    if not conversation:
+        return JsonResponse({'messages': []})
+    messages = list(conversation.messages.values('role', 'content', 'created_at'))
+    return JsonResponse({'messages': messages})

@@ -169,4 +169,8 @@ urlpatterns = [
     path('proposals/write/<int:lead_pk>/', views.proposal_writer, name='proposal_writer_lead'),
     path('proposals/<int:pk>/', views.proposal_detail, name='proposal_detail'),
     path('proposals/<int:pk>/delete/', views.proposal_delete, name='proposal_delete'),
+
+    path('assistant/config/', views.assistant_config, name='assistant_config'),
+path('assistant/chat/', views.assistant_chat, name='assistant_chat'),
+path('assistant/history/<int:conversation_id>/', views.assistant_history, name='assistant_history'),
 ]

@@ -565,5 +565,373 @@ sections.forEach(name => {
 });
 </script>
 
+<div id="assistant-widget">
+    <button id="assistant-toggle">💬</button>
+    <div id="assistant-panel">
+
+        <div id="assistant-header">
+            <span id="assistant-header-title">Assistant</span>
+            <div id="assistant-header-actions">
+                <button id="assistant-switch" title="Switch assistant">⇄</button>
+                <button id="assistant-close" title="Close">✕</button>
+            </div>
+        </div>
+
+        <div id="assistant-selector">
+            <p class="assistant-selector-label">Choose an assistant</p>
+            <button type="button" data-type="crm">CRM Assistant</button>
+            <button type="button" data-type="sales">Sales Assistant</button>
+        </div>
+
+        <div id="assistant-chat">
+            <div id="assistant-messages"></div>
+            <div id="assistant-input-row">
+                <input type="text" id="assistant-input" placeholder="Ask something...">
+                <button type="button" id="assistant-send">Send</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+#assistant-widget, #assistant-widget * {
+    box-sizing: border-box !important;
+}
+
+#assistant-widget {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 999999 !important;
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+#assistant-widget #assistant-toggle {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;
+    background: #8e6fd6 !important;
+    color: #fff !important;
+    border: none !important;
+    font-size: 22px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+}
+
+#assistant-widget #assistant-panel {
+    width: 360px !important;
+    height: 480px !important;
+    max-width: calc(100vw - 40px) !important;
+    background: #fff !important;
+    border-radius: 14px !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2) !important;
+    position: absolute !important;
+    bottom: 70px !important;
+    right: 0 !important;
+    display: none !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+#assistant-widget #assistant-panel.open {
+    display: flex !important;
+}
+
+#assistant-widget #assistant-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: #8e6fd6 !important;
+    color: #fff !important;
+    padding: 12px 16px !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+}
+
+#assistant-widget #assistant-header-title {
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    color: #fff !important;
+}
+
+#assistant-widget #assistant-header-actions {
+    display: flex !important;
+    gap: 8px !important;
+}
+
+#assistant-widget #assistant-header-actions button {
+    background: rgba(255,255,255,0.15) !important;
+    border: none !important;
+    color: #fff !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#assistant-widget #assistant-header-actions button.visible {
+    display: flex !important;
+}
+
+#assistant-widget #assistant-header-actions button:hover {
+    background: rgba(255,255,255,0.28) !important;
+}
+
+#assistant-widget #assistant-selector {
+    padding: 20px 16px !important;
+    display: none !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    flex: 1 !important;
+    width: 100% !important;
+}
+
+#assistant-widget #assistant-selector.visible {
+    display: flex !important;
+}
+
+#assistant-widget .assistant-selector-label {
+    font-size: 13px !important;
+    color: #888 !important;
+    margin: 0 0 4px 0 !important;
+}
+
+#assistant-widget #assistant-selector button {
+    padding: 12px !important;
+    border-radius: 10px !important;
+    border: 1px solid #e2e2e2 !important;
+    background: #fafafa !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+    width: 100% !important;
+    color: #222 !important;
+}
+
+#assistant-widget #assistant-selector button:hover {
+    background: #f0edff !important;
+    border-color: #8e6fd6 !important;
+}
+
+#assistant-widget #assistant-chat {
+    display: none !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    width: 100% !important;
+}
+
+#assistant-widget #assistant-chat.visible {
+    display: flex !important;
+}
+
+#assistant-widget #assistant-messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+}
+
+#assistant-widget .assistant-msg {
+    padding: 9px 13px !important;
+    border-radius: 12px !important;
+    max-width: 80% !important;
+    white-space: pre-wrap !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+}
+
+#assistant-widget .assistant-msg.user {
+    background: #8e6fd6 !important;
+    color: #fff !important;
+    align-self: flex-end !important;
+    border-bottom-right-radius: 4px !important;
+}
+
+#assistant-widget .assistant-msg.assistant {
+    background: #f1f1f3 !important;
+    color: #222 !important;
+    align-self: flex-start !important;
+    border-bottom-left-radius: 4px !important;
+}
+
+#assistant-widget #assistant-input-row {
+    display: flex !important;
+    border-top: 1px solid #eee !important;
+    flex-shrink: 0 !important;
+    padding: 8px !important;
+    gap: 8px !important;
+    width: 100% !important;
+}
+
+#assistant-widget #assistant-input {
+    flex: 1 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 8px !important;
+    padding: 9px 12px !important;
+    font-size: 14px !important;
+    outline: none !important;
+    background: #fff !important;
+    color: #222 !important;
+}
+
+#assistant-widget #assistant-input:focus {
+    border-color: #8e6fd6 !important;
+}
+
+#assistant-widget #assistant-send {
+    border: none !important;
+    background: #8e6fd6 !important;
+    color: #fff !important;
+    padding: 0 16px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+#assistant-widget #assistant-send:hover {
+    opacity: 0.9 !important;
+}
+</style>
+
+<script>
+(function() {
+    let currentType = null;
+    let conversationId = null;
+    let hasBothAssistants = false;
+
+    const toggle = document.getElementById('assistant-toggle');
+    const panel = document.getElementById('assistant-panel');
+    const selector = document.getElementById('assistant-selector');
+    const chatBox = document.getElementById('assistant-chat');
+    const messagesEl = document.getElementById('assistant-messages');
+    const input = document.getElementById('assistant-input');
+    const sendBtn = document.getElementById('assistant-send');
+    const headerTitle = document.getElementById('assistant-header-title');
+    const switchBtn = document.getElementById('assistant-switch');
+    const closeBtn = document.getElementById('assistant-close');
+
+    function getCookie(name) {
+        const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return match ? match.pop() : '';
+    }
+
+    function showSelector() {
+        chatBox.classList.remove('visible');
+        selector.classList.add('visible');
+        switchBtn.classList.remove('visible');
+        headerTitle.textContent = 'Assistant';
+        currentType = null;
+        conversationId = null;
+        messagesEl.innerHTML = '';
+    }
+
+    function openChat(type) {
+        currentType = type;
+        conversationId = null;
+        selector.classList.remove('visible');
+        chatBox.classList.add('visible');
+        messagesEl.innerHTML = '';
+        headerTitle.textContent = type === 'crm' ? 'CRM Assistant' : 'Sales Assistant';
+        if (hasBothAssistants) {
+            switchBtn.classList.add('visible');
+        } else {
+            switchBtn.classList.remove('visible');
+        }
+        input.focus();
+    }
+
+    function appendMessage(role, text) {
+        const div = document.createElement('div');
+        div.className = 'assistant-msg ' + role;
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    toggle.addEventListener('click', async () => {
+        const opening = !panel.classList.contains('open');
+
+        if (opening) {
+            panel.classList.add('open');
+
+            if (!currentType && !selector.classList.contains('visible') && !chatBox.classList.contains('visible')) {
+                const res = await fetch('/assistant/config/');
+                const cfg = await res.json();
+
+                if (cfg.crm_access === 'none' && cfg.sales_access === 'none') {
+                    headerTitle.textContent = 'Assistant';
+                    chatBox.classList.add('visible');
+                    appendMessage('assistant', "You don't have access to any assistant. Contact your admin.");
+                    return;
+                }
+
+                hasBothAssistants = cfg.crm_access !== 'none' && cfg.sales_access !== 'none';
+
+                if (hasBothAssistants) {
+                    showSelector();
+                } else {
+                    openChat(cfg.crm_access !== 'none' ? 'crm' : 'sales');
+                }
+            }
+        } else {
+            panel.classList.remove('open');
+        }
+    });
+
+    closeBtn.addEventListener('click', () => { panel.classList.remove('open'); });
+
+    switchBtn.addEventListener('click', showSelector);
+
+    selector.querySelectorAll('button[data-type]').forEach(btn => {
+        btn.addEventListener('click', () => openChat(btn.dataset.type));
+    });
+
+    async function sendMessage() {
+        const text = input.value.trim();
+        if (!text || !currentType) return;
+        appendMessage('user', text);
+        input.value = '';
+
+        const res = await fetch('/assistant/chat/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                assistant_type: currentType,
+                message: text,
+                conversation_id: conversationId,
+            }),
+        });
+        const data = await res.json();
+        conversationId = data.conversation_id || conversationId;
+        appendMessage('assistant', data.response || 'No response.');
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+})();
+</script>
+
 </body>
 </html>

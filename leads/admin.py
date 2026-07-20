@@ -9,13 +9,21 @@ from .models import (Lead, FollowUp, SalesPerson, Payment,
                      Document, Contract, Notification, Proposal)
 
 
+from django.contrib import admin
+from .models import AssistantPermission
+
+@admin.register(AssistantPermission)
+class AssistantPermissionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'crm_assistant', 'sales_assistant')
+    
+
 @admin.register(Proposal)
 class ProposalAdmin(admin.ModelAdmin):
     list_display = ('title', 'lead', 'status', 'created_by', 'created_at')
     list_filter = ('status',)
     search_fields = ('title',)
 
-    
+
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('user', 'title', 'notif_type', 'is_read', 'created_at')
