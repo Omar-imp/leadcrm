@@ -178,4 +178,5 @@ urlpatterns = [
     path('emails/', views.email_inbox, name='email_inbox'),
     path('emails/compose/', views.email_compose, name='email_compose'),
     path('emails/compose/<int:lead_id>/', views.email_compose, name='email_compose_lead'),
-    ]
+    path('emails/<int:pk>/', views.email_detail, name='email_detail'),
+]

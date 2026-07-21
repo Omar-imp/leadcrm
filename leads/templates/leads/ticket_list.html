@@ -2,10 +2,11 @@
 {% load custom_filters %}
 {% block title %}Support Tickets - Lead CRM{% endblock %}
 {% block content %}
-{% load custom_filters %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Support Tickets</h1>
+    {% if request.user|has_full_access:'support' %}
     <a href="{% url 'ticket_create' %}" class="btn">+ New Ticket</a>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -67,9 +68,11 @@
                 <td>
                     <div class="action-links">
                         <a href="{% url 'ticket_detail' t.pk %}">View</a>
-                        <a href="{% url 'ticket_edit' t.pk %}">Edit</a>
-                        <a href="{% url 'ticket_delete' t.pk %}"
-                           onclick="return confirm('Delete ticket?')">Delete</a>
+                        {% if request.user|has_full_access:'support' %}
+                            <a href="{% url 'ticket_edit' t.pk %}">Edit</a>
+                            <a href="{% url 'ticket_delete' t.pk %}"
+                                onclick="return confirm('Delete ticket?')">Delete</a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

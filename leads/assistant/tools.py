@@ -1,7 +1,7 @@
 from datetime import timedelta
 from django.db.models import Sum, F, Count
 from django.utils import timezone
-from leads.models import Lead, FollowUp, Quotation, Meeting, SalesPerson
+from leads.models import Lead, FollowUp, Quotation, Meeting, SalesPerson, GeneralTask
 
 TOOL_REGISTRY = {}
 
@@ -147,6 +147,38 @@ def search_leads_by_name(user, assistant_type, params):
     return {'leads': results}
 
 
+@register_tool('create_task', requires_action=True)
+def create_task(user, assistant_type, params):
+    title = params.get('title', '').strip()
+    if not title:
+        return {'error': 'A task title is required.'}
+
+    lead_id = params.get('lead_id')
+    lead = None
+    if lead_id:
+        lead = Lead.objects.filter(id=lead_id).first()
+        if assistant_type == 'sales' and lead:
+            sp = _get_salesperson(user)
+            if not sp or lead.spo_id != sp.id:
+                return {'error': 'Not your lead'}
+
+    days_from_now = params.get('days_from_now')
+    due_date = None
+    if days_from_now is not None:
+        due_date = (timezone.localdate() + timedelta(days=days_from_now))
+
+    task = GeneralTask.objects.create(
+        title=title,
+        description=params.get('description', ''),
+        assigned_to=user,
+        created_by=user,
+        priority=params.get('priority', 'medium'),
+        due_date=due_date,
+        lead=lead,
+    )
+    return {'created': True, 'task_id': task.id, 'title': task.title}
+
+
 TOOL_SCHEMAS = {
     "show_hot_leads": {
         "type": "function",
@@ -250,6 +282,24 @@ TOOL_SCHEMAS = {
                     "name": {"type": "string", "description": "Full or partial lead name to search for"}
                 },
                 "required": ["name"]
+            },
+        }
+    },
+    "create_task": {
+        "type": "function",
+        "function": {
+            "name": "create_task",
+            "description": "Create a new general task (to-do), optionally linked to a lead. Use this when the user wants a task/to-do created, as distinct from a follow-up reminder or a meeting.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Task title, e.g. 'Prepare meeting notes'"},
+                    "description": {"type": "string", "description": "Optional task details"},
+                    "lead_id": {"type": "integer", "description": "Optional lead ID this task relates to"},
+                    "days_from_now": {"type": "integer", "description": "Due date, as days from today, e.g. 3 for a task due in 3 days"},
+                    "priority": {"type": "string", "enum": ["low", "medium", "high"], "description": "Task priority"}
+                },
+                "required": ["title"]
             },
         }
     },

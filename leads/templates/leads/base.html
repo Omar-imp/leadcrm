@@ -48,7 +48,7 @@
 {% if '*' in allowed_sections or 'contacts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('contacts')">
             CONTACTS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'contacts' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-contacts">&#9658;</span>
@@ -69,7 +69,7 @@
 {% if '*' in allowed_sections or 'pipeline' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('pipeline')">
             PIPELINE
-            {% if 'leads' in view_only_sections %}
+            {% if 'pipeline' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-pipeline">&#9660;</span>
@@ -93,7 +93,7 @@
 {% if '*' in allowed_sections or 'quotations' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('quotations')">
             QUOTATIONS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'quotations' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-quotations">&#9660;</span>
@@ -135,7 +135,7 @@
 {% if '*' in allowed_sections or 'projects' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('projects')">
             PROJECTS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'projects' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-projects">&#9660;</span>
@@ -163,7 +163,7 @@
 {% if '*' in allowed_sections or 'meetings' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('meetings')">
             MEETINGS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'meetings' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-meetings">&#9660;</span>
@@ -192,7 +192,7 @@
 {% if '*' in allowed_sections or 'tasks' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('tasks')">
             TASKS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'tasks' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-tasks">&#9660;</span>
@@ -283,7 +283,7 @@
 {% if '*' in allowed_sections or 'payments' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('payment')">
             PAYMENT 
-            {% if 'leads' in view_only_sections %}
+            {% if 'payments' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-payment">&#9660;</span>
@@ -308,7 +308,7 @@
 {% if '*' in allowed_sections or 'followups' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('followup')">
             FOLLOWUP 
-            {% if 'leads' in view_only_sections %}
+            {% if 'followups' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-followup">&#9660;</span>
@@ -337,7 +337,7 @@
 {% if '*' in allowed_sections or 'communications' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('communications')">
             COMMUNICATIONS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'communications' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-communications">&#9660;</span>
@@ -366,7 +366,7 @@
 {% if '*' in allowed_sections or 'emails' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('emails')">
             EMAILS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'emails' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-emails">&#9658;</span>
@@ -376,9 +376,11 @@
                 <span class="left"><span class="icon">&#128231;</span> All Emails</span>
                 <span class="badge badge-blue">{{ sidebar_counts.emails }}</span>
             </a>
+            {% if request.user|has_full_access:'emails' %}
             <a href="{% url 'email_compose' %}">
                 <span class="left"><span class="icon">&#43;</span> Compose Email</span>
             </a>
+            {% endif %}
         </nav>
 {% endif %}
 
@@ -386,7 +388,7 @@
 {% if '*' in allowed_sections or 'support' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('support')">
             SUPPORT 
-            {% if 'leads' in view_only_sections %}
+            {% if 'support' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-support">&#9660;</span>
@@ -418,7 +420,7 @@
 {% if '*' in allowed_sections or 'activity' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('activity')">
             ACTIVITY 
-            {% if 'leads' in view_only_sections %}
+            {% if 'activity' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-activity">&#9660;</span>
@@ -435,7 +437,7 @@
 {% if '*' in allowed_sections or 'reports' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('reports')">
             REPORTS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'reports' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-reports">&#9660;</span>
@@ -454,7 +456,7 @@
 {% if '*' in allowed_sections or 'documents' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('documents')">
             DOCUMENTS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'documents' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-documents">&#9658;</span>
@@ -490,7 +492,7 @@
 {% if '*' in allowed_sections or 'contracts' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('contracts')">
             CONTRACTS 
-            {% if 'leads' in view_only_sections %}
+            {% if 'contracts' in view_only_sections %}
             <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
             {% endif %}
             <span class="arrow" id="arrow-contracts">&#9658;</span>

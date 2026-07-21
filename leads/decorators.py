@@ -41,10 +41,10 @@ def block_view_only(view_func):
     from functools import wraps
     from django.shortcuts import redirect
     from django.contrib import messages
+    from .permissions import get_section_for_path
 
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-
         if (
             request.method == "POST"
             and request.user.is_authenticated
@@ -52,21 +52,8 @@ def block_view_only(view_func):
         ):
             try:
                 perms = request.user.custom_permissions
-
                 path = request.path
-
-                section = None
-
-                if path.startswith('/projects/'):
-                    section = 'projects'
-                elif path.startswith('/quotations/'):
-                    section = 'quotations'
-                elif path.startswith('/companies/'):
-                    section = 'contacts'
-                elif path.startswith('/contacts/'):
-                    section = 'contacts'
-                elif path.startswith('/leads/'):
-                    section = 'leads'
+                section = get_section_for_path(path)
 
                 if section and perms.is_view_only(section):
                     messages.error(
@@ -76,7 +63,5 @@ def block_view_only(view_func):
                     return redirect('/')
             except Exception as e:
                 print("BLOCK ERROR:", e)
-
         return view_func(request, *args, **kwargs)
-
     return wrapper

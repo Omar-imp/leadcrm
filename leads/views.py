@@ -3210,3 +3210,19 @@ def email_compose(request, lead_id=None):
         'lead': lead,
         'active': 'emails',
     })
+
+
+@login_required
+def email_detail(request, pk):
+    try:
+        perms = request.user.custom_permissions
+        if not (request.user.is_superuser or perms.has_access('emails')):
+            messages.error(request, "You don't have access to Email Sender.")
+            return redirect('dashboard')
+    except Exception:
+        pass
+    email = get_object_or_404(EmailLog, pk=pk)
+    return render(request, 'leads/email_detail.html', {
+        'email': email,
+        'active': 'emails',
+    })

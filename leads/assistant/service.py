@@ -16,7 +16,8 @@ Keep answers concise and useful — a sentence or short list, not a wall of text
 Never write function calls as plain text in your response (e.g. never output things like <function=...> or similar). Only use the proper tool-calling mechanism provided to you.
 Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail.
 Never mention tool or function names to the user (e.g. never say "show_pending_tasks" or similar). If the user asks where to find something you can look up, call the appropriate tool yourself and show them the actual result — don't describe how they could look it up themselves.
-Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail."""
+Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail.
+Never claim you created, updated, or found something unless you actually called the corresponding tool and it returned success. If no matching tool exists for what the user is asking, say so honestly instead of pretending it was done."""
 
 SALES_SYSTEM_PROMPT = """You are the Sales Assistant for a Lead CRM system (Hajj/Umrah travel business).
 You only have access to the logged-in salesperson's own leads, tasks, meetings, and quotations — never other salespeople's data or company-wide analytics.
@@ -28,16 +29,17 @@ If more than one lead matches a name search, list them and ask which one they me
 Before creating a follow-up, meeting, or quotation, briefly confirm the details (lead name, date/time if relevant) in your response and only call the create tool once the user's message clearly confirms or the details were unambiguous and explicitly requested.
 Never write function calls as plain text in your response (e.g. never output things like <function=...> or similar). Only use the proper tool-calling mechanism provided to you.
 Never mention tool or function names to the user (e.g. never say "show_pending_tasks" or similar). If the user asks where to find something you can look up, call the appropriate tool yourself and show them the actual result — don't describe how they could look it up themselves.
-Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail."""
+Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail.
+Never claim you created, updated, or found something unless you actually called the corresponding tool and it returned success. If no matching tool exists for what the user is asking, say so honestly instead of pretending it was done."""
 
 # which tools each assistant type is allowed to see/call
 CRM_TOOLS = ['show_hot_leads', 'show_pending_tasks', 'show_today_meetings',
              'show_best_salesperson', 'show_quotations_above',
-             'create_followup', 'create_meeting', 'create_quotation']
+             'create_followup', 'create_meeting', 'create_quotation', 'create_task']
 
 SALES_TOOLS = ['show_hot_leads', 'show_pending_tasks', 'show_today_meetings',
                'show_quotations_above', 'search_leads_by_name',
-               'create_followup', 'create_meeting', 'create_quotation']
+               'create_followup', 'create_meeting', 'create_quotation', 'create_task']
 
 
 class AssistantService:
@@ -91,8 +93,24 @@ class AssistantService:
                     parallel_tool_calls=False,
                 )
             except Exception as e:
-                self._audit(latest_message, 'llm_call', False, str(e))
-                return "I'm having trouble reaching the assistant service right now. Please try again in a moment."
+                error_str = str(e)
+                if 'tool_use_failed' in error_str:
+                    # model choked on tool-calling format — retry once without tools
+                    try:
+                        response = client.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            max_tokens=600,
+                            messages=messages,
+                        )
+                        choice = response.choices[0]
+                        msg = choice.message
+                        return msg.content or "Sorry, I couldn't process that — could you rephrase?"
+                    except Exception as e2:
+                        self._audit(latest_message, 'llm_call', False, str(e2))
+                        return "I'm having trouble processing requests right now. Please try again shortly."
+                else:
+                    self._audit(latest_message, 'llm_call', False, error_str)
+                    return "I'm having trouble reaching the assistant service right now. Please try again in a moment."
 
             choice = response.choices[0]
             msg = choice.message

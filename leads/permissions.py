@@ -44,7 +44,7 @@ URL_SECTION_MAP = {
     'projects': ['/projects/', '/milestones/'],
     'documents': ['/documents/'],
     'contracts': ['/contracts/'],
-    'tickets': ['/tickets/'],
+    'support': ['/tickets/'],
     'activity': ['/activity/'],
     'notifications': ['/notifications/'],
 }

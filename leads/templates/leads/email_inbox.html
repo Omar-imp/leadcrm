@@ -1,12 +1,15 @@
 {% extends 'leads/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}Emails - Lead CRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <h2>All Emails</h2>
+    {% if request.user|has_full_access:'emails' %}
     <a href="{% url 'email_compose' %}" class="btn btn-primary">+ Compose Email</a>
+    {% endif %}
 </div>
 
 <div class="table-wrapper">
@@ -19,6 +22,7 @@
                 <th>Sent By</th>
                 <th>Status</th>
                 <th>Date</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
@@ -42,10 +46,15 @@
                     {% endif %}
                 </td>
                 <td>{{ email.created_at|date:"d M Y, h:i A" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'email_detail' email.pk %}">View</a>
+                    </div>
+                </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" style="text-align:center; padding:20px;">No emails sent yet.</td>
+                <td colspan="7" style="text-align:center; padding:20px;">No emails sent yet.</td>
             </tr>
             {% endfor %}
         </tbody>
