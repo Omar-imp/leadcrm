@@ -674,6 +674,9 @@ SECTION_LABELS = {
     'users': 'User Management',
     'ceo_dashboard': 'CEO Dashboard',
     'whatsapp': 'WhatsApp Sender',
+    'emails': 'Email Sender',
+    'crm_chatbot': 'CRM Chatbot',
+    'sales_chatbot': 'Sales Chatbot',
 }
 
 
@@ -3076,11 +3079,23 @@ def proposal_delete(request, pk):
 
 @login_required
 def assistant_config(request):
-    perm, _ = AssistantPermission.objects.get_or_create(user=request.user)
+    try:
+        perms = request.user.custom_permissions
+    except Exception:
+        from .models import UserPermissions
+        perms, _ = UserPermissions.objects.get_or_create(user=request.user)
+
+    crm_access = perms.crm_chatbot
+    sales_access = perms.sales_chatbot
+
+    if request.user.is_superuser or getattr(getattr(request.user, 'profile', None), 'role', None) == 'admin':
+        crm_access = 'full'
+        sales_access = 'full'
+
     return JsonResponse({
-        'crm_access': perm.crm_assistant,
-        'sales_access': perm.sales_assistant,
-        'show_selector': perm.crm_assistant != 'none' and perm.sales_assistant != 'none',
+        'crm_access': crm_access,
+        'sales_access': sales_access,
+        'show_selector': crm_access != 'none' and sales_access != 'none',
     })
 
 
@@ -3096,6 +3111,18 @@ def assistant_chat(request):
         return JsonResponse({'error': 'Invalid assistant type'}, status=400)
     if not message:
         return JsonResponse({'error': 'Empty message'}, status=400)
+
+    # permission check
+    is_admin = request.user.is_superuser or getattr(getattr(request.user, 'profile', None), 'role', None) == 'admin'
+    if not is_admin:
+        try:
+            perms = request.user.custom_permissions
+        except Exception:
+            from .models import UserPermissions
+            perms, _ = UserPermissions.objects.get_or_create(user=request.user)
+        level = perms.crm_chatbot if assistant_type == 'crm' else perms.sales_chatbot
+        if level == 'none':
+            return JsonResponse({'error': 'You do not have access to this assistant.'}, status=403)
 
     service = AssistantService(request.user, assistant_type)
     result = service.handle_message(message, conversation_id)
@@ -3113,6 +3140,13 @@ def assistant_history(request, conversation_id):
 
 @login_required
 def email_inbox(request):
+    try:
+        perms = request.user.custom_permissions
+        if not (request.user.is_superuser or perms.has_access('emails')):
+            messages.error(request, "You don't have access to Email Sender.")
+            return redirect('dashboard')
+    except Exception:
+        pass
     emails = EmailLog.objects.all().order_by('-created_at')
     return render(request, 'leads/email_inbox.html', {
         'emails': emails,
@@ -3120,9 +3154,22 @@ def email_inbox(request):
     })
 
 
+
 @login_required
 def email_compose(request, lead_id=None):
+    try:
+        perms = request.user.custom_permissions
+        if not (request.user.is_superuser or perms.has_access('emails')):
+            messages.error(request, "You don't have access to Email Sender.")
+            return redirect('dashboard')
+        if request.method == 'POST' and not request.user.is_superuser and perms.is_view_only('emails'):
+            messages.error(request, "You have view-only access to Email Sender.")
+            return redirect('email_inbox')
+    except Exception:
+        pass
+
     lead = None
+
 
     if lead_id:
         lead = get_object_or_404(Lead, id=lead_id)

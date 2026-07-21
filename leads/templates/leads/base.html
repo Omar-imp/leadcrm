@@ -601,6 +601,7 @@ sections.forEach(name => {
         <div id="assistant-header">
             <span id="assistant-header-title">Assistant</span>
             <div id="assistant-header-actions">
+                <button id="assistant-clear" title="Clear conversation">🗑</button>
                 <button id="assistant-switch" title="Switch assistant">⇄</button>
                 <button id="assistant-close" title="Close">✕</button>
             </div>
@@ -857,35 +858,24 @@ sections.forEach(name => {
     const headerTitle = document.getElementById('assistant-header-title');
     const switchBtn = document.getElementById('assistant-switch');
     const closeBtn = document.getElementById('assistant-close');
+    const clearBtn = document.getElementById('assistant-clear');
 
     function getCookie(name) {
         const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
         return match ? match.pop() : '';
     }
 
-    function showSelector() {
-        chatBox.classList.remove('visible');
-        selector.classList.add('visible');
-        switchBtn.classList.remove('visible');
-        headerTitle.textContent = 'Assistant';
-        currentType = null;
-        conversationId = null;
-        messagesEl.innerHTML = '';
-    }
-
-    function openChat(type) {
-        currentType = type;
-        conversationId = null;
-        selector.classList.remove('visible');
-        chatBox.classList.add('visible');
-        messagesEl.innerHTML = '';
-        headerTitle.textContent = type === 'crm' ? 'CRM Assistant' : 'Sales Assistant';
-        if (hasBothAssistants) {
-            switchBtn.classList.add('visible');
+    function saveState() {
+        if (currentType) {
+            sessionStorage.setItem('assistant_type', currentType);
         } else {
-            switchBtn.classList.remove('visible');
+            sessionStorage.removeItem('assistant_type');
         }
-        input.focus();
+        if (conversationId) {
+            sessionStorage.setItem('assistant_conversation_id', conversationId);
+        } else {
+            sessionStorage.removeItem('assistant_conversation_id');
+        }
     }
 
     function appendMessage(role, text) {
@@ -896,13 +886,63 @@ sections.forEach(name => {
         messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
+    function showSelector() {
+        chatBox.classList.remove('visible');
+        selector.classList.add('visible');
+        switchBtn.classList.remove('visible');
+        headerTitle.textContent = 'Assistant';
+        currentType = null;
+        conversationId = null;
+        messagesEl.innerHTML = '';
+        saveState();
+    }
+
+    async function openChat(type, restoreConversationId) {
+        currentType = type;
+        conversationId = restoreConversationId || null;
+        selector.classList.remove('visible');
+        chatBox.classList.add('visible');
+        messagesEl.innerHTML = '';
+        headerTitle.textContent = type === 'crm' ? 'CRM Assistant' : 'Sales Assistant';
+        if (hasBothAssistants) {
+            switchBtn.classList.add('visible');
+        } else {
+            switchBtn.classList.remove('visible');
+        }
+        saveState();
+
+        if (conversationId) {
+            try {
+                const res = await fetch('/assistant/history/' + conversationId + '/');
+                const data = await res.json();
+                (data.messages || []).forEach(m => appendMessage(m.role, m.content));
+            } catch (e) {
+                // if history fetch fails, just start fresh silently
+                conversationId = null;
+                saveState();
+            }
+        }
+
+        input.focus();
+    }
+
+    function startNewConversation() {
+        conversationId = null;
+        messagesEl.innerHTML = '';
+        saveState();
+        if (currentType) {
+            appendMessage('assistant', 'Started a new conversation. What can I help with?');
+        }
+    }
+
     toggle.addEventListener('click', async () => {
         const opening = !panel.classList.contains('open');
 
         if (opening) {
             panel.classList.add('open');
 
-            if (!currentType && !selector.classList.contains('visible') && !chatBox.classList.contains('visible')) {
+            const alreadyShowing = selector.classList.contains('visible') || chatBox.classList.contains('visible');
+            if (!alreadyShowing) {
                 const res = await fetch('/assistant/config/');
                 const cfg = await res.json();
 
@@ -915,7 +955,12 @@ sections.forEach(name => {
 
                 hasBothAssistants = cfg.crm_access !== 'none' && cfg.sales_access !== 'none';
 
-                if (hasBothAssistants) {
+                const savedType = sessionStorage.getItem('assistant_type');
+                const savedConversationId = sessionStorage.getItem('assistant_conversation_id');
+
+                if (savedType && (savedType === 'crm' ? cfg.crm_access !== 'none' : cfg.sales_access !== 'none')) {
+                    openChat(savedType, savedConversationId);
+                } else if (hasBothAssistants) {
                     showSelector();
                 } else {
                     openChat(cfg.crm_access !== 'none' ? 'crm' : 'sales');
@@ -929,6 +974,8 @@ sections.forEach(name => {
     closeBtn.addEventListener('click', () => { panel.classList.remove('open'); });
 
     switchBtn.addEventListener('click', showSelector);
+
+    clearBtn.addEventListener('click', startNewConversation);
 
     selector.querySelectorAll('button[data-type]').forEach(btn => {
         btn.addEventListener('click', () => openChat(btn.dataset.type));
@@ -954,6 +1001,7 @@ sections.forEach(name => {
         });
         const data = await res.json();
         conversationId = data.conversation_id || conversationId;
+        saveState();
         appendMessage('assistant', data.response || 'No response.');
     }
 

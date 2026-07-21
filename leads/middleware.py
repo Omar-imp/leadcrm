@@ -65,6 +65,8 @@ class RoleAccessMiddleware:
             '/users/': 'users',
             '/ceo/': 'ceo_dashboard',
             '/whatsapp/': 'whatsapp',
+            '/emails/': 'emails',
+            '/assistant/': None,
         }
         for prefix, section in mapping.items():
             if path.startswith(prefix):

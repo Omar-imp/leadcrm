@@ -14,6 +14,8 @@ Use the tools available to fetch real data before answering. Never make up numbe
 If a follow-up question refers to something mentioned earlier in the conversation, use that context.
 Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail.
 Never write function calls as plain text in your response (e.g. never output things like <function=...> or similar). Only use the proper tool-calling mechanism provided to you.
+Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail.
+Never mention tool or function names to the user (e.g. never say "show_pending_tasks" or similar). If the user asks where to find something you can look up, call the appropriate tool yourself and show them the actual result — don't describe how they could look it up themselves.
 Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail."""
 
 SALES_SYSTEM_PROMPT = """You are the Sales Assistant for a Lead CRM system (Hajj/Umrah travel business).
@@ -25,6 +27,7 @@ If the user refers to a lead by name rather than ID, use search_leads_by_name fi
 If more than one lead matches a name search, list them and ask which one they mean before proceeding.
 Before creating a follow-up, meeting, or quotation, briefly confirm the details (lead name, date/time if relevant) in your response and only call the create tool once the user's message clearly confirms or the details were unambiguous and explicitly requested.
 Never write function calls as plain text in your response (e.g. never output things like <function=...> or similar). Only use the proper tool-calling mechanism provided to you.
+Never mention tool or function names to the user (e.g. never say "show_pending_tasks" or similar). If the user asks where to find something you can look up, call the appropriate tool yourself and show them the actual result — don't describe how they could look it up themselves.
 Keep answers concise and useful — a sentence or short list, not a wall of text, unless asked for detail."""
 
 # which tools each assistant type is allowed to see/call
@@ -75,7 +78,8 @@ class AssistantService:
 
         tool_schemas = [TOOL_SCHEMAS[name] for name in allowed_tools if name in TOOL_SCHEMAS]
 
-        max_iterations = 4
+        seen_calls = set()
+        max_iterations = 6
         for _ in range(max_iterations):
             try:
                 response = client.chat.completions.create(
@@ -106,6 +110,12 @@ class AssistantService:
 
             for tool_call in msg.tool_calls:
                 tool_name = tool_call.function.name
+
+                call_signature = (tool_name, tool_call.function.arguments)
+                if call_signature in seen_calls:
+                    return "Here's what I found — let me know if you'd like more detail or want to try a different question."
+                seen_calls.add(call_signature)
+
                 try:
                     params = json.loads(tool_call.function.arguments or "{}")
                 except json.JSONDecodeError:

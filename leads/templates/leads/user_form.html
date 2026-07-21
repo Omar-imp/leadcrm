@@ -175,6 +175,7 @@ const presets = {
         activity: 'view', reports: 'view', documents: 'view',
         contracts: 'none', salespersons: 'none', users: 'none',
         ceo_dashboard: 'none', whatsapp: 'none',
+        emails: 'view', crm_chatbot: 'none', sales_chatbot: 'view',
     },
     manager: {
         dashboard: 'full', leads: 'full', contacts: 'full',
@@ -184,6 +185,7 @@ const presets = {
         activity: 'full', reports: 'full', documents: 'full',
         contracts: 'view', salespersons: 'full', users: 'none',
         ceo_dashboard: 'none', whatsapp: 'full',
+        emails: 'full', crm_chatbot: 'view', sales_chatbot: 'full',
     },
     support: {
         dashboard: 'full', leads: 'view', contacts: 'view',
@@ -193,6 +195,7 @@ const presets = {
         activity: 'view', reports: 'none', documents: 'view',
         contracts: 'none', salespersons: 'none', users: 'none',
         ceo_dashboard: 'none', whatsapp: 'none',
+        emails: 'view', crm_chatbot: 'none', sales_chatbot: 'none',
     },
     finance: {
         dashboard: 'full', leads: 'view', contacts: 'none',
@@ -202,6 +205,7 @@ const presets = {
         activity: 'view', reports: 'full', documents: 'full',
         contracts: 'full', salespersons: 'none', users: 'none',
         ceo_dashboard: 'none', whatsapp: 'none',
+        emails: 'none', crm_chatbot: 'none', sales_chatbot: 'none',
     },
     pm: {
         dashboard: 'full', leads: 'none', contacts: 'view',
@@ -211,18 +215,19 @@ const presets = {
         activity: 'view', reports: 'view', documents: 'full',
         contracts: 'view', salespersons: 'none', users: 'none',
         ceo_dashboard: 'none', whatsapp: 'none',
+        emails: 'view', crm_chatbot: 'none', sales_chatbot: 'none',
     },
     all: Object.fromEntries(
         ['dashboard','leads','contacts','pipeline','quotations','projects',
          'meetings','tasks','payments','followups','communications','support',
          'activity','reports','documents','contracts','salespersons','users',
-         'ceo_dashboard','whatsapp'].map(s => [s, 'full'])
+         'ceo_dashboard','whatsapp','emails','crm_chatbot','sales_chatbot'].map(s => [s, 'full'])
     ),
     none: Object.fromEntries(
         ['dashboard','leads','contacts','pipeline','quotations','projects',
          'meetings','tasks','payments','followups','communications','support',
          'activity','reports','documents','contracts','salespersons','users',
-         'ceo_dashboard','whatsapp'].map(s => [s, 'none'])
+         'ceo_dashboard','whatsapp','emails','crm_chatbot','sales_chatbot'].map(s => [s, 'none'])
     ),
 };
 

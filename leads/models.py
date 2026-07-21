@@ -55,6 +55,8 @@ class UserPermissions(models.Model):
     followups = models.CharField(max_length=10, default='none')
     communications = models.CharField(max_length=10, default='none')
     emails = models.CharField(max_length=10, default='none')
+    crm_chatbot = models.CharField(max_length=10, default='none')     # CRM Assistant
+    sales_chatbot = models.CharField(max_length=10, default='none')
     support = models.CharField(max_length=10, default='none')
     activity = models.CharField(max_length=10, default='none')
     reports = models.CharField(max_length=10, default='none')
@@ -79,6 +81,7 @@ class UserPermissions(models.Model):
         'projects', 'meetings', 'tasks', 'payments', 'followups',
         'communications', 'emails', 'support', 'activity', 'reports', 'documents',
         'contracts', 'salespersons', 'users', 'ceo_dashboard', 'whatsapp',
+        'crm_chatbot', 'sales_chatbot',
     ]
 
     def get_section_permission(self, section: str) -> str:
