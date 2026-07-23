@@ -5,7 +5,9 @@
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Meetings</h1>
+    {% if request.user|has_full_access:'meetings' %}
     <a href="{% url 'meeting_create' %}" class="btn">+ Schedule Meeting</a>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -47,9 +49,11 @@
                 <td>
                     <div class="action-links">
                         <a href="{% url 'meeting_detail' m.pk %}">View</a>
-                        <a href="{% url 'meeting_edit' m.pk %}">Edit</a>
-                        <a href="{% url 'meeting_delete' m.pk %}"
-                           onclick="return confirm('Delete meeting?')">Delete</a>
+                        {% if request.user|has_full_access:'meetings' %}
+                            <a href="{% url 'meeting_edit' m.pk %}">Edit</a>
+                            <a href="{% url 'meeting_delete' m.pk %}"
+                                onclick="return confirm('Delete meeting?')">Delete</a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

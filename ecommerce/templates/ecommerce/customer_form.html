@@ -1,0 +1,71 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Customer Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Name <span class="required">*</span></label>
+                <input type="text" name="name" required class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Email</label>
+                <input type="email" name="email" class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Phone</label>
+                <input type="text" name="phone" class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Date of Birth</label>
+                <input type="date" name="dob" class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Gender</label>
+                <input type="text" name="gender" class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Billing Address</label>
+                <textarea name="billing_address" class="form-control"></textarea>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Shipping Address</label>
+                <textarea name="shipping_address" class="form-control"></textarea>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Tags</label>
+                <input type="text" name="tags" placeholder="VIP, Wholesale, etc." class="form-control">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn">Save Customer</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Or Bulk Import</h3>
+        <p style="font-size:14px; color:var(--text-muted); margin-top:-8px; margin-bottom:20px;">
+            Already have a customer list from Shopify, WooCommerce, or a spreadsheet? Upload it here instead of adding customers one by one.
+        </p>
+        <form method="post" action="{% url 'bulk_import_customers' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Upload CSV or Excel file</label>
+                <input type="file" name="import_file" accept=".csv,.xlsx,.xls" required class="form-control">
+                <p style="font-size:12px; color:var(--text-muted); margin-top:6px;">
+                    Expected columns: name, email, phone, gender, billing_address, shipping_address, tags
+                </p>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn">Import Customers</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

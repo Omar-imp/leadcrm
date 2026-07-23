@@ -4,7 +4,7 @@
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <h1 class="page-title" style="margin:0;">Projects</h1>
-    {% if request.user|has_full_access:'pipeline' %}
+    {% if request.user|has_full_access:'projects' %}
     <a href="{% url 'project_create' %}" class="btn">+ New Project</a>
     {% endif %}
 </div>
@@ -58,7 +58,7 @@
                 <td>
                     <div class="action-links">
                         <a href="{% url 'project_detail' p.pk %}">View</a>
-                        {% if request.user|has_full_access:'pipeline' %}
+                        {% if request.user|has_full_access:'projects' %}
                             <a href="{% url 'project_edit' p.pk %}">Edit</a>
                             <a href="{% url 'project_delete' p.pk %}"
                                 onclick="return confirm('Delete project?')">Delete</a>

@@ -1,0 +1,27 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    <a href="{% url 'customer_create' %}" class="btn">+ Add Customer</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Tags</th><th>Created</th></tr></thead>
+        <tbody>
+            {% for c in customers %}
+            <tr>
+                <td>{{ c.name }}</td>
+                <td>{{ c.email|default:"-" }}</td>
+                <td>{{ c.phone|default:"-" }}</td>
+                <td>{{ c.tags|default:"-" }}</td>
+                <td>{{ c.created_at|date:"d M Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="empty-state">No customers yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

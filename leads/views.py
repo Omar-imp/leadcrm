@@ -75,7 +75,23 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
+
+            from ecommerce.utils import get_user_organization
+            org = get_user_organization(user)
+
+            if org is None:
+                # no org assigned yet — default to existing Lead CRM
+                return redirect('dashboard')
+
+            if org.product_type == 'leads':
+                return redirect('dashboard')
+            elif org.product_type == 'ecommerce':
+                return redirect('ecommerce_dashboard')
+            elif org.product_type == 'both':
+                return redirect('product_picker')
+
             return redirect('dashboard')
+
         messages.error(request, 'Invalid username or password.')
     return render(request, 'leads/login.html')
 

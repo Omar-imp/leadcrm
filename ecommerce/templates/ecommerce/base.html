@@ -1,0 +1,648 @@
+{% load custom_filters %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Lead CRM{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <div class="brand" style="display:flex; justify-content:center; padding: 20px 0;">
+            <div style="
+                width: 140px;
+                height: 140px;
+                border-radius: 20px;
+                overflow: hidden;
+                -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%);
+                mask-image: radial-gradient(circle, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%);
+            ">
+                <img src="{% static 'images/logo.png' %}"
+                    alt="Logo"
+                    style="width:100% !important; height:100% !important; object-fit:cover !important; display:block !important;">
+            </div>
+        </div>
+        <div class="brand">E-commerce CRM</div>
+
+        <!-- MENU -->
+        <nav>
+            <a href="{% url 'ecommerce_dashboard' %}" class="{% if active == 'dashboard' %}active{% endif %}">
+                <span class="left"><span class="icon">&#9632;</span> Dashboard</span>
+            </a>
+        </nav>
+
+        <!-- PRODUCTS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('products')">
+            PRODUCTS
+            <span class="arrow" id="arrow-products">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-products">
+            <a href="{% url 'product_list' %}" class="{% if active == 'products' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128230;</span> All Products</span>
+            </a>
+            <a href="{% url 'product_create' %}">
+                <span class="left"><span class="icon">&#43;</span> Add Product</span>
+            </a>
+        </nav>
+
+        <!-- CATEGORIES -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('categories')">
+            CATEGORIES
+            <span class="arrow" id="arrow-categories">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-categories">
+            <a href="#" class="{% if active == 'categories' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128193;</span> All Categories</span>
+            </a>
+        </nav>
+
+        <!-- CUSTOMERS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('customers')">
+            CUSTOMERS
+            <span class="arrow" id="arrow-customers">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-customers">
+            <a href="{% url 'customer_list' %}" class="{% if active == 'customers' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128101;</span> All Customers</span>
+            </a>
+            <a href="{% url 'customer_create' %}">
+                <span class="left"><span class="icon">&#43;</span> Add Customer</span>
+            </a>
+        </nav>
+
+        <!-- ORDERS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('orders')">
+            ORDERS
+            <span class="arrow" id="arrow-orders">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-orders">
+            <a href="#" class="{% if active == 'orders' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128230;</span> All Orders</span>
+            </a>
+            <a href="#">
+                <span class="left"><span class="icon">&#9200;</span> Pending</span>
+            </a>
+            <a href="#">
+                <span class="left"><span class="icon">&#128666;</span> Shipped</span>
+            </a>
+        </nav>
+
+        <!-- INVENTORY -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('inventory')">
+            INVENTORY
+            <span class="arrow" id="arrow-inventory">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-inventory">
+            <a href="#" class="{% if active == 'inventory' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128202;</span> Stock Overview</span>
+            </a>
+            <a href="#">
+                <span class="left"><span class="icon">&#9888;</span> Low Stock</span>
+            </a>
+        </nav>
+
+        <!-- PAYMENTS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('payments')">
+            PAYMENTS
+            <span class="arrow" id="arrow-payments">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-payments">
+            <a href="#" class="{% if active == 'payments' %}active{% endif %}">
+                <span class="left"><span class="icon">$</span> All Payments</span>
+            </a>
+        </nav>
+
+        <!-- SHIPPING -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('shipping')">
+            SHIPPING
+            <span class="arrow" id="arrow-shipping">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-shipping">
+            <a href="#" class="{% if active == 'shipping' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128666;</span> All Shipments</span>
+            </a>
+        </nav>
+
+        <!-- SUPPORT / RETURNS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('support')">
+            SUPPORT
+            <span class="arrow" id="arrow-support">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-support">
+            <a href="#" class="{% if active == 'tickets' %}active{% endif %}">
+                <span class="left"><span class="icon">&#127917;</span> Tickets</span>
+            </a>
+            <a href="#">
+                <span class="left"><span class="icon">&#8617;</span> Returns</span>
+            </a>
+        </nav>
+
+        <!-- REPORTS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('reports')">
+            REPORTS
+            <span class="arrow" id="arrow-reports">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-reports">
+            <a href="#" class="{% if active == 'reports' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128202;</span> Analytics</span>
+            </a>
+        </nav>
+
+        <!-- ACCOUNT -->
+        {% if user.is_authenticated %}
+        <div class="section-label">ACCOUNT</div>
+        <nav>
+            <a href="{% url 'logout' %}">
+                <span class="left"><span class="icon">&#10148;</span> Logout ({{ user.username }})</span>
+            </a>
+        </nav>
+        {% endif %}
+    </aside>
+
+    <main class="main">
+        <div class="topbar">
+            <div style="flex:1;"></div>
+            <a href="{% url 'notification_list' %}" class="notif-bell">
+                &#128276;
+                {% if sidebar_counts.unread_notifications > 0 %}
+                <span class="notif-count">{{ sidebar_counts.unread_notifications }}</span>
+                {% endif %}
+            </a>
+        </div>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<script>
+// remember open/closed state in localStorage
+function toggleSection(name) {
+    const section = document.getElementById('section-' + name);
+    const arrow = document.getElementById('arrow-' + name);
+    const isOpen = section.classList.contains('open');
+
+    if (isOpen) {
+        section.classList.remove('open');
+        arrow.innerHTML = '&#9658;';
+        localStorage.setItem('sidebar-' + name, 'closed');
+    } else {
+        section.classList.add('open');
+        arrow.innerHTML = '&#9660;';
+        localStorage.setItem('sidebar-' + name, 'open');
+    }
+}
+
+// restore state on page load
+const sections = [
+    'products', 'categories', 'customers', 'orders',
+    'inventory', 'payments', 'shipping', 'support', 'reports'
+];
+
+sections.forEach(name => {
+    const state = localStorage.getItem('sidebar-' + name);
+    const section = document.getElementById('section-' + name);
+    const arrow = document.getElementById('arrow-' + name);
+    if (!section || !arrow) return;
+
+    // default open for active section, closed for others
+    const hasActive = section.querySelector('a.active');
+    if (state === 'open' || (!state && hasActive)) {
+        section.classList.add('open');
+        arrow.innerHTML = '&#9660;';
+    } else {
+        section.classList.remove('open');
+        arrow.innerHTML = '&#9658;';
+    }
+});
+</script>
+
+<div id="assistant-widget">
+    <button id="assistant-toggle">💬</button>
+    <div id="assistant-panel">
+
+        <div id="assistant-header">
+            <span id="assistant-header-title">Assistant</span>
+            <div id="assistant-header-actions">
+                <button id="assistant-clear" title="Clear conversation">🗑</button>
+                <button id="assistant-switch" title="Switch assistant">⇄</button>
+                <button id="assistant-close" title="Close">✕</button>
+            </div>
+        </div>
+
+        <div id="assistant-selector">
+            <p class="assistant-selector-label">Choose an assistant</p>
+            <button type="button" data-type="crm">CRM Assistant</button>
+            <button type="button" data-type="sales">Sales Assistant</button>
+        </div>
+
+        <div id="assistant-chat">
+            <div id="assistant-messages"></div>
+            <div id="assistant-input-row">
+                <input type="text" id="assistant-input" placeholder="Ask something...">
+                <button type="button" id="assistant-send">Send</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+#assistant-widget, #assistant-widget * {
+    box-sizing: border-box !important;
+}
+
+#assistant-widget {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 999999 !important;
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+#assistant-widget #assistant-toggle {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;
+    background: #8e6fd6 !important;
+    color: #fff !important;
+    border: none !important;
+    font-size: 22px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+}
+
+#assistant-widget #assistant-panel {
+    width: 360px !important;
+    height: 480px !important;
+    max-width: calc(100vw - 40px) !important;
+    background: #fff !important;
+    border-radius: 14px !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2) !important;
+    position: absolute !important;
+    bottom: 70px !important;
+    right: 0 !important;
+    display: none !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+#assistant-widget #assistant-panel.open {
+    display: flex !important;
+}
+
+#assistant-widget #assistant-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: #8e6fd6 !important;
+    color: #fff !important;
+    padding: 12px 16px !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+}
+
+#assistant-widget #assistant-header-title {
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    color: #fff !important;
+}
+
+#assistant-widget #assistant-header-actions {
+    display: flex !important;
+    gap: 8px !important;
+}
+
+#assistant-widget #assistant-header-actions button {
+    background: rgba(255,255,255,0.15) !important;
+    border: none !important;
+    color: #fff !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#assistant-widget #assistant-header-actions button.visible {
+    display: flex !important;
+}
+
+#assistant-widget #assistant-header-actions button:hover {
+    background: rgba(255,255,255,0.28) !important;
+}
+
+#assistant-widget #assistant-selector {
+    padding: 20px 16px !important;
+    display: none !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    flex: 1 !important;
+    width: 100% !important;
+}
+
+#assistant-widget #assistant-selector.visible {
+    display: flex !important;
+}
+
+#assistant-widget .assistant-selector-label {
+    font-size: 13px !important;
+    color: #888 !important;
+    margin: 0 0 4px 0 !important;
+}
+
+#assistant-widget #assistant-selector button {
+    padding: 12px !important;
+    border-radius: 10px !important;
+    border: 1px solid #e2e2e2 !important;
+    background: #fafafa !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+    width: 100% !important;
+    color: #222 !important;
+}
+
+#assistant-widget #assistant-selector button:hover {
+    background: #f0edff !important;
+    border-color: #8e6fd6 !important;
+}
+
+#assistant-widget #assistant-chat {
+    display: none !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    width: 100% !important;
+}
+
+#assistant-widget #assistant-chat.visible {
+    display: flex !important;
+}
+
+#assistant-widget #assistant-messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+}
+
+#assistant-widget .assistant-msg {
+    padding: 9px 13px !important;
+    border-radius: 12px !important;
+    max-width: 80% !important;
+    white-space: pre-wrap !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+}
+
+#assistant-widget .assistant-msg.user {
+    background: #8e6fd6 !important;
+    color: #fff !important;
+    align-self: flex-end !important;
+    border-bottom-right-radius: 4px !important;
+}
+
+#assistant-widget .assistant-msg.assistant {
+    background: #f1f1f3 !important;
+    color: #222 !important;
+    align-self: flex-start !important;
+    border-bottom-left-radius: 4px !important;
+}
+
+#assistant-widget #assistant-input-row {
+    display: flex !important;
+    border-top: 1px solid #eee !important;
+    flex-shrink: 0 !important;
+    padding: 8px !important;
+    gap: 8px !important;
+    width: 100% !important;
+}
+
+#assistant-widget #assistant-input {
+    flex: 1 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 8px !important;
+    padding: 9px 12px !important;
+    font-size: 14px !important;
+    outline: none !important;
+    background: #fff !important;
+    color: #222 !important;
+}
+
+#assistant-widget #assistant-input:focus {
+    border-color: #8e6fd6 !important;
+}
+
+#assistant-widget #assistant-send {
+    border: none !important;
+    background: #8e6fd6 !important;
+    color: #fff !important;
+    padding: 0 16px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+#assistant-widget #assistant-send:hover {
+    opacity: 0.9 !important;
+}
+</style>
+
+<script>
+(function() {
+    let currentType = null;
+    let conversationId = null;
+    let hasBothAssistants = false;
+
+    const toggle = document.getElementById('assistant-toggle');
+    const panel = document.getElementById('assistant-panel');
+    const selector = document.getElementById('assistant-selector');
+    const chatBox = document.getElementById('assistant-chat');
+    const messagesEl = document.getElementById('assistant-messages');
+    const input = document.getElementById('assistant-input');
+    const sendBtn = document.getElementById('assistant-send');
+    const headerTitle = document.getElementById('assistant-header-title');
+    const switchBtn = document.getElementById('assistant-switch');
+    const closeBtn = document.getElementById('assistant-close');
+    const clearBtn = document.getElementById('assistant-clear');
+
+    function getCookie(name) {
+        const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return match ? match.pop() : '';
+    }
+
+    function saveState() {
+        if (currentType) {
+            sessionStorage.setItem('assistant_type', currentType);
+        } else {
+            sessionStorage.removeItem('assistant_type');
+        }
+        if (conversationId) {
+            sessionStorage.setItem('assistant_conversation_id', conversationId);
+        } else {
+            sessionStorage.removeItem('assistant_conversation_id');
+        }
+    }
+
+    function appendMessage(role, text) {
+        const div = document.createElement('div');
+        div.className = 'assistant-msg ' + role;
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function showSelector() {
+        chatBox.classList.remove('visible');
+        selector.classList.add('visible');
+        switchBtn.classList.remove('visible');
+        headerTitle.textContent = 'Assistant';
+        currentType = null;
+        conversationId = null;
+        messagesEl.innerHTML = '';
+        saveState();
+    }
+
+    async function openChat(type, restoreConversationId) {
+        currentType = type;
+        conversationId = restoreConversationId || null;
+        selector.classList.remove('visible');
+        chatBox.classList.add('visible');
+        messagesEl.innerHTML = '';
+        headerTitle.textContent = type === 'crm' ? 'CRM Assistant' : 'Sales Assistant';
+        if (hasBothAssistants) {
+            switchBtn.classList.add('visible');
+        } else {
+            switchBtn.classList.remove('visible');
+        }
+        saveState();
+
+        if (conversationId) {
+            try {
+                const res = await fetch('/assistant/history/' + conversationId + '/');
+                const data = await res.json();
+                (data.messages || []).forEach(m => appendMessage(m.role, m.content));
+            } catch (e) {
+                // if history fetch fails, just start fresh silently
+                conversationId = null;
+                saveState();
+            }
+        }
+
+        input.focus();
+    }
+
+    function startNewConversation() {
+        conversationId = null;
+        messagesEl.innerHTML = '';
+        saveState();
+        if (currentType) {
+            appendMessage('assistant', 'Started a new conversation. What can I help with?');
+        }
+    }
+
+    toggle.addEventListener('click', async () => {
+        const opening = !panel.classList.contains('open');
+
+        if (opening) {
+            panel.classList.add('open');
+
+            const alreadyShowing = selector.classList.contains('visible') || chatBox.classList.contains('visible');
+            if (!alreadyShowing) {
+                const res = await fetch('/assistant/config/');
+                const cfg = await res.json();
+
+                if (cfg.crm_access === 'none' && cfg.sales_access === 'none') {
+                    headerTitle.textContent = 'Assistant';
+                    chatBox.classList.add('visible');
+                    appendMessage('assistant', "You don't have access to any assistant. Contact your admin.");
+                    return;
+                }
+
+                hasBothAssistants = cfg.crm_access !== 'none' && cfg.sales_access !== 'none';
+
+                const savedType = sessionStorage.getItem('assistant_type');
+                const savedConversationId = sessionStorage.getItem('assistant_conversation_id');
+
+                if (savedType && (savedType === 'crm' ? cfg.crm_access !== 'none' : cfg.sales_access !== 'none')) {
+                    openChat(savedType, savedConversationId);
+                } else if (hasBothAssistants) {
+                    showSelector();
+                } else {
+                    openChat(cfg.crm_access !== 'none' ? 'crm' : 'sales');
+                }
+            }
+        } else {
+            panel.classList.remove('open');
+        }
+    });
+
+    closeBtn.addEventListener('click', () => { panel.classList.remove('open'); });
+
+    switchBtn.addEventListener('click', showSelector);
+
+    clearBtn.addEventListener('click', startNewConversation);
+
+    selector.querySelectorAll('button[data-type]').forEach(btn => {
+        btn.addEventListener('click', () => openChat(btn.dataset.type));
+    });
+
+    async function sendMessage() {
+        const text = input.value.trim();
+        if (!text || !currentType) return;
+        appendMessage('user', text);
+        input.value = '';
+
+        const res = await fetch('/assistant/chat/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                assistant_type: currentType,
+                message: text,
+                conversation_id: conversationId,
+            }),
+        });
+        const data = await res.json();
+        conversationId = data.conversation_id || conversationId;
+        saveState();
+        appendMessage('assistant', data.response || 'No response.');
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+})();
+</script>
+
+</body>
+</html>
