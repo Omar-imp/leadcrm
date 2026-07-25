@@ -1,12 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Customer
-from django.shortcuts import redirect
+from .models import (Customer, Payment, Category, Product,
+                    Order, OrderItem)
 from django.contrib import messages
 import csv
 import io
 import openpyxl
-from .models import Category, Product
+import uuid
 
 @login_required
 def ecommerce_dashboard(request):
@@ -164,4 +164,155 @@ def product_create(request):
         'title': 'Add Product',
         'categories': Category.objects.all(),
     }
-    return render(request, 'ecommerce/product_form.html', context)
+    return render(request, 'ecommerce/product_form.html', context) 
+
+
+@login_required
+def category_list(request):
+    categories = Category.objects.select_related('parent').order_by('name')
+    context = {
+        'categories': categories,
+        'active': 'categories',
+        'title': 'All Categories',
+    }
+    return render(request, 'ecommerce/category_list.html', context)
+
+
+@login_required
+def category_create(request):
+    if request.method == 'POST':
+        parent_id = request.POST.get('parent')
+        parent = Category.objects.filter(id=parent_id).first() if parent_id else None
+        Category.objects.create(
+            name=request.POST.get('name'),
+            parent=parent,
+        )
+        messages.success(request, 'Category created.')
+        return redirect('category_list')
+
+    context = {
+        'active': 'categories',
+        'title': 'Add Category',
+        'categories': Category.objects.all(),
+    }
+    return render(request, 'ecommerce/category_form.html', context)
+
+
+@login_required
+def order_list(request):
+    orders = Order.objects.select_related('customer').order_by('-created_at')
+    context = {
+        'orders': orders,
+        'active': 'orders',
+        'title': 'All Orders',
+    }
+    return render(request, 'ecommerce/order_list.html', context)
+
+
+@login_required
+def order_create(request):
+    if request.method == 'POST':
+        customer_id = request.POST.get('customer')
+        customer = Customer.objects.filter(id=customer_id).first()
+        if not customer:
+            messages.error(request, 'Please select a valid customer.')
+            return redirect('order_create')
+
+        order = Order.objects.create(
+            order_number='ORD-' + uuid.uuid4().hex[:8].upper(),
+            customer=customer,
+            status=request.POST.get('status', 'pending'),
+            discount=request.POST.get('discount') or 0,
+            tax=request.POST.get('tax') or 0,
+            shipping_cost=request.POST.get('shipping_cost') or 0,
+            created_by=request.user,
+        )
+
+        product_ids = request.POST.getlist('product')
+        quantities = request.POST.getlist('quantity')
+
+        for product_id, qty in zip(product_ids, quantities):
+            if not product_id or not qty:
+                continue
+            product = Product.objects.filter(id=product_id).first()
+            if product:
+                qty_int = int(qty)
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=qty_int,
+                    unit_price=product.sale_price,
+                )
+                product.stock_qty = max(0, product.stock_qty - qty_int)
+                product.save()
+
+        messages.success(request, f'Order {order.order_number} created.')
+        return redirect('order_list')
+
+    context = {
+        'active': 'orders',
+        'title': 'Create Order',
+        'customers': Customer.objects.all(),
+        'products': Product.objects.all(),
+    }
+    return render(request, 'ecommerce/order_form.html', context)
+
+
+@login_required
+def order_detail(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    context = {
+        'order': order,
+        'active': 'orders',
+        'title': f'Order {order.order_number}',
+    }
+    return render(request, 'ecommerce/order_detail.html', context)
+
+
+@login_required
+def low_stock_list(request):
+    threshold = 5
+    products = Product.objects.filter(stock_qty__lte=threshold).order_by('stock_qty')
+    context = {
+        'products': products,
+        'active': 'inventory',
+        'title': 'Low Stock Products',
+        'threshold': threshold,
+    }
+    return render(request, 'ecommerce/low_stock_list.html', context)
+
+
+@login_required
+def payment_list(request):
+    payments = Payment.objects.select_related('order', 'order__customer').order_by('-created_at')
+    context = {
+        'payments': payments,
+        'active': 'payments',
+        'title': 'All Payments',
+    }
+    return render(request, 'ecommerce/payment_list.html', context)
+
+
+@login_required
+def payment_create(request, order_id=None):
+    order = get_object_or_404(Order, id=order_id) if order_id else None
+
+    if request.method == 'POST':
+        order_pk = request.POST.get('order') or order_id
+        order_obj = get_object_or_404(Order, id=order_pk)
+        Payment.objects.create(
+            order=order_obj,
+            method=request.POST.get('method', 'cash'),
+            status=request.POST.get('status', 'pending'),
+            amount=request.POST.get('amount') or 0,
+        )
+        messages.success(request, 'Payment recorded.')
+        return redirect('order_detail', pk=order_obj.pk)
+
+    context = {
+        'active': 'payments',
+        'title': 'Record Payment',
+        'order': order,
+        'orders': Order.objects.all(),
+    }
+    return render(request, 'ecommerce/payment_form.html', context)

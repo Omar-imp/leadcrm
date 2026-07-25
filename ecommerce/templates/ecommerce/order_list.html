@@ -1,0 +1,39 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    <a href="{% url 'order_create' %}" class="btn">+ Create Order</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Order #</th><th>Customer</th><th>Status</th><th>Total</th><th>Date</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for o in orders %}
+            <tr>
+                <td>{{ o.order_number }}</td>
+                <td>{{ o.customer.name }}</td>
+                <td>
+                    {% if o.status == 'delivered' %}<span class="pill pill-converted">Delivered</span>
+                    {% elif o.status == 'shipped' %}<span class="pill pill-info">Shipped</span>
+                    {% elif o.status == 'pending' %}<span class="pill pill-quotation">Pending</span>
+                    {% elif o.status == 'cancelled' or o.status == 'refunded' or o.status == 'returned' %}<span class="pill pill-lost">{{ o.get_status_display }}</span>
+                    {% else %}<span class="pill pill-new">{{ o.get_status_display }}</span>
+                    {% endif %}
+                </td>
+                <td>Rs {{ o.total }}</td>
+                <td>{{ o.created_at|date:"d M Y" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'order_detail' o.pk %}">View</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No orders yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Category Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Name <span class="required">*</span></label>
+                <input type="text" name="name" required class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Parent Category</label>
+                <select name="parent" class="form-control">
+                    <option value="">-- None (top-level) --</option>
+                    {% for c in categories %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn">Save Category</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:340px; max-width:500px;">
+        <h3 style="margin-top:0;">Existing Category Tree</h3>
+        <p style="font-size:14px; color:var(--text-muted); margin-top:-8px; margin-bottom:20px;">
+            Here's your current category structure, for reference while you add new ones.
+        </p>
+        {% for c in categories %}
+            {% if not c.parent %}
+            <div style="padding:10px 0; border-bottom:1px solid var(--border);">
+                <strong>{{ c.name }}</strong>
+                <span style="color:var(--text-muted); font-size:13px;">({{ c.products.count }} products)</span>
+                {% for child in c.children.all %}
+                <div style="padding-left:20px; margin-top:6px; font-size:14px; color:var(--text-dark);">
+                    ↳ {{ child.name }}
+                    <span style="color:var(--text-muted); font-size:12px;">({{ child.products.count }} products)</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% empty %}
+        <p class="empty-state">No categories yet — this is your first one.</p>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

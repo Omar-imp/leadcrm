@@ -1,0 +1,34 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    <a href="{% url 'payment_create' %}" class="btn">+ Record Payment</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Order</th><th>Customer</th><th>Method</th><th>Status</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody>
+            {% for p in payments %}
+            <tr>
+                <td><a href="{% url 'order_detail' p.order.pk %}">{{ p.order.order_number }}</a></td>
+                <td>{{ p.order.customer.name }}</td>
+                <td>{{ p.get_method_display }}</td>
+                <td>
+                    {% if p.status == 'paid' %}<span class="pill pill-converted">Paid</span>
+                    {% elif p.status == 'refunded' %}<span class="pill pill-lost">Refunded</span>
+                    {% elif p.status == 'partial' %}<span class="pill pill-quotation">Partial</span>
+                    {% else %}<span class="pill pill-new">Pending</span>
+                    {% endif %}
+                </td>
+                <td>Rs {{ p.amount }}</td>
+                <td>{{ p.created_at|date:"d M Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No payments recorded yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

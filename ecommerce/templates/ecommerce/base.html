@@ -54,10 +54,13 @@
             <span class="arrow" id="arrow-categories">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-categories">
-            <a href="#" class="{% if active == 'categories' %}active{% endif %}">
+            <a href="{% url 'category_list' %}" class="{% if active == 'categories' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128193;</span> All Categories</span>
             </a>
-        </nav>
+            <a href="{% url 'category_create' %}">
+                <span class="left"><span class="icon">&#43;</span> Add Category</span>
+            </a>
+                    </nav>
 
         <!-- CUSTOMERS -->
         <div class="section-label dropdown-toggle" onclick="toggleSection('customers')">
@@ -79,7 +82,7 @@
             <span class="arrow" id="arrow-orders">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-orders">
-            <a href="#" class="{% if active == 'orders' %}active{% endif %}">
+            <a href="{% url 'order_list' %}" class="{% if active == 'orders' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128230;</span> All Orders</span>
             </a>
             <a href="#">
@@ -99,7 +102,7 @@
             <a href="#" class="{% if active == 'inventory' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128202;</span> Stock Overview</span>
             </a>
-            <a href="#">
+            <a href="{% url 'low_stock_list' %}" class="{% if active == 'inventory' %}active{% endif %}">
                 <span class="left"><span class="icon">&#9888;</span> Low Stock</span>
             </a>
         </nav>
@@ -110,8 +113,11 @@
             <span class="arrow" id="arrow-payments">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-payments">
-            <a href="#" class="{% if active == 'payments' %}active{% endif %}">
+           <a href="{% url 'payment_list' %}" class="{% if active == 'payments' %}active{% endif %}">
                 <span class="left"><span class="icon">$</span> All Payments</span>
+            </a>
+            <a href="{% url 'payment_create' %}">
+                <span class="left"><span class="icon">&#43;</span> Record Payment</span>
             </a>
         </nav>
 
