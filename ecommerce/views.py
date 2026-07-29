@@ -1,20 +1,20 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required as dj_login_required
 from .models import (Customer, Payment, Category, Product,
-                    Order, OrderItem, Shipment, ReturnRequest)
+                    Order, OrderItem, Shipment, ReturnRequest,
+                    EcommerceUserPermissions, EcommerceAssistantConversation)
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from functools import wraps
-from .models import EcommerceUserPermissions
 from .decorators import block_ecommerce_view_only
-from django.db.models import Sum, Count, F
+from django.db.models import Sum, Count
 from django.utils import timezone
 from datetime import timedelta
-import csv
-import io
-import openpyxl
-import uuid
+import csv, json, calendar, io, openpyxl, uuid
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from .assistant.service import EcommerceAssistantService
 
 
 LOGIN_URL = 'ecommerce_login'
@@ -64,11 +64,33 @@ def ecommerce_dashboard(request):
     new_customers = Customer.objects.filter(created_at__date__gte=month_start).count()
     total_customers = Customer.objects.count()
 
-    open_tickets = ReturnRequest.objects.filter(status='pending').count()
+    open_returns = ReturnRequest.objects.filter(status='pending').count()
     pending_orders = Order.objects.filter(status='pending').count()
     low_stock_products = Product.objects.filter(stock_qty__lte=5).count()
 
     outstanding_payments = Payment.objects.filter(status__in=['pending', 'partial']).aggregate(total=Sum('amount'))['total'] or 0
+
+    # ── Orders by status (donut chart) ──
+    status_labels = []
+    status_counts = []
+    status_display_map = dict(Order.STATUS_CHOICES)
+    status_counts_qs = Order.objects.values('status').annotate(c=Count('id')).order_by('-c')
+    for row in status_counts_qs:
+        status_labels.append(status_display_map.get(row['status'], row['status']))
+        status_counts.append(row['c'])
+
+    # ── Revenue trend last 6 months (bar chart) ──
+    month_labels = []
+    month_revenue = []
+    for i in range(5, -1, -1):
+        y, m = today.year, today.month - i
+        while m <= 0:
+            m += 12
+            y -= 1
+        month_orders = orders.filter(created_at__year=y, created_at__month=m)
+        total = sum(o.total for o in month_orders)
+        month_labels.append(f"{calendar.month_abbr[m]} {y}")
+        month_revenue.append(float(total))
 
     context = {
         'active': 'dashboard',
@@ -80,11 +102,15 @@ def ecommerce_dashboard(request):
         'aov': aov,
         'new_customers': new_customers,
         'total_customers': total_customers,
-        'open_tickets': open_tickets,
+        'open_returns': open_returns,
         'pending_orders': pending_orders,
         'low_stock_products': low_stock_products,
         'outstanding_payments': outstanding_payments,
         'recent_orders': orders.select_related('customer').order_by('-created_at')[:5],
+        'status_labels': json.dumps(status_labels),
+        'status_counts': json.dumps(status_counts),
+        'month_labels': json.dumps(month_labels),
+        'month_revenue': json.dumps(month_revenue),
     }
     return render(request, 'ecommerce/dashboard.html', context)
 
@@ -579,3 +605,37 @@ def ecommerce_user_delete(request, pk):
         target_user.delete()
         messages.success(request, 'User deleted.')
     return redirect('ecommerce_user_list')
+
+
+@login_required
+def ecommerce_assistant_config(request):
+    perms, _ = EcommerceUserPermissions.objects.get_or_create(user=request.user)
+    access = 'full' if request.user.is_superuser else perms.chatbot
+    return JsonResponse({'access': access})
+
+
+@login_required
+@require_POST
+def ecommerce_assistant_chat(request):
+    data = json.loads(request.body)
+    message = data.get('message', '').strip()
+    conversation_id = data.get('conversation_id')
+
+    if not message:
+        return JsonResponse({'error': 'Empty message'}, status=400)
+
+    service = EcommerceAssistantService(request.user)
+    if not service.can_query():
+        return JsonResponse({'error': 'You do not have access to this assistant.'}, status=403)
+
+    result = service.handle_message(message, conversation_id)
+    return JsonResponse(result)
+
+
+@login_required
+def ecommerce_assistant_history(request, conversation_id):
+    conversation = EcommerceAssistantConversation.objects.filter(id=conversation_id, user=request.user).first()
+    if not conversation:
+        return JsonResponse({'messages': []})
+    msgs = list(conversation.messages.values('role', 'content', 'created_at'))
+    return JsonResponse({'messages': msgs})

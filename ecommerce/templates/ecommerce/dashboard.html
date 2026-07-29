@@ -1,67 +1,114 @@
 {% extends 'ecommerce/base.html' %}
 {% block title %}Dashboard - E-commerce CRM{% endblock %}
 {% block content %}
-<h1 class="page-title">E-commerce Dashboard</h1>
+<h1 class="page-title">Overall Business Figures</h1>
 
-<div class="stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
-    <div class="card stat">
-        <div class="label">Revenue Today</div>
-        <div class="value">Rs {{ revenue_today|floatformat:0 }}</div>
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon blue">&#128176;</div>
+        <div class="kpi-body">
+            <div class="kpi-value">Rs {{ revenue_today|floatformat:0 }}</div>
+            <div class="kpi-label">Revenue Today</div>
+        </div>
     </div>
-    <div class="card stat">
-        <div class="label">Revenue This Week</div>
-        <div class="value">Rs {{ revenue_week|floatformat:0 }}</div>
+    <div class="kpi-card">
+        <div class="kpi-icon cyan">&#128200;</div>
+        <div class="kpi-body">
+            <div class="kpi-value">Rs {{ revenue_week|floatformat:0 }}</div>
+            <div class="kpi-label">Revenue This Week</div>
+        </div>
     </div>
-    <div class="card stat">
-        <div class="label">Revenue This Month</div>
-        <div class="value">Rs {{ revenue_month|floatformat:0 }}</div>
+    <div class="kpi-card">
+        <div class="kpi-icon purple">&#128197;</div>
+        <div class="kpi-body">
+            <div class="kpi-value">Rs {{ revenue_month|floatformat:0 }}</div>
+            <div class="kpi-label">Revenue This Month</div>
+        </div>
     </div>
-    <div class="card stat">
-        <div class="label">Revenue This Year</div>
-        <div class="value">Rs {{ revenue_year|floatformat:0 }}</div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">&#127942;</div>
+        <div class="kpi-body">
+            <div class="kpi-value">Rs {{ revenue_year|floatformat:0 }}</div>
+            <div class="kpi-label">Revenue This Year</div>
+        </div>
     </div>
 </div>
 
-<div class="stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
-    <div class="card stat">
-        <div class="label">Total Orders</div>
-        <div class="value">{{ total_orders }}</div>
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon blue">&#128230;</div>
+        <div class="kpi-body">
+            <div class="kpi-value">{{ total_orders }}</div>
+            <div class="kpi-label">Total Orders</div>
+        </div>
     </div>
-    <div class="card stat">
-        <div class="label">Average Order Value</div>
-        <div class="value">Rs {{ aov|floatformat:0 }}</div>
+    <div class="kpi-card">
+        <div class="kpi-icon orange">&#9878;</div>
+        <div class="kpi-body">
+            <div class="kpi-value">Rs {{ aov|floatformat:0 }}</div>
+            <div class="kpi-label">Average Order Value</div>
+        </div>
     </div>
-    <div class="card stat">
-        <div class="label">New Customers (This Month)</div>
-        <div class="value">{{ new_customers }}</div>
+    <div class="kpi-card">
+        <div class="kpi-icon cyan">&#128101;</div>
+        <div class="kpi-body">
+            <div class="kpi-value">{{ new_customers }}</div>
+            <div class="kpi-label">New Customers</div>
+        </div>
     </div>
-    <div class="card stat">
-        <div class="label">Total Customers</div>
-        <div class="value">{{ total_customers }}</div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">&#127970;</div>
+        <div class="kpi-body">
+            <div class="kpi-value">{{ total_customers }}</div>
+            <div class="kpi-label">Total Customers</div>
+        </div>
     </div>
 </div>
 
-<div class="stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
-    <div class="card stat">
-        <div class="label">Pending Orders</div>
-        <div class="value">{{ pending_orders }}</div>
+<div class="followup-row">
+    <div class="followup-card" style="background:#eef4ff;">
+        <div>
+            <div class="label">Pending Orders</div>
+            <div class="value" style="color:var(--blue);">{{ pending_orders }}</div>
+        </div>
     </div>
-    <div class="card stat">
-        <div class="label">Low Stock Products</div>
-        <div class="value">{{ low_stock_products }}</div>
+    <div class="followup-card" style="background:#fff6e8;">
+        <div>
+            <div class="label">Low Stock Products</div>
+            <div class="value" style="color:var(--orange);">{{ low_stock_products }}</div>
+        </div>
     </div>
-    <div class="card stat">
-        <div class="label">Open Return Requests</div>
-        <div class="value">{{ open_tickets }}</div>
+    <div class="followup-card" style="background:#fdecec;">
+        <div>
+            <div class="label">Open Return Requests</div>
+            <div class="value" style="color:var(--red);">{{ open_returns }}</div>
+        </div>
     </div>
-    <div class="card stat">
-        <div class="label">Outstanding Payments</div>
-        <div class="value">Rs {{ outstanding_payments|floatformat:0 }}</div>
+    <div class="followup-card" style="background:#e9f9ee;">
+        <div>
+            <div class="label">Outstanding Payments</div>
+            <div class="value" style="color:var(--green);">Rs {{ outstanding_payments|floatformat:0 }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="charts-row">
+    <div class="card chart-card">
+        <h2 class="section-heading">Orders by Status</h2>
+        <div id="statusDonutWrap" style="display:flex; align-items:center; gap:24px;">
+            <div id="statusDonut" style="width:160px; height:160px; border-radius:50%; flex-shrink:0;"></div>
+            <div id="statusLegend" style="flex:1;"></div>
+        </div>
+    </div>
+
+    <div class="card chart-card">
+        <h2 class="section-heading">Revenue Trend (Last 6 Months)</h2>
+        <div class="bar-chart" style="display:flex; align-items:flex-end; gap:16px; height:240px;" id="trendBars"></div>
     </div>
 </div>
 
 <div class="card">
-    <h3 style="margin-top:0;">Recent Orders</h3>
+    <h2 class="section-heading">Recent Orders</h2>
     <table>
         <thead><tr><th>Order #</th><th>Customer</th><th>Status</th><th>Total</th><th>Date</th></tr></thead>
         <tbody>
@@ -79,4 +126,67 @@
         </tbody>
     </table>
 </div>
+
+<script>
+(function() {
+    const statusLabelsRaw = {{ status_labels|safe }};
+    const statusCountsRaw = {{ status_counts|safe }};
+    const statusColors = ['#4f6df5', '#22b8cf', '#8b5cf6', '#f2a93b', '#22b969', '#f16063', '#1d5fbf', '#e2413f', '#dc8a1a'];
+    const statusData = statusLabelsRaw.map(function(label, i) {
+        return { label: label, value: statusCountsRaw[i], color: statusColors[i % statusColors.length] };
+    });
+
+    const total = statusData.reduce((s, d) => s + d.value, 0);
+    const donutEl = document.getElementById('statusDonut');
+    const legendEl = document.getElementById('statusLegend');
+    const donutWrap = document.getElementById('statusDonutWrap');
+
+    if (total > 0) {
+        let cumulative = 0;
+        const stops = [];
+        statusData.forEach(d => {
+            if (d.value <= 0) return;
+            const start = (cumulative / total) * 360;
+            cumulative += d.value;
+            const end = (cumulative / total) * 360;
+            stops.push(d.color + ' ' + start.toFixed(2) + 'deg ' + end.toFixed(2) + 'deg');
+        });
+        donutEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
+
+        legendEl.innerHTML = statusData.filter(d => d.value > 0).map(function(d) {
+            const pct = ((d.value / total) * 100).toFixed(1);
+            return '<div class="legend-row">' +
+                        '<span class="legend-dot" style="background:' + d.color + '"></span>' +
+                        '<span class="legend-label">' + d.label + '</span>' +
+                        '<span class="legend-value">' + d.value + ' (' + pct + '%)</span>' +
+                    '</div>';
+        }).join('');
+    } else {
+        donutWrap.innerHTML = '<div class="chart-empty"><div class="chart-empty-icon">&#128202;</div>' +
+            '<p>No orders yet. Once orders come in, this chart will show their status breakdown.</p></div>';
+    }
+
+    const monthLabels = {{ month_labels|safe }};
+    const monthRevenue = {{ month_revenue|safe }};
+    const barsEl = document.getElementById('trendBars');
+    const barsTotal = monthRevenue.reduce(function(a, b) { return a + b; }, 0);
+
+    if (barsTotal > 0) {
+        const maxVal = Math.max.apply(null, monthRevenue.concat([1]));
+        barsEl.innerHTML = monthLabels.map(function(label, i) {
+            const val = monthRevenue[i];
+            const heightPct = (val / maxVal * 100).toFixed(1);
+            return '<div class="bar-col">' +
+                        '<div class="bar-value">Rs ' + val.toFixed(0) + '</div>' +
+                        '<div class="bar-track"><div class="bar-fill" style="height:' + heightPct + '%"></div></div>' +
+                        '<div class="bar-label">' + label + '</div>' +
+                    '</div>';
+        }).join('');
+    } else {
+        barsEl.parentElement.innerHTML = '<h2 class="section-heading">Revenue Trend (Last 6 Months)</h2>' +
+            '<div class="chart-empty"><div class="chart-empty-icon">&#128200;</div>' +
+            '<p>No orders yet. Once orders come in, this chart will show your revenue trend.</p></div>';
+    }
+})();
+</script>
 {% endblock %}

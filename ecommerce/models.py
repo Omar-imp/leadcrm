@@ -152,7 +152,8 @@ class ReturnRequest(models.Model):
 
 ECOMMERCE_SECTIONS = [
     'dashboard', 'products', 'categories', 'customers',
-    'orders', 'inventory', 'payments', 'shipping', 'returns', 'reports'
+    'orders', 'inventory', 'payments', 'shipping', 'returns',
+    'reports', 'chatbot'
 ]
 
 
@@ -170,6 +171,7 @@ class EcommerceUserPermissions(models.Model):
     shipping = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
     returns = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
     reports = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    chatbot = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
 
     ALL_SECTIONS = ECOMMERCE_SECTIONS
 
@@ -188,4 +190,24 @@ class EcommerceUserPermissions(models.Model):
     def __str__(self):
         return f"E-commerce Permissions for {self.user.username}"
 
-    
+
+class EcommerceAssistantConversation(models.Model):
+    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ecommerce_assistant_conversations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class EcommerceAssistantMessage(models.Model):
+    conversation = models.ForeignKey(EcommerceAssistantConversation, on_delete=models.CASCADE, related_name='messages')
+    role         = models.CharField(max_length=10)
+    content      = models.TextField()
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+
+class EcommerceAssistantAuditLog(models.Model):
+    user            = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    query           = models.TextField()
+    action_executed = models.CharField(max_length=100)
+    success         = models.BooleanField(default=True)
+    response        = models.TextField(blank=True)
+    timestamp       = models.DateTimeField(auto_now_add=True)

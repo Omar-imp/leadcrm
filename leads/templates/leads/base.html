@@ -1007,7 +1007,7 @@ sections.forEach(name => {
 
         if (conversationId) {
             try {
-                const res = await fetch('/assistant/history/' + conversationId + '/');
+                const res = await fetch('/leadcrm/assistant/history/' + conversationId + '/');
                 const data = await res.json();
                 (data.messages || []).forEach(m => appendMessage(m.role, m.content));
             } catch (e) {
@@ -1037,7 +1037,7 @@ sections.forEach(name => {
 
             const alreadyShowing = selector.classList.contains('visible') || chatBox.classList.contains('visible');
             if (!alreadyShowing) {
-                const res = await fetch('/assistant/config/');
+                const res = await fetch('/leadcrm/assistant/config/');
                 const cfg = await res.json();
 
                 if (cfg.crm_access === 'none' && cfg.sales_access === 'none') {
@@ -1081,7 +1081,7 @@ sections.forEach(name => {
         appendMessage('user', text);
         input.value = '';
 
-        const res = await fetch('/assistant/chat/', {
+        const res = await fetch('/leadcrm/assistant/chat/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

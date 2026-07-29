@@ -46,5 +46,9 @@ urlpatterns = [
     path('users/create/', views.ecommerce_user_create, name='ecommerce_user_create'),
     path('users/<int:pk>/edit/', views.ecommerce_user_edit, name='ecommerce_user_edit'),
     path('users/<int:pk>/delete/', views.ecommerce_user_delete, name='ecommerce_user_delete'),
+    
+    path('assistant/config/', views.ecommerce_assistant_config, name='ecommerce_assistant_config'),
+path('assistant/chat/', views.ecommerce_assistant_chat, name='ecommerce_assistant_chat'),
+path('assistant/history/<int:conversation_id>/', views.ecommerce_assistant_history, name='ecommerce_assistant_history'),
 ]
 

@@ -72,7 +72,7 @@
                             <input type="radio" name="perm_{{ section }}" value="full"
                                    style="width:18px; height:18px; accent-color:var(--green);"
                                    {% if current_perms %}
-                                       {% if current_perms|getattr:section == 'full' %}checked{% endif %}
+                                       {% if current_perms|ecom_getattr:section == 'full' %}checked{% endif %}
                                    {% else %}
                                        {% if section == 'dashboard' %}checked{% endif %}
                                    {% endif %}>
@@ -81,14 +81,14 @@
                             <input type="radio" name="perm_{{ section }}" value="view"
                                    style="width:18px; height:18px; accent-color:#2196f3;"
                                    {% if current_perms %}
-                                       {% if current_perms|getattr:section == 'view' %}checked{% endif %}
+                                       {% if current_perms|ecom_getattr:section == 'view' %}checked{% endif %}
                                    {% endif %}>
                         </td>
                         <td style="text-align:center; padding:12px;">
                             <input type="radio" name="perm_{{ section }}" value="none"
                                    style="width:18px; height:18px; accent-color:var(--red);"
                                    {% if current_perms %}
-                                       {% if current_perms|getattr:section == 'none' %}checked{% endif %}
+                                       {% if current_perms|ecom_getattr:section == 'none' %}checked{% endif %}
                                    {% else %}
                                        {% if section != 'dashboard' %}checked{% endif %}
                                    {% endif %}>
