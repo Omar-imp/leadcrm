@@ -78,6 +78,8 @@
         <p><strong>Shipping:</strong> Rs {{ order.shipping_cost }}</p>
         <p style="font-size:20px; font-weight:700; margin-top:12px;">Total: Rs {{ order.total }}</p>
         <a href="{% url 'payment_create_for_order' order.pk %}" class="btn" style="margin-top:16px; display:inline-block;">Record Payment</a>
+        <a href="{% url 'shipment_create_for_order' order.pk %}" class="btn" style="margin-top:8px; display:inline-block;">Create Shipment</a>
+        <a href="{% url 'return_create_for_order' order.pk %}" class="btn btn-secondary" style="margin-top:8px; display:inline-block;">Request Return</a>
     </div>
 
 </div>

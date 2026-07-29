@@ -1,0 +1,60 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Return Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Order <span class="required">*</span></label>
+                <select name="order" required class="form-control" {% if order %}disabled{% endif %}>
+                    <option value="">-- Select Order --</option>
+                    {% for o in orders %}
+                    <option value="{{ o.id }}" {% if order and order.id == o.id %}selected{% endif %}>
+                        {{ o.order_number }} — {{ o.customer.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if order %}<input type="hidden" name="order" value="{{ order.id }}">{% endif %}
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Product (optional)</label>
+                <select name="product" class="form-control">
+                    <option value="">-- Not specific to one product --</option>
+                    {% for p in products %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Reason <span class="required">*</span></label>
+                <textarea name="reason" required class="form-control" rows="5"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn">Submit Return Request</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
+        <h3 style="margin-top:0;">Order Reference</h3>
+        {% if order %}
+        <p><strong>Order:</strong> {{ order.order_number }}</p>
+        <p><strong>Customer:</strong> {{ order.customer.name }}</p>
+        <p style="margin-top:12px;"><strong>Items in this order:</strong></p>
+        {% for item in order.items.all %}
+        <div style="padding:8px 0; border-bottom:1px solid var(--border); font-size:14px;">
+            {{ item.product.name|default:"Deleted product" }} × {{ item.quantity }}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="color:var(--text-muted);">Select an order on the left to see its items here.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

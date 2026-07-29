@@ -1,9 +1,12 @@
 {% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
 {% block title %}{{ title }} - E-commerce CRM{% endblock %}
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'payments' %}
     <a href="{% url 'payment_create' %}" class="btn">+ Record Payment</a>
+    {% endif %}
 </div>
 
 <div class="card">

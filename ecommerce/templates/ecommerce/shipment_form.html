@@ -1,0 +1,70 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Shipment Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Order <span class="required">*</span></label>
+                <select name="order" id="id_order" required class="form-control" onchange="updateAddress()" {% if order %}disabled{% endif %}>
+                    <option value="">-- Select Order --</option>
+                    {% for o in orders %}
+                    <option value="{{ o.id }}" data-address="{{ o.customer.shipping_address|default:o.customer.billing_address }}" {% if order and order.id == o.id %}selected{% endif %}>
+                        {{ o.order_number }} — {{ o.customer.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if order %}<input type="hidden" name="order" value="{{ order.id }}">{% endif %}
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Carrier</label>
+                <input type="text" name="carrier" placeholder="e.g. TCS, Leopards, DHL" class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Tracking Number</label>
+                <input type="text" name="tracking_number" class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Status</label>
+                <select name="status" class="form-control">
+                    <option value="pickup">Pickup</option>
+                    <option value="in_transit">In Transit</option>
+                    <option value="delivered">Delivered</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn">Save Shipment</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
+        <h3 style="margin-top:0;">Delivery Address</h3>
+        <p style="font-size:14px; color:var(--text-muted); margin-top:-8px; margin-bottom:16px;">
+            Shipping (or billing, if no shipping address set) address for the selected order's customer.
+        </p>
+        <div id="address_preview" style="white-space:pre-wrap; font-size:14px; padding:12px; background:#f7f8fa; border-radius:6px; min-height:80px;">
+            Select an order to see the delivery address.
+        </div>
+    </div>
+
+</div>
+
+<script>
+function updateAddress() {
+    const select = document.getElementById('id_order');
+    const selected = select.options[select.selectedIndex];
+    const address = selected ? selected.dataset.address : '';
+    document.getElementById('address_preview').textContent = address || 'No address on file for this customer.';
+}
+
+{% if order %}
+updateAddress();
+{% endif %}
+</script>
+{% endblock %}

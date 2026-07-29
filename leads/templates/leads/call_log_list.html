@@ -1,0 +1,53 @@
+{% extends 'leads/base.html' %}
+{% block title %}Call History{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>Call History</h2>
+    <div class="filters">
+        <a href="{% url 'call_log_list' %}" class="{% if not channel_filter %}active{% endif %}">All</a>
+        <a href="{% url 'call_log_list' %}?channel=phone" class="{% if channel_filter == 'phone' %}active{% endif %}">Phone</a>
+        <a href="{% url 'call_log_list' %}?channel=whatsapp" class="{% if channel_filter == 'whatsapp' %}active{% endif %}">WhatsApp</a>
+    </div>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Lead</th>
+            <th>Channel</th>
+            <th>Number</th>
+            <th>Status</th>
+            <th>Duration</th>
+            <th>Recording</th>
+            <th>Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for call in page_obj %}
+        <tr>
+            <td>{{ call.lead }}</td>
+            <td>{{ call.get_channel_display }}</td>
+            <td>{{ call.to_number }}</td>
+            <td><span class="status-badge status-{{ call.status }}">{{ call.status }}</span></td>
+            <td>{{ call.duration }}s</td>
+            <td>
+                {% if call.recording_url %}
+                <audio controls src="{{ call.recording_url }}" style="height:32px; max-width:180px;"></audio>
+                {% else %}—{% endif %}
+            </td>
+            <td>{{ call.created_at|date:"d M, h:i A" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center; color:#888;">No call records found.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

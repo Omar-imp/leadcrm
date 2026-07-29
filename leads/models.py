@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.conf import settings
 
 
 class SalesPerson(models.Model):
@@ -1135,3 +1136,71 @@ class EmailLog(models.Model):
 
     def __str__(self):
         return f"{self.subject} → {self.to_email}"
+    
+
+CALL_CHANNEL_CHOICES = [
+    ('phone', 'Phone'),
+    ('whatsapp', 'WhatsApp'),
+]
+
+CALL_DIRECTION_CHOICES = [
+    ('incoming', 'Incoming'),
+    ('outgoing', 'Outgoing'),
+]
+
+CALL_STATUS_CHOICES = [
+    ('completed', 'Completed'),
+    ('missed', 'Missed'),
+    ('no_answer', 'No Answer'),
+    ('scheduled', 'Scheduled'),
+]
+
+
+class CallLog(models.Model):
+    lead = models.ForeignKey('Lead', on_delete=models.CASCADE, related_name='call_logs', null=True, blank=True)
+    contact = models.ForeignKey('Contact', on_delete=models.CASCADE, related_name='call_logs', null=True, blank=True)
+    spo = models.ForeignKey('SalesPerson', on_delete=models.SET_NULL, null=True, blank=True)
+    channel = models.CharField(max_length=20, choices=CALL_CHANNEL_CHOICES, default='phone')
+    direction = models.CharField(max_length=20, choices=CALL_DIRECTION_CHOICES, default='outgoing')
+    status = models.CharField(max_length=20, choices=CALL_STATUS_CHOICES, default='completed')
+    phone_number = models.CharField(max_length=30, blank=True)
+    duration_seconds = models.PositiveIntegerField(default=0)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        who = self.lead or self.contact or self.phone_number
+        return f"{self.get_channel_display()} call - {who}"
+
+
+class CallSchedule(models.Model):
+    lead = models.ForeignKey('Lead', on_delete=models.CASCADE, related_name='call_schedules', null=True, blank=True)
+    contact = models.ForeignKey('Contact', on_delete=models.CASCADE, related_name='call_schedules', null=True, blank=True)
+    spo = models.ForeignKey('SalesPerson', on_delete=models.SET_NULL, null=True, blank=True)
+    channel = models.CharField(max_length=20, choices=CALL_CHANNEL_CHOICES, default='phone')
+    scheduled_time = models.DateTimeField()
+    notes = models.TextField(blank=True)
+    is_done = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['scheduled_time']
+
+    def __str__(self):
+        who = self.lead or self.contact
+        return f"Scheduled {self.get_channel_display()} call - {who} @ {self.scheduled_time}"
+    
+
+class GoogleCredential(models.Model):
+    """Stores OAuth tokens per CRM user for Google Calendar access."""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    access_token = models.TextField()
+    refresh_token = models.TextField()
+    token_expiry = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Google credentials for {self.user}"

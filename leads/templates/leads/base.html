@@ -5,12 +5,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}Lead CRM{% endblock %}</title>
+<title>{% block title %}Raabta 360{% endblock %}</title>
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-<div class="app">
+
+<div class="mobile-topbar">
+    <button type="button" class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">&#9776;</button>
+    <span class="mobile-brand">Raabta 360</span>
+</div>
+
+<div class="app" id="appRoot">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <aside class="sidebar">
+        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close menu">&#10005;</button>
+
         <div class="brand" style="display:flex; justify-content:center; padding: 20px 0;">
             <div style="
                 width: 140px;
@@ -20,19 +29,29 @@
                 -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%);
                 mask-image: radial-gradient(circle, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%);
             ">
-                <img src="{% static 'images/logo.png' %}"
+                <img src="{% static 'images/logo1.png' %}"
                     alt="Logo"
                     style="width:100% !important; height:100% !important; object-fit:cover !important; display:block !important;">
             </div>
         </div>
-        <div class="brand">Lead CRM</div>
+        <!-- <div class="brand">Rabta CRM</div> -->
+         <div class="brand" style="text-align: center;">Rabta CRM</div>
+
 
         <!-- MENU -->
         <nav>
             <a href="{% url 'dashboard' %}" class="{% if active == 'dashboard' %}active{% endif %}">
                 <span class="left"><span class="icon">&#9632;</span> Dashboard</span>
             </a>
+
+            <a href="{% url 'calendar_view' %}" class="{% if active == 'calendar' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128197;</span> Calendar</span>
+            </a>
+
+            {% if '*' in allowed_sections or user.profile.role == 'ceo' %}
+
             {% if '*' in allowed_sections or 'ceo_dashboard' in allowed_sections %}
+
             <a href="{% url 'ceo_dashboard' %}" class="{% if active == 'ceo_dashboard' %}active{% endif %}">
                 <span class="left"><span class="icon">👑</span> CEO Dashboard</span>
             </a>
@@ -41,6 +60,7 @@
             <a href="{% url 'user_list' %}" class="{% if active == 'users' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128100;</span> Users</span>
             </a>
+            {% endif %}
             {% endif %}
         </nav>
 
@@ -237,6 +257,20 @@
         </nav>
 {% endif %}
 
+{% if '*' in allowed_sections or 'leads' in allowed_sections %}
+        <div class="section-label dropdown-toggle" onclick="toggleSection('salespersons')">
+            SALES PERSONS <span class="arrow" id="arrow-salespersons">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-salespersons">
+            <a href="{% url 'salesperson_list' %}" class="{% if active == 'salespersons' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128100;</span> All SPOs</span>
+            </a>
+            <a href="{% url 'salesperson_create' %}">
+                <span class="left"><span class="icon">&#43;</span> Add SPO</span>
+            </a>
+        </nav>
+{% endif %}
+
         <!-- LEAD -->
 {% if '*' in allowed_sections or 'leads' in allowed_sections %}
         <div class="section-label dropdown-toggle" onclick="toggleSection('lead')">
@@ -379,6 +413,38 @@
             {% if request.user|has_full_access:'emails' %}
             <a href="{% url 'email_compose' %}">
                 <span class="left"><span class="icon">&#43;</span> Compose Email</span>
+            </a>
+            {% endif %}
+        </nav>
+{% endif %}
+
+        <!-- CALLING -->
+{% if '*' in allowed_sections or 'calling' in allowed_sections %}
+        <div class="section-label dropdown-toggle" onclick="toggleSection('calling')">
+            CALLING 
+            {% if 'calling' in view_only_sections %}
+            <span style="font-size:10px; color:#fff; opacity:0.6; margin-left:4px;">👁 view only</span>
+            {% endif %}
+            <span class="arrow" id="arrow-calling">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-calling">
+            <a href="{% url 'call_log_list' %}" class="{% if active == 'call_logs' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128222;</span> Call History</span>
+                <span class="badge badge-blue">{{ sidebar_counts.calls_total }}</span>
+            </a>
+            <a href="{% url 'call_log_list' %}?channel=phone">
+                <span class="left"><span class="icon">&#9742;</span> Phone Calls</span>
+            </a>
+            <a href="{% url 'call_log_list' %}?channel=whatsapp">
+                <span class="left"><span class="icon">&#128241;</span> WhatsApp Calls</span>
+            </a>
+            <a href="{% url 'call_schedule_list' %}" class="{% if active == 'scheduled_calls' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128197;</span> Scheduled Calls</span>
+                <span class="badge badge-orange">{{ sidebar_counts.calls_scheduled }}</span>
+            </a>
+            {% if not google_connected %}
+            <a href="{% url 'google_authorize' %}">
+                <span class="left"><span class="icon">&#128279;</span> Connect Calendar</span>
             </a>
             {% endif %}
         </nav>
@@ -553,6 +619,28 @@
 </div>
 
 <script>
+// mobile hamburger sidebar toggle
+(function() {
+    const appRoot = document.getElementById('appRoot');
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const closeBtn = document.getElementById('sidebarCloseBtn');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    function openSidebar() { appRoot.classList.add('sidebar-open'); }
+    function closeSidebar() { appRoot.classList.remove('sidebar-open'); }
+
+    if (hamburgerBtn) hamburgerBtn.addEventListener('click', openSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+
+    // close sidebar automatically when a nav link is tapped on mobile
+    document.querySelectorAll('.sidebar nav a').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 900) closeSidebar();
+        });
+    });
+})();
+
 // remember open/closed state in localStorage
 function toggleSection(name) {
     const section = document.getElementById('section-' + name);
@@ -574,7 +662,11 @@ function toggleSection(name) {
 const sections = [
     'contacts', 'pipeline', 'quotations', 'proposals', 'projects',
     'meetings', 'tasks', 'lead', 'payment', 'followup',
+
+    'communications', 'support', 'activity', 'reports',
+
     'communications', 'emails', 'support', 'activity', 'reports',
+
     'documents', 'contracts', 'salespersons'
 ];
 
@@ -643,7 +735,7 @@ sections.forEach(name => {
     width: 56px !important;
     height: 56px !important;
     border-radius: 50% !important;
-    background: #8e6fd6 !important;
+    background: #1d5fbf !important;
     color: #fff !important;
     border: none !important;
     font-size: 22px !important;
@@ -680,7 +772,7 @@ sections.forEach(name => {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    background: #8e6fd6 !important;
+    background: #1d5fbf !important;
     color: #fff !important;
     padding: 12px 16px !important;
     flex-shrink: 0 !important;
@@ -755,8 +847,8 @@ sections.forEach(name => {
 }
 
 #assistant-widget #assistant-selector button:hover {
-    background: #f0edff !important;
-    border-color: #8e6fd6 !important;
+    background: #eaf1fc !important;
+    border-color: #1d5fbf !important;
 }
 
 #assistant-widget #assistant-chat {
@@ -791,7 +883,7 @@ sections.forEach(name => {
 }
 
 #assistant-widget .assistant-msg.user {
-    background: #8e6fd6 !important;
+    background: #1d5fbf !important;
     color: #fff !important;
     align-self: flex-end !important;
     border-bottom-right-radius: 4px !important;
@@ -825,12 +917,12 @@ sections.forEach(name => {
 }
 
 #assistant-widget #assistant-input:focus {
-    border-color: #8e6fd6 !important;
+    border-color: #1d5fbf !important;
 }
 
 #assistant-widget #assistant-send {
     border: none !important;
-    background: #8e6fd6 !important;
+    background: #1d5fbf !important;
     color: #fff !important;
     padding: 0 16px !important;
     border-radius: 8px !important;

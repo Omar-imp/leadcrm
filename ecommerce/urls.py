@@ -25,4 +25,26 @@ urlpatterns = [
     path('payments/', views.payment_list, name='payment_list'),
     path('payments/create/', views.payment_create, name='payment_create'),
     path('orders/<int:order_id>/pay/', views.payment_create, name='payment_create_for_order'),
-]   
+
+    # Shipment URLS
+    path('shipments/', views.shipment_list, name='shipment_list'),
+    path('shipments/create/', views.shipment_create, name='shipment_create'),
+    path('orders/<int:order_id>/ship/', views.shipment_create, name='shipment_create_for_order'),
+
+    # Return URLS
+    path('returns/', views.return_list, name='return_list'),
+    path('returns/create/', views.return_create, name='return_create'),
+    path('orders/<int:order_id>/return/', views.return_create, name='return_create_for_order'),
+    path('returns/<int:pk>/update-status/', views.return_update_status, name='return_update_status'),
+
+    # Login/Logout URLS
+    path('login/', views.ecommerce_login, name='ecommerce_login'),
+    path('logout/', views.ecommerce_logout, name='ecommerce_logout'),
+
+    #Add Users URLS
+    path('users/', views.ecommerce_user_list, name='ecommerce_user_list'),
+    path('users/create/', views.ecommerce_user_create, name='ecommerce_user_create'),
+    path('users/<int:pk>/edit/', views.ecommerce_user_edit, name='ecommerce_user_edit'),
+    path('users/<int:pk>/delete/', views.ecommerce_user_delete, name='ecommerce_user_delete'),
+]
+

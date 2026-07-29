@@ -3,41 +3,80 @@
 {% block content %}
 <h1 class="page-title">Overall Business Figures</h1>
 
-<div class="card">
-    <div class="stats-row">
-        <div class="stat"><div class="label">Total</div><div class="value">{{ stats.total }}</div></div>
-        <div class="stat"><div class="label">New</div><div class="value">{{ stats.new }}</div></div>
-        <div class="stat"><div class="label">Positive</div><div class="value">{{ stats.positive }}</div></div>
-        <div class="stat lost"><div class="label">Lost</div><div class="value">{{ stats.lost }}</div></div>
-        <div class="stat"><div class="label">Quotation</div><div class="value">{{ stats.quotation }}</div></div>
-        <div class="stat"><div class="label">Convert</div><div class="value">{{ stats.convert }}</div></div>
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon blue">&#128276;</div>
+        <div class="kpi-body"><div class="kpi-value">{{ stats.total }}</div><div class="kpi-label">Total Leads</div></div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon cyan">&#10024;</div>
+        <div class="kpi-body"><div class="kpi-value">{{ stats.new }}</div><div class="kpi-label">New</div></div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon purple">&#128077;</div>
+        <div class="kpi-body"><div class="kpi-value">{{ stats.positive }}</div><div class="kpi-label">Positive</div></div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red">&#10006;</div>
+        <div class="kpi-body"><div class="kpi-value">{{ stats.lost }}</div><div class="kpi-label">Lost</div></div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon orange">&#128203;</div>
+        <div class="kpi-body"><div class="kpi-value">{{ stats.quotation }}</div><div class="kpi-label">Quotation</div></div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">&#10003;</div>
+        <div class="kpi-body"><div class="kpi-value">{{ stats.convert }}</div><div class="kpi-label">Converted</div></div>
+    </div>
+</div>
+
+<div class="charts-row">
+    <div class="card chart-card">
+        <h2 class="section-heading">Leads by Status</h2>
+        <div class="donut-wrap" id="statusDonutWrap">
+            <div class="donut" id="statusDonut">
+                <div class="donut-center">
+                    <div class="donut-center-value">{{ stats.total }}</div>
+                    <div class="donut-center-label">Total</div>
+                </div>
+            </div>
+            <div class="donut-legend" id="statusLegend"></div>
+        </div>
+    </div>
+    <div class="card chart-card">
+        <h2 class="section-heading">Leads Trend (Last 6 Months)</h2>
+        <div class="bar-chart" id="trendBars"></div>
     </div>
 </div>
 
 <div class="followup-row">
-    <a href="{% url 'followup_list' 'today' %}" class="card followup-card">
-        <svg class="sparkline" viewBox="0 0 60 36"><polyline points="0,28 10,18 20,24 30,12 40,20 50,8 60,16" fill="none" stroke="#4aa9a3" stroke-width="2"/></svg>
-        <div><div class="label">Today Followup</div><div class="value">&gt; {{ followup_stats.today }}</div></div>
+    <a href="{% url 'followup_list' 'today' %}" class="card followup-card followup-teal">
+        <div class="followup-icon">&#9200;</div>
+        <div class="followup-body">
+            <div class="followup-label">Today Follow Up</div>
+            <div class="followup-value">{{ followup_stats.today }}</div>
+        </div>
     </a>
-    <a href="{% url 'followup_list' 'next' %}" class="card followup-card">
-        <svg class="sparkline" viewBox="0 0 60 36">
-            <rect x="2" y="14" width="3" height="16" fill="#f2a93b"/><rect x="8" y="8" width="3" height="22" fill="#f2a93b"/>
-            <rect x="14" y="18" width="3" height="12" fill="#f2a93b"/><rect x="20" y="4" width="3" height="26" fill="#f2a93b"/>
-            <rect x="26" y="12" width="3" height="18" fill="#f2a93b"/><rect x="32" y="16" width="3" height="14" fill="#f2a93b"/>
-        </svg>
-        <div><div class="label">Next Followup</div><div class="value">^ {{ followup_stats.next }}</div></div>
+    <a href="{% url 'followup_list' 'next' %}" class="card followup-card followup-orange">
+        <div class="followup-icon">&#128337;</div>
+        <div class="followup-body">
+            <div class="followup-label">Next Follow Up</div>
+            <div class="followup-value">{{ followup_stats.next }}</div>
+        </div>
     </a>
-    <a href="{% url 'followup_list' 'pending' %}" class="card followup-card">
-        <svg class="sparkline" viewBox="0 0 60 36"><polyline points="0,8 10,20 20,12 30,26 40,16 50,30 60,18" fill="none" stroke="#e2574c" stroke-width="2"/></svg>
-        <div><div class="label">Pending Followup</div><div class="value">v {{ followup_stats.pending }}</div></div>
+    <a href="{% url 'followup_list' 'pending' %}" class="card followup-card followup-red">
+        <div class="followup-icon">&#9888;</div>
+        <div class="followup-body">
+            <div class="followup-label">Pending Follow Up</div>
+            <div class="followup-value">{{ followup_stats.pending }}</div>
+        </div>
     </a>
-    <a href="{% url 'followup_list' 'done' %}" class="card followup-card">
-        <svg class="sparkline" viewBox="0 0 60 36">
-            <rect x="2" y="10" width="3" height="20" fill="#3f9142"/><rect x="8" y="4" width="3" height="26" fill="#3f9142"/>
-            <rect x="14" y="14" width="3" height="16" fill="#3f9142"/><rect x="20" y="2" width="3" height="28" fill="#3f9142"/>
-            <rect x="26" y="8" width="3" height="22" fill="#3f9142"/><rect x="32" y="12" width="3" height="18" fill="#3f9142"/>
-        </svg>
-        <div><div class="label">Done Followup</div><div class="value">^ {{ followup_stats.done }}</div></div>
+    <a href="{% url 'followup_list' 'done' %}" class="card followup-card followup-green">
+        <div class="followup-icon">&#10003;</div>
+        <div class="followup-body">
+            <div class="followup-label">Done Follow Up</div>
+            <div class="followup-value">{{ followup_stats.done }}</div>
+        </div>
     </a>
 </div>
 
@@ -59,4 +98,151 @@
         </tbody>
     </table>
 </div>
+
+<style>
+/* ---- Power BI style analytics (self-contained, no external library) ---- */
+.charts-row { display: grid; grid-template-columns: 1.1fr 1.6fr; gap: 24px; margin-bottom: 28px; }
+.chart-card { padding: 26px 30px; }
+@media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+
+.donut-wrap { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; justify-content: center; padding-top: 8px; }
+.donut {
+    width: 190px; height: 190px; border-radius: 50%;
+    background: #eef0f6;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+.donut-center {
+    width: 118px; height: 118px; border-radius: 50%; background: #fff;
+    box-shadow: 0 2px 10px rgba(15,23,42,0.08);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.donut-center-value { font-size: 26px; font-weight: 800; font-family: "Poppins", sans-serif; color: var(--text-dark); line-height: 1; }
+.donut-center-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-top: 4px; letter-spacing: 0.4px; }
+
+.donut-legend { display: flex; flex-direction: column; gap: 12px; min-width: 170px; }
+.legend-row { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+.legend-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+.legend-label { color: var(--text-dark); font-weight: 600; flex: 1; }
+.legend-value { color: var(--text-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    height: 270px;
+    padding: 10px 6px 0;
+    border-bottom: 2px solid var(--border);
+}
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.bar-value { font-size: 13px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; }
+.bar-track { width: 100%; max-width: 46px; height: 100%; display: flex; align-items: flex-end; background: linear-gradient(180deg, transparent 0%, transparent calc(100% - 1px), var(--border) 100%); }
+.bar-fill {
+    width: 100%;
+    background: linear-gradient(180deg, #2f7de0, #164a94);
+    border-radius: 6px 6px 0 0;
+    transition: height 0.6s ease;
+    min-height: 3px;
+}
+.bar-label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 8px; white-space: nowrap; }
+
+.chart-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; color: var(--text-muted); gap: 10px; padding: 50px 20px; min-height: 220px;
+}
+.chart-empty-icon { font-size: 40px; opacity: 0.5; }
+.chart-empty p { margin: 0; font-size: 14px; max-width: 280px; }
+
+/* Bigger, better represented followup cards */
+.followup-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-bottom: 28px; }
+.followup-card {
+    display: flex; align-items: center; gap: 18px;
+    padding: 26px 24px;
+    border-left: 5px solid transparent;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.followup-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+.followup-icon {
+    width: 56px; height: 56px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #fff; flex-shrink: 0;
+}
+.followup-teal { border-left-color: var(--teal); }
+.followup-teal .followup-icon { background: linear-gradient(135deg, #2f7de0, #164a94); }
+.followup-orange { border-left-color: var(--orange); }
+.followup-orange .followup-icon { background: linear-gradient(135deg, #f2a93b, #dc8a1a); }
+.followup-red { border-left-color: var(--red); }
+.followup-red .followup-icon { background: linear-gradient(135deg, #f16063, #e2413f); }
+.followup-green { border-left-color: var(--green); }
+.followup-green .followup-icon { background: linear-gradient(135deg, #22b969, #189652); }
+.followup-label { font-size: 13px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+.followup-value { font-size: 30px; font-weight: 800; font-family: "Poppins", sans-serif; color: var(--text-dark); line-height: 1; }
+
+@media (max-width: 900px) { .followup-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .followup-row { grid-template-columns: 1fr; } .donut-wrap { flex-direction: column; } }
+</style>
+
+<script>
+(function() {
+    const statusData = [
+        { label: 'New', value: {{ stats.new }}, color: '#22b8cf' },
+        { label: 'Positive', value: {{ stats.positive }}, color: '#8b5cf6' },
+        { label: 'Lost', value: {{ stats.lost }}, color: '#f16063' },
+        { label: 'Quotation', value: {{ stats.quotation }}, color: '#f2a93b' },
+        { label: 'Converted', value: {{ stats.convert }}, color: '#22b969' },
+    ];
+    const total = statusData.reduce((s, d) => s + d.value, 0);
+    const donutEl = document.getElementById('statusDonut');
+    const legendEl = document.getElementById('statusLegend');
+    const donutWrap = document.getElementById('statusDonutWrap');
+
+    if (total > 0) {
+        let cumulative = 0;
+        const stops = [];
+        statusData.forEach(d => {
+            if (d.value <= 0) return;
+            const start = (cumulative / total) * 360;
+            cumulative += d.value;
+            const end = (cumulative / total) * 360;
+            stops.push(d.color + ' ' + start.toFixed(2) + 'deg ' + end.toFixed(2) + 'deg');
+        });
+        donutEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
+
+        legendEl.innerHTML = statusData.filter(d => d.value > 0).map(function(d) {
+            const pct = ((d.value / total) * 100).toFixed(1);
+            return '<div class="legend-row">' +
+                        '<span class="legend-dot" style="background:' + d.color + '"></span>' +
+                        '<span class="legend-label">' + d.label + '</span>' +
+                        '<span class="legend-value">' + d.value + ' (' + pct + '%)</span>' +
+                    '</div>';
+        }).join('');
+    } else {
+        donutWrap.innerHTML = '<div class="chart-empty"><div class="chart-empty-icon">&#128202;</div>' +
+            '<p>No leads yet. Once you add leads, this chart will show their status breakdown.</p></div>';
+    }
+
+    const monthLabels = {{ month_labels|safe }};
+    const monthCounts = {{ month_counts|safe }};
+    const barsEl = document.getElementById('trendBars');
+    const barsTotal = monthCounts.reduce(function(a, b) { return a + b; }, 0);
+
+    if (barsTotal > 0) {
+        const maxVal = Math.max.apply(null, monthCounts.concat([1]));
+        barsEl.innerHTML = monthLabels.map(function(label, i) {
+            const val = monthCounts[i];
+            const heightPct = (val / maxVal * 100).toFixed(1);
+            return '<div class="bar-col">' +
+                        '<div class="bar-value">' + val + '</div>' +
+                        '<div class="bar-track"><div class="bar-fill" style="height:' + heightPct + '%"></div></div>' +
+                        '<div class="bar-label">' + label + '</div>' +
+                    '</div>';
+        }).join('');
+    } else {
+        barsEl.parentElement.innerHTML = '<h2 class="section-heading">Leads Trend (Last 6 Months)</h2>' +
+            '<div class="chart-empty"><div class="chart-empty-icon">&#128200;</div>' +
+            '<p>No leads yet. Once you add leads, this chart will show your monthly trend.</p></div>';
+    }
+})();
+</script>
 {% endblock %}

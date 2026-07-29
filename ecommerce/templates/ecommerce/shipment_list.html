@@ -1,0 +1,36 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'shipping' %}
+    <a href="{% url 'shipment_create' %}" class="btn">+ Create Shipment</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Order</th><th>Customer</th><th>Carrier</th><th>Tracking #</th><th>Status</th><th>Updated</th></tr></thead>
+        <tbody>
+            {% for s in shipments %}
+            <tr>
+                <td><a href="{% url 'order_detail' s.order.pk %}">{{ s.order.order_number }}</a></td>
+                <td>{{ s.order.customer.name }}</td>
+                <td>{{ s.carrier|default:"-" }}</td>
+                <td>{{ s.tracking_number|default:"-" }}</td>
+                <td>
+                    {% if s.status == 'delivered' %}<span class="pill pill-converted">Delivered</span>
+                    {% elif s.status == 'in_transit' %}<span class="pill pill-info">In Transit</span>
+                    {% else %}<span class="pill pill-new">Pickup</span>
+                    {% endif %}
+                </td>
+                <td>{{ s.updated_at|date:"d M Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No shipments yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

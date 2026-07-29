@@ -10,6 +10,8 @@ from .decorators import role_required
 from django.db.models import Sum, Count
 import csv
 import io
+import json
+import calendar
 import openpyxl
 from .ai_assignment import assign_lead_with_ai
 from .duplicate_detector import check_and_mark_duplicate
@@ -38,6 +40,28 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib import messages
 from .models import EmailLog
+import json
+import requests
+from datetime import timedelta
+
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+from django.utils.dateparse import parse_datetime
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST, require_GET
+
+from twilio.rest import Client
+from twilio.twiml.voice_response import VoiceResponse, Dial
+
+from google_auth_oauthlib.flow import Flow
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+
+from .models import Lead, CallLog, CallSchedule, GoogleCredential
+from django.core.paginator import Paginator
+
+
 from .models import (Lead, FollowUp, SalesPerson, Payment,
                      ScheduledPayment, Installment, UserProfile,
                      Company, Contact, Opportunity,
@@ -115,6 +139,30 @@ def dashboard(request):
         'convert': leads.filter(status='converted').count(),
     }
 
+    # Monthly lead trend (last 6 months) for histogram/bar chart
+    from django.db.models import Count
+
+    month_labels = []
+    month_counts = []
+    for i in range(5, -1, -1):
+        y, m = today.year, today.month - i
+        while m <= 0:
+            m += 12
+            y -= 1
+        count = leads.filter(created_at__year=y, created_at__month=m).count()
+        month_labels.append(f"{calendar.month_abbr[m]} {y}")
+        month_counts.append(count)
+
+    # Source breakdown for pie chart
+    from .models import LEAD_SOURCE_CHOICES
+    source_counts_qs = leads.values('lead_source').annotate(c=Count('id')).order_by('-c')
+    source_labels = []
+    source_counts = []
+    source_display_map = dict(LEAD_SOURCE_CHOICES)
+    for row in source_counts_qs:
+        source_labels.append(source_display_map.get(row['lead_source'], row['lead_source'] or 'Unknown'))
+        source_counts.append(row['c'])
+
     followups = FollowUp.objects.all()
     followup_stats = {
         'today': followups.filter(status='pending', follow_up_date__date=today).count(),
@@ -142,8 +190,89 @@ def dashboard(request):
         'followup_stats': followup_stats,
         'spo_rows': spo_rows,
         'active': 'dashboard',
+        'month_labels': json.dumps(month_labels),
+        'month_counts': json.dumps(month_counts),
+        'source_labels': json.dumps(source_labels),
+        'source_counts': json.dumps(source_counts),
     }
     return render(request, 'leads/dashboard.html', context)
+
+
+@login_required
+def calendar_view(request):
+    import calendar as cal_module
+    today = timezone.localdate()
+
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+    except (TypeError, ValueError):
+        year, month = today.year, today.month
+
+    if month < 1:
+        month = 12
+        year -= 1
+    elif month > 12:
+        month = 1
+        year += 1
+
+    prev_month = month - 1 or 12
+    prev_year = year - 1 if month == 1 else year
+    next_month = month + 1 if month < 12 else 1
+    next_year = year + 1 if month == 12 else year
+
+    cal = cal_module.Calendar(firstweekday=6)  # Sunday first
+    month_days = cal.monthdatescalendar(year, month)
+
+    events_by_day = {}
+
+    for meeting in Meeting.objects.filter(scheduled_at__year=year, scheduled_at__month=month):
+        d = meeting.scheduled_at.date()
+        events_by_day.setdefault(d, []).append({
+            'type': 'meeting',
+            'title': meeting.title,
+            'url': reverse('meeting_detail', args=[meeting.pk]),
+        })
+
+    for followup in FollowUp.objects.filter(follow_up_date__year=year, follow_up_date__month=month):
+        d = followup.follow_up_date.date()
+        events_by_day.setdefault(d, []).append({
+            'type': 'followup',
+            'title': f"Follow up: {followup.lead.name}",
+            'url': reverse('lead_detail', args=[followup.lead.pk]),
+        })
+
+    for task in GeneralTask.objects.filter(due_date__year=year, due_date__month=month):
+        d = task.due_date
+        events_by_day.setdefault(d, []).append({
+            'type': 'task',
+            'title': task.title,
+            'url': '',
+        })
+
+    weeks = []
+    for week in month_days:
+        week_data = []
+        for day in week:
+            week_data.append({
+                'date': day,
+                'day': day.day,
+                'other_month': day.month != month,
+                'is_today': day == today,
+                'events': events_by_day.get(day, [])[:3],
+                'more_count': max(0, len(events_by_day.get(day, [])) - 3),
+            })
+        weeks.append(week_data)
+
+    context = {
+        'active': 'calendar',
+        'weeks': weeks,
+        'month_name': cal_module.month_name[month],
+        'year': year,
+        'prev_month': prev_month, 'prev_year': prev_year,
+        'next_month': next_month, 'next_year': next_year,
+    }
+    return render(request, 'leads/calendar.html', context)
 
 
 @login_required
@@ -216,7 +345,7 @@ def _send_whatsapp_welcome(lead):
 
             normalized = normalize_phone(lead.contact_number)
             session, _ = ChatSession.objects.get_or_create(
-                phone_number=normalized,
+                contact_number=normalized,
                 defaults={'lead_name': lead.name}
             )
             if not session.lead_name:
@@ -3241,4 +3370,363 @@ def email_detail(request, pk):
     return render(request, 'leads/email_detail.html', {
         'email': email,
         'active': 'emails',
+    })
+
+
+# ============================================================
+# 1. PHONE CALLING (Twilio) — click-to-call + recording
+# ============================================================
+
+@login_required
+@require_POST
+def start_phone_call(request, lead_id):
+    """Agent clicks 'Call' on a lead — Twilio dials the lead and bridges to the agent."""
+    lead = get_object_or_404(Lead, id=lead_id)
+    agent_number = request.POST.get('agent_number') or settings.AGENT_FALLBACK_NUMBER
+
+    client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+
+    call = client.calls.create(
+        to=lead.contact_number,
+        from_=settings.TWILIO_PHONE_NUMBER,
+        url=settings.SITE_BASE_URL + reverse('twiml_response') + f'?agent_number={agent_number}',
+        status_callback=settings.SITE_BASE_URL + reverse('call_status_callback', args=[lead.id]),
+        status_callback_event=['initiated', 'ringing', 'answered', 'completed'],
+        status_callback_method='POST',
+        record=True,
+        recording_status_callback=settings.SITE_BASE_URL + reverse('recording_callback'),
+        recording_status_callback_method='POST',
+    )
+
+    log = CallLog.objects.create(
+        lead=lead,
+        caller=request.user,
+        call_sid=call.sid,
+        to_number=lead.contact_number,
+        channel='phone',
+        status='initiated',
+    )
+    return JsonResponse({'status': 'calling', 'call_sid': call.sid, 'log_id': log.id})
+
+
+@csrf_exempt
+def twiml_response(request):
+    """Twilio requests this URL when the call connects — decides what happens on the call."""
+    agent_number = request.GET.get('agent_number') or settings.AGENT_FALLBACK_NUMBER
+    response = VoiceResponse()
+    dial = Dial(caller_id=settings.TWILIO_PHONE_NUMBER)
+    dial.number(agent_number)
+    response.append(dial)
+    return HttpResponse(str(response), content_type='text/xml')
+
+
+@csrf_exempt
+@require_POST
+def call_status_callback(request, lead_id):
+    call_sid = request.POST.get('CallSid')
+    call_status = request.POST.get('CallStatus')
+    duration = request.POST.get('CallDuration', 0)
+
+    CallLog.objects.filter(call_sid=call_sid).update(
+        status=call_status,
+        duration=duration or 0,
+    )
+    return HttpResponse(status=200)
+
+
+@csrf_exempt
+@require_POST
+def recording_callback(request):
+    call_sid = request.POST.get('CallSid')
+    recording_sid = request.POST.get('RecordingSid')
+    recording_url = f"https://api.twilio.com/2010-04-01/Accounts/{settings.TWILIO_ACCOUNT_SID}/Recordings/{recording_sid}.mp3"
+
+    CallLog.objects.filter(call_sid=call_sid).update(recording_url=recording_url)
+    return HttpResponse(status=200)
+
+
+# ============================================================
+# 2. WHATSAPP CALLING (Meta Cloud API)
+# ============================================================
+# Real WhatsApp voice calls via Meta's Cloud API use WebRTC. The backend below
+# initiates/manages the call session; actual audio requires an SDP offer from a
+# WebRTC-capable client (browser mic/speaker access), which then gets relayed
+# through these endpoints. This is NOT optional plumbing — without a WebRTC
+# frontend, the call session can open but no audio will flow.
+
+META_GRAPH_URL = f"https://graph.facebook.com/{settings.META_WA_API_VERSION}/{settings.META_WA_PHONE_NUMBER_ID}/calls"
+
+
+def _meta_headers():
+    return {
+        'Authorization': f'Bearer {settings.META_WA_ACCESS_TOKEN}',
+        'Content-Type': 'application/json',
+    }
+
+
+@login_required
+@require_POST
+def start_whatsapp_call(request, lead_id):
+    """
+    Initiates a WhatsApp call session. `sdp_offer` must come from your frontend's
+    WebRTC client (RTCPeerConnection.createOffer()) — pass it in as POST data.
+    """
+    lead = get_object_or_404(Lead, id=lead_id)
+    sdp_offer = request.POST.get('sdp_offer')
+
+    if not sdp_offer:
+        return JsonResponse(
+            {'error': 'sdp_offer is required — generate it client-side via WebRTC before calling this endpoint.'},
+            status=400,
+        )
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": lead.contact_number.replace('+', '').replace(' ', ''),
+        "action": "connect",
+        "session": {
+            "sdp_type": "offer",
+            "sdp": sdp_offer,
+        },
+    }
+
+    resp = requests.post(META_GRAPH_URL, headers=_meta_headers(), data=json.dumps(payload))
+    data = resp.json()
+
+    if resp.status_code != 200:
+        return JsonResponse({'error': 'meta_api_error', 'details': data}, status=resp.status_code)
+
+    call_id = data.get('calls', [{}])[0].get('id', '')
+
+    CallLog.objects.create(
+        lead=lead,
+        caller=request.user,
+        call_sid=call_id,
+        to_number=lead.contact_number,
+        channel='whatsapp',
+        status='initiated',
+    )
+    # Meta returns the callee's SDP answer asynchronously via webhook (see below),
+    # not in this response — your WebRTC client must wait for it to complete the connection.
+    return JsonResponse({'status': 'initiated', 'call_id': call_id})
+
+
+@login_required
+@require_POST
+def end_whatsapp_call(request, call_id):
+    payload = {
+        "messaging_product": "whatsapp",
+        "call_id": call_id,
+        "action": "terminate",
+    }
+    resp = requests.post(META_GRAPH_URL, headers=_meta_headers(), data=json.dumps(payload))
+    CallLog.objects.filter(call_sid=call_id).update(status='completed')
+    return JsonResponse(resp.json(), status=resp.status_code)
+
+
+@csrf_exempt
+def whatsapp_webhook(request):
+    """
+    Single webhook endpoint for both verification (GET) and events (POST) —
+    register this URL in Meta App Dashboard > WhatsApp > Configuration.
+    Handles call status updates (ringing/accepted/rejected/terminated) and
+    delivers the SDP answer your WebRTC client needs to complete the call.
+    """
+    if request.method == 'GET':
+        mode = request.GET.get('hub.mode')
+        token = request.GET.get('hub.verify_token')
+        challenge = request.GET.get('hub.challenge')
+        if mode == 'subscribe' and token == settings.META_WA_VERIFY_TOKEN:
+            return HttpResponse(challenge)
+        return HttpResponse('Verification failed', status=403)
+
+    if request.method == 'POST':
+        body = json.loads(request.body.decode('utf-8'))
+        try:
+            entry = body['entry'][0]['changes'][0]['value']
+            calls = entry.get('calls', [])
+            for call_event in calls:
+                call_id = call_event.get('id')
+                event_status = call_event.get('status')  # ringing, accepted, rejected, terminated
+                if call_id and event_status:
+                    CallLog.objects.filter(call_sid=call_id).update(status=event_status)
+
+                # SDP answer arrives here when the callee accepts — push it to the
+                # waiting frontend client via websockets/polling/Server-Sent-Events
+                # so RTCPeerConnection.setRemoteDescription() can be called.
+                session = call_event.get('session', {})
+                if session.get('sdp_type') == 'answer':
+                    # TODO: relay session['sdp'] to the agent's browser (e.g. via Django Channels)
+                    pass
+        except (KeyError, IndexError, json.JSONDecodeError):
+            pass
+
+        return HttpResponse(status=200)
+
+
+# ============================================================
+# 3. GOOGLE CALENDAR — OAuth flow + scheduling
+# ============================================================
+
+def _build_flow():
+    return Flow.from_client_config(
+        {
+            "web": {
+                "client_id": settings.GOOGLE_CLIENT_ID,
+                "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": [settings.GOOGLE_REDIRECT_URI],
+            }
+        },
+        scopes=settings.GOOGLE_SCOPES,
+        redirect_uri=settings.GOOGLE_REDIRECT_URI,
+    )
+
+
+@login_required
+def google_authorize(request):
+    """'Connect Google Calendar' button points here."""
+    flow = _build_flow()
+    auth_url, state = flow.authorization_url(
+        access_type='offline',       # needed to get a refresh_token
+        prompt='consent',            # forces refresh_token on repeat auth too
+        include_granted_scopes='true',
+    )
+    request.session['google_oauth_state'] = state
+    return redirect(auth_url)
+
+
+@login_required
+def google_callback(request):
+    state = request.session.get('google_oauth_state')
+    flow = _build_flow()
+    flow.fetch_token(authorization_response=request.build_absolute_uri())
+
+    credentials = flow.credentials
+    GoogleCredential.objects.update_or_create(
+        user=request.user,
+        defaults={
+            'access_token': credentials.token,
+            'refresh_token': credentials.refresh_token,
+            'token_expiry': credentials.expiry,
+        },
+    )
+    return redirect('crm_dashboard')  # change to your actual dashboard url name
+
+
+def _get_calendar_service(user):
+    cred = GoogleCredential.objects.get(user=user)
+    creds = Credentials(
+        token=cred.access_token,
+        refresh_token=cred.refresh_token,
+        token_uri='https://oauth2.googleapis.com/token',
+        client_id=settings.GOOGLE_CLIENT_ID,
+        client_secret=settings.GOOGLE_CLIENT_SECRET,
+        scopes=settings.GOOGLE_SCOPES,
+    )
+    service = build('calendar', 'v3', credentials=creds)
+
+    # Persist refreshed access token if it rotated
+    if creds.token != cred.access_token:
+        cred.access_token = creds.token
+        cred.save(update_fields=['access_token'])
+
+    return service
+
+
+@login_required
+@require_POST
+def schedule_call(request, lead_id):
+    lead = get_object_or_404(Lead, id=lead_id)
+    scheduled_time = parse_datetime(request.POST.get('scheduled_time'))  # "2026-07-25T15:00:00"
+    note = request.POST.get('note', '')
+
+    if not scheduled_time:
+        return JsonResponse({'error': 'Invalid scheduled_time format'}, status=400)
+
+    try:
+        service = _get_calendar_service(request.user)
+    except GoogleCredential.DoesNotExist:
+        return JsonResponse({'error': 'Google Calendar not connected'}, status=400)
+
+    event = {
+        'summary': f'Call: {lead.name}',
+        'description': note or f'Follow-up call with {lead.name} ({lead.contact_number})',
+        'start': {'dateTime': scheduled_time.isoformat(), 'timeZone': 'Asia/Karachi'},
+        'end': {'dateTime': (scheduled_time + timedelta(minutes=15)).isoformat(), 'timeZone': 'Asia/Karachi'},
+        'reminders': {
+            'useDefault': False,
+            'overrides': [
+                {'method': 'popup', 'minutes': 30},
+                {'method': 'popup', 'minutes': 10},
+            ],
+        },
+    }
+    created_event = service.events().insert(calendarId='primary', body=event).execute()
+
+    schedule = CallSchedule.objects.create(
+        lead=lead,
+        scheduled_by=request.user,
+        scheduled_time=scheduled_time,
+        note=note,
+        google_event_id=created_event['id'],
+    )
+    return JsonResponse({
+        'status': 'scheduled',
+        'schedule_id': schedule.id,
+        'event_link': created_event.get('htmlLink'),
+    })
+
+
+@login_required
+@require_POST
+def cancel_scheduled_call(request, schedule_id):
+    schedule = get_object_or_404(CallSchedule, id=schedule_id, scheduled_by=request.user)
+    if schedule.google_event_id:
+        try:
+            service = _get_calendar_service(request.user)
+            service.events().delete(calendarId='primary', eventId=schedule.google_event_id).execute()
+        except Exception:
+            pass  # event may already be deleted on Google's side
+    schedule.delete()
+    return JsonResponse({'status': 'cancelled'})
+
+
+@login_required
+def call_log_list(request):
+    calls = CallLog.objects.select_related('lead').order_by('-created_at')
+
+    channel = request.GET.get('channel')
+    if channel:
+        calls = calls.filter(channel=channel)
+
+    status = request.GET.get('status')
+    if status:
+        calls = calls.filter(status=status)
+
+    paginator = Paginator(calls, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'leads/call_log_list.html', {
+        'page_obj': page_obj,
+        'active': 'call_logs',
+        'channel_filter': channel,
+    })
+
+
+@login_required
+def call_schedule_list(request):
+    schedules = CallSchedule.objects.select_related('lead').order_by('scheduled_time')
+
+    scope = request.GET.get('scope')
+    if scope == 'mine':
+        schedules = schedules.filter(scheduled_by=request.user)
+
+    paginator = Paginator(schedules, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'leads/call_schedule_list.html', {
+        'page_obj': page_obj,
+        'active': 'scheduled_calls',
     })

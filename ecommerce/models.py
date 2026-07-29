@@ -118,3 +118,74 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.order.order_number} - {self.amount}"
+    
+
+class Shipment(models.Model):
+    STATUS_CHOICES = [
+        ('pickup', 'Pickup'), ('in_transit', 'In Transit'), ('delivered', 'Delivered'),
+    ]
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='shipments')
+    tracking_number = models.CharField(max_length=100, blank=True)
+    carrier = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pickup')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.order.order_number} - {self.tracking_number or 'no tracking'}"
+    
+
+class ReturnRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'), ('approved', 'Approved'),
+        ('rejected', 'Rejected'), ('refunded', 'Refunded'),
+    ]
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='returns')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    reason = models.TextField()
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Return for {self.order.order_number}"
+
+
+ECOMMERCE_SECTIONS = [
+    'dashboard', 'products', 'categories', 'customers',
+    'orders', 'inventory', 'payments', 'shipping', 'returns', 'reports'
+]
+
+
+class EcommerceUserPermissions(models.Model):
+    ACCESS_CHOICES = [('none', 'No Access'), ('view', 'View Only'), ('full', 'Full Access')]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='ecommerce_permissions')
+    dashboard = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    products = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    categories = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    customers = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    orders = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    inventory = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    payments = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    shipping = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    returns = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    reports = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+
+    ALL_SECTIONS = ECOMMERCE_SECTIONS
+
+    def get_section_permission(self, section: str) -> str:
+        return getattr(self, section, 'none')
+
+    def has_access(self, section: str) -> bool:
+        return self.get_section_permission(section) in ['full', 'view']
+
+    def is_view_only(self, section: str) -> bool:
+        return self.get_section_permission(section) == 'view'
+
+    def has_full_access(self, section: str) -> bool:
+        return self.get_section_permission(section) == 'full'
+
+    def __str__(self):
+        return f"E-commerce Permissions for {self.user.username}"
+
+    

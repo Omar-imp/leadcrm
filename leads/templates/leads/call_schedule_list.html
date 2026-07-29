@@ -1,0 +1,50 @@
+{% extends 'leads/base.html' %}
+{% block title %}Scheduled Calls{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>Scheduled Calls</h2>
+    <div class="filters">
+        <a href="{% url 'call_schedule_list' %}">All</a>
+        <a href="{% url 'call_schedule_list' %}?scope=mine">Mine</a>
+    </div>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Lead</th>
+            <th>Scheduled Time</th>
+            <th>Note</th>
+            <th>Scheduled By</th>
+            <th>Calendar</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for schedule in page_obj %}
+        <tr>
+            <td>{{ schedule.lead }}</td>
+            <td>{{ schedule.scheduled_time|date:"d M Y, h:i A" }}</td>
+            <td>{{ schedule.note|default:"—" }}</td>
+            <td>{{ schedule.scheduled_by }}</td>
+            <td>
+                {% if schedule.google_event_id %}
+                <span style="color:#16a34a;">✓ Synced</span>
+                {% else %}
+                <span style="color:#888;">Not synced</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center; color:#888;">There is no scheduled call.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

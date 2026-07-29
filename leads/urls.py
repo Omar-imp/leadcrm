@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('calendar/', views.calendar_view, name='calendar_view'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
 
@@ -179,4 +180,25 @@ urlpatterns = [
     path('emails/compose/', views.email_compose, name='email_compose'),
     path('emails/compose/<int:lead_id>/', views.email_compose, name='email_compose_lead'),
     path('emails/<int:pk>/', views.email_detail, name='email_detail'),
+    
+    # ---- Phone calling (Twilio) ----
+    path('call/phone/start/<int:lead_id>/', views.start_phone_call, name='start_phone_call'),
+    path('call/phone/twiml/', views.twiml_response, name='twiml_response'),
+    path('call/phone/status/<int:lead_id>/', views.call_status_callback, name='call_status_callback'),
+    path('call/phone/recording/', views.recording_callback, name='recording_callback'),
+
+    # ---- WhatsApp calling (Meta Cloud API) ----
+    path('call/whatsapp/start/<int:lead_id>/', views.start_whatsapp_call, name='start_whatsapp_call'),
+    path('call/whatsapp/end/<str:call_id>/', views.end_whatsapp_call, name='end_whatsapp_call'),
+    path('call/whatsapp/webhook/', views.whatsapp_webhook, name='whatsapp_webhook'),
+
+    # ---- Google Calendar ----
+    path('google/authorize/', views.google_authorize, name='google_authorize'),
+    path('google/callback/', views.google_callback, name='google_callback'),
+    path('call/schedule/<int:lead_id>/', views.schedule_call, name='schedule_call'),
+    path('call/schedule/cancel/<int:schedule_id>/', views.cancel_scheduled_call, name='cancel_scheduled_call'),
+    
+    # ---- Call log list----
+    path('calls/', views.call_log_list, name='call_log_list'),
+    path('calls/scheduled/', views.call_schedule_list, name='call_schedule_list'),
 ]

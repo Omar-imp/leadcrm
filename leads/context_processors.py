@@ -5,7 +5,8 @@ from .models import (Lead, FollowUp, Payment, ScheduledPayment,
                      Company, Contact, Opportunity, Quotation,
                      Project, Meeting, GeneralTask,
                      CommunicationLog, Ticket, ActivityLog,
-                     Document, Contract, Notification)
+                     Document, Contract, Notification,
+                     CallLog, CallSchedule) 
 
 
 def sidebar_counts(request):

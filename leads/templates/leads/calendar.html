@@ -1,0 +1,51 @@
+{% extends 'leads/base.html' %}
+{% block title %}Calendar - Lead CRM{% endblock %}
+{% block content %}
+<div class="calendar-header">
+    <h1 class="page-title" style="margin:0;">Calendar</h1>
+    <div class="calendar-nav">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}">&#8592;</a>
+        <div class="calendar-month-title">{{ month_name }} {{ year }}</div>
+        <a href="?year={{ next_year }}&month={{ next_month }}">&#8594;</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="calendar-grid">
+        <div class="calendar-weekday">Sun</div>
+        <div class="calendar-weekday">Mon</div>
+        <div class="calendar-weekday">Tue</div>
+        <div class="calendar-weekday">Wed</div>
+        <div class="calendar-weekday">Thu</div>
+        <div class="calendar-weekday">Fri</div>
+        <div class="calendar-weekday">Sat</div>
+
+        {% for week in weeks %}
+            {% for day in week %}
+            <div class="calendar-day {% if day.other_month %}other-month{% endif %} {% if day.is_today %}today{% endif %}">
+                <div class="calendar-day-number">{{ day.day }}</div>
+                {% for event in day.events %}
+                    {% if event.url %}
+                    <a href="{{ event.url }}" class="calendar-event {{ event.type }}">{{ event.title }}</a>
+                    {% else %}
+                    <div class="calendar-event {{ event.type }}">{{ event.title }}</div>
+                    {% endif %}
+                {% endfor %}
+                {% if day.more_count > 0 %}
+                <div class="calendar-more">+{{ day.more_count }} more</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Legend</h2>
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:8px;"><span class="calendar-event meeting" style="padding:4px 10px;">Meeting</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span class="calendar-event followup" style="padding:4px 10px;">Follow Up</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span class="calendar-event task" style="padding:4px 10px;">Task</span></div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+<div class="form-card">
+    <div class="form-card-header"><h2>{{ title }}</h2></div>
+    <div class="form-card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <h3 style="margin:0 0 16px; font-size:16px;">Account Details</h3>
+
+            <div class="form-row">
+                {% if not edit_user %}
+                <div class="form-group">
+                    <label class="field-label">Username <span class="required">*</span></label>
+                    <input type="text" name="username" class="form-control" required>
+                </div>
+                {% endif %}
+                <div class="form-group">
+                    <label class="field-label">First Name</label>
+                    <input type="text" name="first_name" class="form-control"
+                           value="{{ edit_user.first_name|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Last Name</label>
+                    <input type="text" name="last_name" class="form-control"
+                           value="{{ edit_user.last_name|default:'' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="field-label">Email</label>
+                    <input type="email" name="email" class="form-control"
+                           value="{{ edit_user.email|default:'' }}">
+                </div>
+            </div>
+
+            {% if not edit_user %}
+            <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label class="field-label">Password <span class="required">*</span></label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+            </div>
+            {% endif %}
+
+            <h3 style="margin:28px 0 8px; font-size:16px;">Section Access Permissions</h3>
+            <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">
+                Set exactly what this user can access.
+                <strong>Full</strong> = view and make changes.
+                <strong>View Only</strong> = can see but cannot edit/create/delete.
+                <strong>No Access</strong> = section hidden completely.
+            </p>
+
+            <table style="width:100%;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left; padding:10px 12px; border-bottom:2px solid var(--border);">Section</th>
+                        <th style="text-align:center; padding:10px 12px; border-bottom:2px solid var(--border); color:var(--green);">Full Access</th>
+                        <th style="text-align:center; padding:10px 12px; border-bottom:2px solid var(--border); color:var(--blue);">View Only</th>
+                        <th style="text-align:center; padding:10px 12px; border-bottom:2px solid var(--border); color:var(--red);">No Access</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for section, label in section_labels.items %}
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:12px;"><strong>{{ label }}</strong></td>
+                        <td style="text-align:center; padding:12px;">
+                            <input type="radio" name="perm_{{ section }}" value="full"
+                                   style="width:18px; height:18px; accent-color:var(--green);"
+                                   {% if current_perms %}
+                                       {% if current_perms|getattr:section == 'full' %}checked{% endif %}
+                                   {% else %}
+                                       {% if section == 'dashboard' %}checked{% endif %}
+                                   {% endif %}>
+                        </td>
+                        <td style="text-align:center; padding:12px;">
+                            <input type="radio" name="perm_{{ section }}" value="view"
+                                   style="width:18px; height:18px; accent-color:#2196f3;"
+                                   {% if current_perms %}
+                                       {% if current_perms|getattr:section == 'view' %}checked{% endif %}
+                                   {% endif %}>
+                        </td>
+                        <td style="text-align:center; padding:12px;">
+                            <input type="radio" name="perm_{{ section }}" value="none"
+                                   style="width:18px; height:18px; accent-color:var(--red);"
+                                   {% if current_perms %}
+                                       {% if current_perms|getattr:section == 'none' %}checked{% endif %}
+                                   {% else %}
+                                       {% if section != 'dashboard' %}checked{% endif %}
+                                   {% endif %}>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div style="margin:20px 0; padding:16px; background:#f3f4f8; border-radius:8px;">
+                <div style="font-size:13px; font-weight:700; margin-bottom:12px;">
+                    Quick Presets — click to auto-fill permissions:
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button type="button" onclick="applyPreset('store_manager')" class="btn btn-small btn-outline">Store Manager</button>
+                    <button type="button" onclick="applyPreset('fulfillment')" class="btn btn-small btn-outline">Fulfillment Staff</button>
+                    <button type="button" onclick="applyPreset('support')" class="btn btn-small btn-outline">Support Agent</button>
+                    <button type="button" onclick="applyPreset('finance')" class="btn btn-small btn-outline">Finance</button>
+                    <button type="button" onclick="applyPreset('all')" class="btn btn-small" style="background:var(--green);">Full Access</button>
+                    <button type="button" onclick="applyPreset('none')" class="btn btn-small" style="background:var(--red);">No Access</button>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'ecommerce_user_list' %}" style="margin-right:12px; padding:12px 20px; color:#666;">Cancel</a>
+                <button type="submit" class="btn">
+                    {% if edit_user %}Save Changes{% else %}Create User{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const presets = {
+    store_manager: {
+        dashboard: 'full', products: 'full', categories: 'full', customers: 'full',
+        orders: 'full', inventory: 'full', payments: 'full', shipping: 'full',
+        returns: 'full', reports: 'full',
+    },
+    fulfillment: {
+        dashboard: 'full', products: 'view', categories: 'view', customers: 'view',
+        orders: 'full', inventory: 'full', payments: 'none', shipping: 'full',
+        returns: 'view', reports: 'none',
+    },
+    support: {
+        dashboard: 'full', products: 'view', categories: 'none', customers: 'full',
+        orders: 'view', inventory: 'none', payments: 'view', shipping: 'view',
+        returns: 'full', reports: 'none',
+    },
+    finance: {
+        dashboard: 'full', products: 'none', categories: 'none', customers: 'view',
+        orders: 'view', inventory: 'none', payments: 'full', shipping: 'none',
+        returns: 'view', reports: 'full',
+    },
+    all: Object.fromEntries(
+        ['dashboard','products','categories','customers','orders','inventory',
+         'payments','shipping','returns','reports'].map(s => [s, 'full'])
+    ),
+    none: Object.fromEntries(
+        ['dashboard','products','categories','customers','orders','inventory',
+         'payments','shipping','returns','reports'].map(s => [s, 'none'])
+    ),
+};
+
+function applyPreset(name) {
+    const preset = presets[name];
+    if (!preset) return;
+    for (const [section, value] of Object.entries(preset)) {
+        const radio = document.querySelector(`input[name="perm_${section}"][value="${value}"]`);
+        if (radio) radio.checked = true;
+    }
+}
+</script>
+{% endblock %}

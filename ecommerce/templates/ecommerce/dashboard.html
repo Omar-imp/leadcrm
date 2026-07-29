@@ -2,7 +2,81 @@
 {% block title %}Dashboard - E-commerce CRM{% endblock %}
 {% block content %}
 <h1 class="page-title">E-commerce Dashboard</h1>
+
+<div class="stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
+    <div class="card stat">
+        <div class="label">Revenue Today</div>
+        <div class="value">Rs {{ revenue_today|floatformat:0 }}</div>
+    </div>
+    <div class="card stat">
+        <div class="label">Revenue This Week</div>
+        <div class="value">Rs {{ revenue_week|floatformat:0 }}</div>
+    </div>
+    <div class="card stat">
+        <div class="label">Revenue This Month</div>
+        <div class="value">Rs {{ revenue_month|floatformat:0 }}</div>
+    </div>
+    <div class="card stat">
+        <div class="label">Revenue This Year</div>
+        <div class="value">Rs {{ revenue_year|floatformat:0 }}</div>
+    </div>
+</div>
+
+<div class="stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
+    <div class="card stat">
+        <div class="label">Total Orders</div>
+        <div class="value">{{ total_orders }}</div>
+    </div>
+    <div class="card stat">
+        <div class="label">Average Order Value</div>
+        <div class="value">Rs {{ aov|floatformat:0 }}</div>
+    </div>
+    <div class="card stat">
+        <div class="label">New Customers (This Month)</div>
+        <div class="value">{{ new_customers }}</div>
+    </div>
+    <div class="card stat">
+        <div class="label">Total Customers</div>
+        <div class="value">{{ total_customers }}</div>
+    </div>
+</div>
+
+<div class="stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
+    <div class="card stat">
+        <div class="label">Pending Orders</div>
+        <div class="value">{{ pending_orders }}</div>
+    </div>
+    <div class="card stat">
+        <div class="label">Low Stock Products</div>
+        <div class="value">{{ low_stock_products }}</div>
+    </div>
+    <div class="card stat">
+        <div class="label">Open Return Requests</div>
+        <div class="value">{{ open_tickets }}</div>
+    </div>
+    <div class="card stat">
+        <div class="label">Outstanding Payments</div>
+        <div class="value">Rs {{ outstanding_payments|floatformat:0 }}</div>
+    </div>
+</div>
+
 <div class="card">
-    <p>Welcome to the E-commerce CRM. This is a placeholder — we'll build out the real dashboard next.</p>
+    <h3 style="margin-top:0;">Recent Orders</h3>
+    <table>
+        <thead><tr><th>Order #</th><th>Customer</th><th>Status</th><th>Total</th><th>Date</th></tr></thead>
+        <tbody>
+            {% for o in recent_orders %}
+            <tr>
+                <td><a href="{% url 'order_detail' o.pk %}">{{ o.order_number }}</a></td>
+                <td>{{ o.customer.name }}</td>
+                <td>{{ o.get_status_display }}</td>
+                <td>Rs {{ o.total }}</td>
+                <td>{{ o.created_at|date:"d M Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="empty-state">No orders yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

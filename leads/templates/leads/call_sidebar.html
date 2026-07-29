@@ -1,0 +1,158 @@
+{# ============================================================ #}
+{# Calling & Calendar sidebar — include this in lead_detail.html #}
+{# Usage: {% include 'partials/call_sidebar.html' with lead=lead %} #}
+{# ============================================================ #}
+
+<div class="call-sidebar" id="call-sidebar" data-lead-id="{{ lead.id }}">
+
+    <h4>Contact Lead</h4>
+
+    <!-- Phone call button -->
+    <button id="btn-call-phone" class="btn btn-call-phone">
+        📞 Call {{ lead.contact_number }}
+    </button>
+
+    <!-- WhatsApp call button -->
+    <button id="btn-call-whatsapp" class="btn btn-call-whatsapp">
+        🟢 WhatsApp Call
+    </button>
+    <div id="whatsapp-permission-note" style="display:none; font-size:12px; color:#b45309; margin-top:4px;">
+        Mic permission chahiye hogi WhatsApp call ke liye.
+    </div>
+
+    <hr>
+
+    <!-- Schedule call / Google Calendar -->
+    <h4>Schedule a Call</h4>
+
+    {% if google_connected %}
+        <form id="schedule-call-form">
+            <label for="schedule-datetime">Date & Time</label>
+            <input type="datetime-local" id="schedule-datetime" name="scheduled_time" required>
+
+            <label for="schedule-note">Note (optional)</label>
+            <textarea id="schedule-note" name="note" rows="2" placeholder="Reminder note..."></textarea>
+
+            <button type="submit" class="btn btn-schedule">📅 Schedule + Add Reminder</button>
+        </form>
+        <div id="schedule-result" style="font-size:13px; margin-top:6px;"></div>
+    {% else %}
+        <p style="font-size:13px; color:#666;">
+            Reminders ke liye pehle Google Calendar connect karein.
+        </p>
+        <a href="{% url 'google_authorize' %}" class="btn btn-google-connect">
+            🔗 Connect Google Calendar
+        </a>
+    {% endif %}
+
+    <hr>
+
+    <!-- Call history -->
+    <h4>Call History</h4>
+    <ul id="call-history-list" class="call-history-list">
+        {% for call in lead.calls.all %}
+        <li>
+            <span class="call-channel">{{ call.get_channel_display }}</span> —
+            <span class="call-status status-{{ call.status }}">{{ call.status }}</span>
+            <span class="call-time">{{ call.created_at|date:"d M, h:i A" }}</span>
+            {% if call.duration %}<span class="call-duration">{{ call.duration }}s</span>{% endif %}
+            {% if call.recording_url %}
+                <audio controls src="{{ call.recording_url }}" style="display:block; width:100%; margin-top:4px;"></audio>
+            {% endif %}
+        </li>
+        {% empty %}
+        <li style="color:#888;">There is no call history right now.</li>
+        {% endfor %}
+    </ul>
+
+</div>
+
+<style>
+.call-sidebar { padding: 16px; border-left: 1px solid #e5e7eb; width: 280px; }
+.call-sidebar h4 { margin: 12px 0 8px; font-size: 14px; color: #374151; }
+.call-sidebar .btn {
+    display: block; width: 100%; padding: 10px; margin-bottom: 8px;
+    border: none; border-radius: 6px; font-size: 14px; cursor: pointer;
+    text-align: center; text-decoration: none;
+}
+.btn-call-phone { background: #2563eb; color: #fff; }
+.btn-call-whatsapp { background: #16a34a; color: #fff; }
+.btn-schedule { background: #7c3aed; color: #fff; }
+.btn-google-connect { background: #fff; color: #2563eb; border: 1px solid #2563eb; }
+.call-sidebar input, .call-sidebar textarea {
+    width: 100%; padding: 6px; margin-bottom: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 13px;
+}
+.call-history-list { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+.call-history-list li { padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+.call-status { font-weight: 600; text-transform: capitalize; }
+.status-completed { color: #16a34a; }
+.status-failed, .status-no-answer, .status-rejected { color: #dc2626; }
+.status-initiated, .status-ringing, .status-in-progress { color: #d97706; }
+.call-time, .call-duration { color: #888; font-size: 12px; margin-left: 4px; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sidebar = document.getElementById('call-sidebar');
+    const leadId = sidebar.dataset.leadId;
+
+    function getCookie(name) {
+        const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return match ? match.pop() : '';
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // ---- Phone call ----
+    document.getElementById('btn-call-phone').addEventListener('click', function () {
+        this.disabled = true;
+        this.textContent = 'Calling...';
+        fetch(`/call/phone/start/${leadId}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken },
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert('Call started: ' + data.status);
+            this.disabled = false;
+            this.textContent = '📞 Call';
+        })
+        .catch(() => {
+            this.disabled = false;
+            this.textContent = '📞 Call';
+        });
+    });
+
+    // ---- WhatsApp call ----
+    // NOTE: real audio requires WebRTC (mic capture + SDP offer/answer).
+    // This is a placeholder wiring; see the note below the button.
+    document.getElementById('btn-call-whatsapp').addEventListener('click', function () {
+        document.getElementById('whatsapp-permission-note').style.display = 'block';
+        // TODO: replace with actual RTCPeerConnection flow, then POST the offer:
+        // fetch(`/call/whatsapp/start/${leadId}/`, { method: 'POST', body: formData with sdp_offer, headers: {'X-CSRFToken': csrftoken} })
+        alert('WhatsApp calling ke liye WebRTC client setup abhi baaki hai — backend ready hai.');
+    });
+
+    // ---- Schedule call ----
+    const scheduleForm = document.getElementById('schedule-call-form');
+    if (scheduleForm) {
+        scheduleForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(scheduleForm);
+            fetch(`/call/schedule/${leadId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken },
+                body: formData,
+            })
+            .then(res => res.json())
+            .then(data => {
+                const resultEl = document.getElementById('schedule-result');
+                if (data.status === 'scheduled') {
+                    resultEl.innerHTML = `✅ Scheduled — <a href="${data.event_link}" target="_blank">View in Calendar</a>`;
+                } else {
+                    resultEl.innerHTML = `❌ ${data.error || 'Something went wrong'}`;
+                }
+            });
+        });
+    }
+});
+</script>
