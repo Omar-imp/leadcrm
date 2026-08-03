@@ -639,3 +639,136 @@ def ecommerce_assistant_history(request, conversation_id):
         return JsonResponse({'messages': []})
     msgs = list(conversation.messages.values('role', 'content', 'created_at'))
     return JsonResponse({'messages': msgs})
+
+
+# ── ADD TO ecommerce/views.py ──
+
+# ── REPLACE in ecommerce/views.py ──
+
+import json
+import calendar as cal_module
+
+
+@login_required
+def ecommerce_reports(request):
+    today = timezone.localdate()
+    this_month = today.replace(day=1)
+
+    orders = Order.objects.exclude(status='cancelled')
+    total_revenue = sum(o.total for o in orders)
+    revenue_this_month = sum(o.total for o in orders.filter(created_at__date__gte=this_month))
+
+    # orders by status -> donut chart data
+    status_labels = []
+    status_counts = []
+    status_display_map = dict(Order.STATUS_CHOICES)
+    for key, label in Order.STATUS_CHOICES:
+        c = Order.objects.filter(status=key).count()
+        if c > 0:
+            status_labels.append(label)
+            status_counts.append(c)
+
+    # revenue trend last 6 months -> bar chart data
+    month_labels = []
+    month_revenue = []
+    for i in range(5, -1, -1):
+        y, m = today.year, today.month - i
+        while m <= 0:
+            m += 12
+            y -= 1
+        month_orders = orders.filter(created_at__year=y, created_at__month=m)
+        total = sum(o.total for o in month_orders)
+        month_labels.append(f"{cal_module.month_abbr[m]} {y}")
+        month_revenue.append(float(total))
+
+    # best sellers
+    best_sellers = (
+        OrderItem.objects.values('product__name')
+        .annotate(total_qty=Sum('quantity'))
+        .order_by('-total_qty')[:8]
+    )
+    best_seller_labels = [b['product__name'] or 'Unknown' for b in best_sellers]
+    best_seller_counts = [b['total_qty'] for b in best_sellers]
+
+    # top customers
+    top_customers = []
+    for c in Customer.objects.all():
+        c_orders = Order.objects.filter(customer=c).exclude(status='cancelled')
+        total = sum(o.total for o in c_orders)
+        if total > 0:
+            top_customers.append({'name': c.name, 'orders': c_orders.count(), 'total': total})
+    top_customers.sort(key=lambda x: x['total'], reverse=True)
+    top_customers = top_customers[:10]
+
+    total_products = Product.objects.count()
+    low_stock_count = Product.objects.filter(stock_qty__lte=5).count()
+
+    payments = Payment.objects.all()
+    paid_total = payments.filter(status='paid').aggregate(t=Sum('amount'))['t'] or 0
+    pending_total = payments.filter(status__in=['pending', 'partial']).aggregate(t=Sum('amount'))['t'] or 0
+
+    context = {
+        'active': 'reports',
+        'title': 'Reports & Analytics',
+        'total_revenue': total_revenue,
+        'revenue_this_month': revenue_this_month,
+        'top_customers': top_customers,
+        'total_products': total_products,
+        'low_stock_count': low_stock_count,
+        'paid_total': paid_total,
+        'pending_total': pending_total,
+        'status_labels': json.dumps(status_labels),
+        'status_counts': json.dumps(status_counts),
+        'month_labels': json.dumps(month_labels),
+        'month_revenue': json.dumps(month_revenue),
+        'best_seller_labels': json.dumps(best_seller_labels),
+        'best_seller_counts': json.dumps(best_seller_counts),
+    }
+    return render(request, 'ecommerce/reports.html', context)
+
+
+@login_required
+def stock_overview(request):
+    products = Product.objects.select_related('category').order_by('-stock_qty')
+    total_units = sum(p.stock_qty for p in products)
+    total_value = sum(p.stock_qty * p.sale_price for p in products)
+
+    # stock health breakdown -> donut chart
+    out_of_stock = products.filter(stock_qty=0).count()
+    low_stock = products.filter(stock_qty__gt=0, stock_qty__lte=5).count()
+    healthy_stock = products.filter(stock_qty__gt=5).count()
+
+    health_labels = json.dumps(['Healthy', 'Low Stock', 'Out of Stock'])
+    health_counts = json.dumps([healthy_stock, low_stock, out_of_stock])
+
+    # top 8 products by stock value -> bar chart
+    by_value = sorted(products, key=lambda p: p.stock_qty * p.sale_price, reverse=True)[:8]
+    value_labels = json.dumps([p.name for p in by_value])
+    value_amounts = json.dumps([float(p.stock_qty * p.sale_price) for p in by_value])
+
+    context = {
+        'products': products,
+        'active': 'inventory',
+        'title': 'Stock Overview',
+        'total_units': total_units,
+        'total_value': total_value,
+        'out_of_stock': out_of_stock,
+        'low_stock': low_stock,
+        'healthy_stock': healthy_stock,
+        'health_labels': health_labels,
+        'health_counts': health_counts,
+        'value_labels': value_labels,
+        'value_amounts': value_amounts,
+    }
+    return render(request, 'ecommerce/stock_overview.html', context)
+
+@login_required
+def order_list_filtered(request, status):
+    orders = Order.objects.filter(status=status).select_related('customer').order_by('-created_at')
+    title_map = {'pending': 'Pending Orders', 'shipped': 'Shipped Orders'}
+    context = {
+        'orders': orders,
+        'active': 'orders',
+        'title': title_map.get(status, 'Orders'),
+    }
+    return render(request, 'ecommerce/order_list.html', context)

@@ -160,12 +160,16 @@ class EcommerceAssistantService:
                             result = {'error': str(e)}
                             success = False
 
-                self._audit(latest_message, tool_name, success, json.dumps(result)[:500])
+                try:
+                    audit_str = json.dumps(result, default=str)[:500]
+                except Exception:
+                    audit_str = str(result)[:500]
+                self._audit(latest_message, tool_name, success, audit_str)
 
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
-                    "content": json.dumps(result),
+                    "content": json.dumps(result, default=str),
                 })
 
         return "I gathered some information but couldn't finish forming a response — try rephrasing."

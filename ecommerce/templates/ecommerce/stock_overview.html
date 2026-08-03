@@ -1,0 +1,100 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Total Units in Stock</div><div class="kpi-value">{{ total_units }}</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Total Inventory Value</div><div class="kpi-value">Rs {{ total_value|floatformat:0 }}</div></div>
+    <div class="kpi-card orange"><div class="kpi-label">Low Stock Products</div><div class="kpi-value">{{ low_stock }}</div></div>
+    <div class="kpi-card red"><div class="kpi-label">Out of Stock</div><div class="kpi-value">{{ out_of_stock }}</div></div>
+</div>
+
+<div class="charts-row">
+    <div class="card chart-card">
+        <h2 class="section-heading">Stock Health</h2>
+        <div id="healthDonutWrap" style="display:flex; align-items:center; gap:24px;">
+            <div id="healthDonut" style="width:160px; height:160px; border-radius:50%; flex-shrink:0;"></div>
+            <div id="healthLegend" style="flex:1;"></div>
+        </div>
+    </div>
+
+    <div class="card chart-card">
+        <h2 class="section-heading">Top Products by Stock Value</h2>
+        <div class="bar-chart" id="valueBars"></div>
+    </div>
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Stock</th><th>Sale Price</th><th>Value</th></tr></thead>
+        <tbody>
+            {% for p in products %}
+            <tr>
+                <td>{{ p.name }}</td>
+                <td>{{ p.sku }}</td>
+                <td>{{ p.category|default:"-" }}</td>
+                <td><span class="pill {% if p.stock_qty == 0 %}pill-lost{% elif p.stock_qty <= 5 %}pill-quotation{% else %}pill-converted{% endif %}">{{ p.stock_qty }}</span></td>
+                <td>Rs {{ p.sale_price }}</td>
+                <td>Rs {{ p.stock_qty|floatformat:0 }} x {{ p.sale_price }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No products yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+(function() {
+    // ── Stock health donut ──
+    const healthLabels = {{ health_labels|safe }};
+    const healthCounts = {{ health_counts|safe }};
+    const healthColors = ['#22b969', '#f2a93b', '#f16063'];
+    const healthData = healthLabels.map((label, i) => ({ label, value: healthCounts[i], color: healthColors[i] }));
+    const healthTotal = healthData.reduce((s, d) => s + d.value, 0);
+
+    const donutEl = document.getElementById('healthDonut');
+    const legendEl = document.getElementById('healthLegend');
+    const donutWrap = document.getElementById('healthDonutWrap');
+
+    if (healthTotal > 0) {
+        let cumulative = 0;
+        const stops = [];
+        healthData.forEach(d => {
+            if (d.value <= 0) return;
+            const start = (cumulative / healthTotal) * 360;
+            cumulative += d.value;
+            const end = (cumulative / healthTotal) * 360;
+            stops.push(d.color + ' ' + start.toFixed(2) + 'deg ' + end.toFixed(2) + 'deg');
+        });
+        donutEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
+        legendEl.innerHTML = healthData.filter(d => d.value > 0).map(d => {
+            const pct = ((d.value / healthTotal) * 100).toFixed(1);
+            return '<div class="legend-row"><span class="legend-dot" style="background:' + d.color + '"></span>' +
+                   '<span class="legend-label">' + d.label + '</span><span class="legend-value">' + d.value + ' (' + pct + '%)</span></div>';
+        }).join('');
+    } else {
+        donutWrap.innerHTML = '<div class="chart-empty"><div class="chart-empty-icon">&#128230;</div><p>No products yet.</p></div>';
+    }
+
+    // ── Top products by value ──
+    const valueLabels = {{ value_labels|safe }};
+    const valueAmounts = {{ value_amounts|safe }};
+    const valueEl = document.getElementById('valueBars');
+
+    if (valueAmounts.length > 0 && valueAmounts.some(v => v > 0)) {
+        const maxVal = Math.max.apply(null, valueAmounts.concat([1]));
+        valueEl.innerHTML = valueLabels.map((label, i) => {
+            const val = valueAmounts[i];
+            const widthPct = (val / maxVal * 100).toFixed(1);
+            return '<div class="bar-row"><div class="bar-label">' + label + '</div>' +
+                   '<div class="bar-track"><div class="bar-fill green" style="width:' + widthPct + '%"></div></div>' +
+                   '<div class="bar-count">Rs ' + val.toFixed(0) + '</div></div>';
+        }).join('');
+    } else {
+        valueEl.innerHTML = '<div class="chart-empty"><div class="chart-empty-icon">&#128176;</div><p>No stock value yet.</p></div>';
+    }
+})();
+</script>
+{% endblock %}

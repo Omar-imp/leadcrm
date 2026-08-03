@@ -82,13 +82,10 @@
             <span class="arrow" id="arrow-orders">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-orders">
-            <a href="{% url 'order_list' %}" class="{% if active == 'orders' %}active{% endif %}">
-                <span class="left"><span class="icon">&#128230;</span> All Orders</span>
-            </a>
-            <a href="#">
+            <a href="{% url 'order_list_filtered' 'pending' %}">
                 <span class="left"><span class="icon">&#9200;</span> Pending</span>
             </a>
-            <a href="#">
+            <a href="{% url 'order_list_filtered' 'shipped' %}">
                 <span class="left"><span class="icon">&#128666;</span> Shipped</span>
             </a>
         </nav>
@@ -99,7 +96,7 @@
             <span class="arrow" id="arrow-inventory">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-inventory">
-            <a href="#" class="{% if active == 'inventory' %}active{% endif %}">
+            <a href="{% url 'stock_overview' %}" class="{% if active == 'inventory' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128202;</span> Stock Overview</span>
             </a>
             <a href="{% url 'low_stock_list' %}" class="{% if active == 'inventory' %}active{% endif %}">
@@ -141,9 +138,6 @@
             <span class="arrow" id="arrow-support">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-support">
-            <a href="#" class="{% if active == 'tickets' %}active{% endif %}">
-                <span class="left"><span class="icon">&#127917;</span> Tickets</span>
-            </a>
             <a href="{% url 'return_list' %}" class="{% if active == 'support' %}active{% endif %}">
                 <span class="left"><span class="icon">&#8617;</span> Returns</span>
             </a>
@@ -155,7 +149,7 @@
             <span class="arrow" id="arrow-reports">&#9658;</span>
         </div>
         <nav class="dropdown-section" id="section-reports">
-            <a href="#" class="{% if active == 'reports' %}active{% endif %}">
+            <a href="{% url 'ecommerce_reports' %}" class="{% if active == 'reports' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128202;</span> Analytics</span>
             </a>
         </nav>

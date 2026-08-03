@@ -1,0 +1,118 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div class="report-grid">
+    <div class="kpi-card"><div class="kpi-label">Total Revenue</div><div class="kpi-value">Rs {{ total_revenue|floatformat:0 }}</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Revenue This Month</div><div class="kpi-value">Rs {{ revenue_this_month|floatformat:0 }}</div></div>
+    <div class="kpi-card orange"><div class="kpi-label">Paid Payments</div><div class="kpi-value">Rs {{ paid_total|floatformat:0 }}</div></div>
+    <div class="kpi-card red"><div class="kpi-label">Outstanding Payments</div><div class="kpi-value">Rs {{ pending_total|floatformat:0 }}</div></div>
+</div>
+
+<div class="charts-row">
+    <div class="card chart-card">
+        <h2 class="section-heading">Orders by Status</h2>
+        <div id="statusDonutWrap" style="display:flex; align-items:center; gap:24px;">
+            <div id="statusDonut" style="width:160px; height:160px; border-radius:50%; flex-shrink:0;"></div>
+            <div id="statusLegend" style="flex:1;"></div>
+        </div>
+    </div>
+
+    <div class="card chart-card">
+        <h2 class="section-heading">Revenue Trend (Last 6 Months)</h2>
+        <div class="bar-chart" style="display:flex; align-items:flex-end; gap:16px; height:240px;" id="revenueBars"></div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Best Sellers</h2>
+    <div class="bar-chart" id="bestSellerBars"></div>
+</div>
+
+<div class="card">
+    <h2 class="section-heading">Top Customers</h2>
+    <table>
+        <thead><tr><th>Customer</th><th>Orders</th><th>Total Spend</th></tr></thead>
+        <tbody>
+            {% for c in top_customers %}
+            <tr><td>{{ c.name }}</td><td>{{ c.orders }}</td><td>Rs {{ c.total|floatformat:0 }}</td></tr>
+            {% empty %}
+            <tr><td colspan="3" class="empty-state">No customer spend yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+(function() {
+    // ── Orders by Status donut ──
+    const statusLabels = {{ status_labels|safe }};
+    const statusCounts = {{ status_counts|safe }};
+    const statusColors = ['#4f6df5', '#22b8cf', '#8b5cf6', '#f2a93b', '#22b969', '#f16063', '#1d5fbf', '#e2413f', '#dc8a1a'];
+    const statusData = statusLabels.map((label, i) => ({ label, value: statusCounts[i], color: statusColors[i % statusColors.length] }));
+    const statusTotal = statusData.reduce((s, d) => s + d.value, 0);
+
+    const donutEl = document.getElementById('statusDonut');
+    const legendEl = document.getElementById('statusLegend');
+    const donutWrap = document.getElementById('statusDonutWrap');
+
+    if (statusTotal > 0) {
+        let cumulative = 0;
+        const stops = [];
+        statusData.forEach(d => {
+            const start = (cumulative / statusTotal) * 360;
+            cumulative += d.value;
+            const end = (cumulative / statusTotal) * 360;
+            stops.push(d.color + ' ' + start.toFixed(2) + 'deg ' + end.toFixed(2) + 'deg');
+        });
+        donutEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
+        legendEl.innerHTML = statusData.map(d => {
+            const pct = ((d.value / statusTotal) * 100).toFixed(1);
+            return '<div class="legend-row"><span class="legend-dot" style="background:' + d.color + '"></span>' +
+                   '<span class="legend-label">' + d.label + '</span><span class="legend-value">' + d.value + ' (' + pct + '%)</span></div>';
+        }).join('');
+    } else {
+        donutWrap.innerHTML = '<div class="chart-empty"><div class="chart-empty-icon">&#128202;</div><p>No orders yet.</p></div>';
+    }
+
+    // ── Revenue trend bars ──
+    const monthLabels = {{ month_labels|safe }};
+    const monthRevenue = {{ month_revenue|safe }};
+    const revBarsEl = document.getElementById('revenueBars');
+    const revTotal = monthRevenue.reduce((a, b) => a + b, 0);
+
+    if (revTotal > 0) {
+        const maxVal = Math.max.apply(null, monthRevenue.concat([1]));
+        revBarsEl.innerHTML = monthLabels.map((label, i) => {
+            const val = monthRevenue[i];
+            const heightPct = (val / maxVal * 100).toFixed(1);
+            return '<div class="bar-col"><div class="bar-value">Rs ' + val.toFixed(0) + '</div>' +
+                   '<div class="bar-track"><div class="bar-fill" style="height:' + heightPct + '%"></div></div>' +
+                   '<div class="bar-label">' + label + '</div></div>';
+        }).join('');
+    } else {
+        revBarsEl.parentElement.innerHTML = '<h2 class="section-heading">Revenue Trend (Last 6 Months)</h2><div class="chart-empty"><div class="chart-empty-icon">&#128200;</div><p>No orders yet.</p></div>';
+    }
+
+    // ── Best sellers horizontal bars ──
+    const bsLabels = {{ best_seller_labels|safe }};
+    const bsCounts = {{ best_seller_counts|safe }};
+    const bsEl = document.getElementById('bestSellerBars');
+
+    if (bsCounts.length > 0 && bsCounts.some(v => v > 0)) {
+        const maxVal = Math.max.apply(null, bsCounts.concat([1]));
+        bsEl.innerHTML = bsLabels.map((label, i) => {
+            const val = bsCounts[i];
+            const widthPct = (val / maxVal * 100).toFixed(1);
+            return '<div class="bar-row"><div class="bar-label">' + label + '</div>' +
+                   '<div class="bar-track"><div class="bar-fill blue" style="width:' + widthPct + '%"></div></div>' +
+                   '<div class="bar-count">' + val + '</div></div>';
+        }).join('');
+    } else {
+        bsEl.innerHTML = '<div class="chart-empty"><div class="chart-empty-icon">&#127942;</div><p>No sales yet.</p></div>';
+    }
+})();
+</script>
+{% endblock %}

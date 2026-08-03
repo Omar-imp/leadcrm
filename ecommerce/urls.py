@@ -41,14 +41,19 @@ urlpatterns = [
     path('login/', views.ecommerce_login, name='ecommerce_login'),
     path('logout/', views.ecommerce_logout, name='ecommerce_logout'),
 
-    #Add Users URLS
+    # Add Users URLS
     path('users/', views.ecommerce_user_list, name='ecommerce_user_list'),
     path('users/create/', views.ecommerce_user_create, name='ecommerce_user_create'),
     path('users/<int:pk>/edit/', views.ecommerce_user_edit, name='ecommerce_user_edit'),
     path('users/<int:pk>/delete/', views.ecommerce_user_delete, name='ecommerce_user_delete'),
     
+    # Chatbot URLS
     path('assistant/config/', views.ecommerce_assistant_config, name='ecommerce_assistant_config'),
-path('assistant/chat/', views.ecommerce_assistant_chat, name='ecommerce_assistant_chat'),
-path('assistant/history/<int:conversation_id>/', views.ecommerce_assistant_history, name='ecommerce_assistant_history'),
+    path('assistant/chat/', views.ecommerce_assistant_chat, name='ecommerce_assistant_chat'),
+    path('assistant/history/<int:conversation_id>/', views.ecommerce_assistant_history, name='ecommerce_assistant_history'),
+
+    path('reports/', views.ecommerce_reports, name='ecommerce_reports'),
+    path('inventory/stock-overview/', views.stock_overview, name='stock_overview'),
+    path('orders/status/<str:status>/', views.order_list_filtered, name='order_list_filtered'),
 ]
 
