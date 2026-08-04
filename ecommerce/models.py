@@ -211,3 +211,31 @@ class EcommerceAssistantAuditLog(models.Model):
     success         = models.BooleanField(default=True)
     response        = models.TextField(blank=True)
     timestamp       = models.DateTimeField(auto_now_add=True)
+
+
+DOCUMENT_TYPE_CHOICES = [
+    ('invoice', 'Invoice'),
+    ('receipt', 'Receipt'),
+    ('contract', 'Contract'),
+    ('id_proof', 'ID Proof'),
+    ('other', 'Other'),
+]
+
+
+class EcommerceDocument(models.Model):
+    title = models.CharField(max_length=200)
+    doc_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES, default='other')
+    file = models.FileField(upload_to='ecommerce_documents/')
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='documents')
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='documents')
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+
+
+

@@ -55,5 +55,10 @@ urlpatterns = [
     path('reports/', views.ecommerce_reports, name='ecommerce_reports'),
     path('inventory/stock-overview/', views.stock_overview, name='stock_overview'),
     path('orders/status/<str:status>/', views.order_list_filtered, name='order_list_filtered'),
+
+    # ── 3. ADD to ecommerce/urls.py ──
+    path('documents/', views.document_list, name='document_list'),
+    path('documents/upload/', views.document_upload, name='document_upload'),
+    path('documents/<int:pk>/delete/', views.document_delete, name='document_delete'),
 ]
 

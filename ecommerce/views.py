@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required as dj_login_required
 from .models import (Customer, Payment, Category, Product,
                     Order, OrderItem, Shipment, ReturnRequest,
-                    EcommerceUserPermissions, EcommerceAssistantConversation)
+                    EcommerceUserPermissions, EcommerceAssistantConversation,
+                    EcommerceDocument, DOCUMENT_TYPE_CHOICES)
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -41,7 +42,7 @@ def ecommerce_login(request):
 
 def ecommerce_logout(request):
     logout(request)
-    return redirect('ecommerce_login')
+    return redirect('login_selector')
 
 
 @login_required
@@ -772,3 +773,67 @@ def order_list_filtered(request, status):
         'title': title_map.get(status, 'Orders'),
     }
     return render(request, 'ecommerce/order_list.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def document_upload(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        doc_type = request.POST.get('doc_type', 'other')
+        notes = request.POST.get('notes')
+        file = request.FILES.get('file')
+
+        if not file:
+            messages.error(request, 'Please select a file to upload.')
+            return redirect('document_upload')
+
+        doc = EcommerceDocument(
+            title=title or file.name,
+            doc_type=doc_type,
+            notes=notes,
+            uploaded_by=request.user,
+            file=file,
+        )
+        order_id = request.POST.get('order')
+        customer_id = request.POST.get('customer')
+        doc.order_id = order_id if order_id else None
+        doc.customer_id = customer_id if customer_id else None
+        doc.save()
+        messages.success(request, f'"{doc.title}" uploaded successfully.')
+        return redirect('document_list')
+
+    context = {
+        'active': 'documents',
+        'title': 'Upload Document',
+        'doc_types': DOCUMENT_TYPE_CHOICES,
+        'orders': Order.objects.all(),
+        'customers': Customer.objects.all(),
+    }
+    return render(request, 'ecommerce/document_upload.html', context)
+
+
+@login_required
+def document_list(request):
+    documents = EcommerceDocument.objects.select_related('order', 'customer', 'uploaded_by').order_by('-created_at')
+    doc_type = request.GET.get('type')
+    if doc_type:
+        documents = documents.filter(doc_type=doc_type)
+    context = {
+        'documents': documents,
+        'active': 'documents',
+        'title': 'Documents',
+        'doc_types': DOCUMENT_TYPE_CHOICES,
+        'selected_type': doc_type,
+    }
+    return render(request, 'ecommerce/document_list.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def document_delete(request, pk):
+    doc = get_object_or_404(EcommerceDocument, pk=pk)
+    doc.file.delete()
+    doc.delete()
+    messages.success(request, 'Document deleted.')
+    return redirect('document_list')

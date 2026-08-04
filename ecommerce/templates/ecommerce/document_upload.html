@@ -1,0 +1,53 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div class="card" style="max-width:600px;">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="margin-bottom:16px;">
+            <label class="field-label">Title <span class="required">*</span></label>
+            <input type="text" name="title" required class="form-control">
+        </div>
+        <div style="margin-bottom:16px;">
+            <label class="field-label">Document Type</label>
+            <select name="doc_type" class="form-control">
+                {% for value, label in doc_types %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label class="field-label">Related Order (optional)</label>
+            <select name="order" class="form-control">
+                <option value="">-- None --</option>
+                {% for o in orders %}
+                <option value="{{ o.id }}">{{ o.order_number }} — {{ o.customer.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label class="field-label">Related Customer (optional)</label>
+            <select name="customer" class="form-control">
+                <option value="">-- None --</option>
+                {% for c in customers %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label class="field-label">File <span class="required">*</span></label>
+            <input type="file" name="file" required class="form-control">
+        </div>
+        <div style="margin-bottom:16px;">
+            <label class="field-label">Notes</label>
+            <textarea name="notes" class="form-control"></textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn">Upload</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

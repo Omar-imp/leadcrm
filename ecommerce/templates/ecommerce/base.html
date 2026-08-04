@@ -154,6 +154,20 @@
             </a>
         </nav>
 
+        <!-- DOCS UPLOAD -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('documents')">
+            DOCUMENTS
+            <span class="arrow" id="arrow-documents">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-documents">
+            <a href="{% url 'document_list' %}" class="{% if active == 'documents' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128193;</span> All Documents</span>
+            </a>
+            <a href="{% url 'document_upload' %}">
+                <span class="left"><span class="icon">&#43;</span> Upload Document</span>
+            </a>
+        </nav>
+
         <!-- USERS -->
         <div class="section-label dropdown-toggle" onclick="toggleSection('users')">
             USERS
@@ -169,7 +183,7 @@
         {% if user.is_authenticated %}
         <div class="section-label">ACCOUNT</div>
         <nav>
-            <a href="{% url 'logout' %}">
+            <a href="{% url 'ecommerce_logout' %}">
                 <span class="left"><span class="icon">&#10148;</span> Logout ({{ user.username }})</span>
             </a>
         </nav>

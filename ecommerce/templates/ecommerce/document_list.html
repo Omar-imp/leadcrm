@@ -1,0 +1,39 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'documents' %}
+    <a href="{% url 'document_upload' %}" class="btn">+ Upload Document</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Title</th><th>Type</th><th>Order</th><th>Customer</th><th>Uploaded By</th><th>Date</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for d in documents %}
+            <tr>
+                <td>{{ d.title }}</td>
+                <td>{{ d.get_doc_type_display }}</td>
+                <td>{{ d.order.order_number|default:"-" }}</td>
+                <td>{{ d.customer.name|default:"-" }}</td>
+                <td>{{ d.uploaded_by.username|default:"-" }}</td>
+                <td>{{ d.created_at|date:"d M Y" }}</td>
+                <td>
+                    <div class="action-links">
+                        <a href="{{ d.file.url }}" target="_blank">View</a>
+                        {% if request.user|ecom_has_full_access:'documents' %}
+                        <a href="{% url 'document_delete' d.pk %}" onclick="return confirm('Delete this document?')">Delete</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="empty-state">No documents uploaded yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
