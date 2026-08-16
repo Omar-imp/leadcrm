@@ -1,0 +1,31 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'inventory' %}
+    <a href="{% url 'stock_transfer_create' %}" class="btn">+ New Transfer</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Product</th><th>From</th><th>To</th><th>Quantity</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+            {% for t in transfers %}
+            <tr>
+                <td>{{ t.product.name }}</td>
+                <td>{{ t.from_warehouse.name }}</td>
+                <td>{{ t.to_warehouse.name }}</td>
+                <td>{{ t.quantity }}</td>
+                <td><span class="pill pill-converted">{{ t.get_status_display }}</span></td>
+                <td>{{ t.created_at|date:"d M Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No transfers yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

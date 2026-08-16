@@ -1,0 +1,37 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'suppliers' %}
+    <a href="{% url 'supplier_create' %}" class="btn">+ Add Supplier</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Name</th><th>Contact Person</th><th>Email</th><th>Phone</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for s in suppliers %}
+            <tr>
+                <td>{{ s.name }}</td>
+                <td>{{ s.contact_person|default:"-" }}</td>
+                <td>{{ s.email|default:"-" }}</td>
+                <td>{{ s.phone|default:"-" }}</td>
+                <td>
+                    <div class="action-links">
+                        {% if request.user|ecom_has_full_access:'suppliers' %}
+                        <a href="{% url 'supplier_edit' s.pk %}">Edit</a>
+                        <a href="{% url 'supplier_delete' s.pk %}" onclick="return confirm('Delete {{ s.name }}?')">Delete</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="empty-state">No suppliers yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

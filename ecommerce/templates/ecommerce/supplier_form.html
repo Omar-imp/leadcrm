@@ -1,0 +1,54 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Supplier Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Name <span class="required">*</span></label>
+                <input type="text" name="name" required class="form-control" value="{{ supplier.name|default:'' }}">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Contact Person</label>
+                <input type="text" name="contact_person" class="form-control" value="{{ supplier.contact_person|default:'' }}">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Email</label>
+                <input type="email" name="email" class="form-control" value="{{ supplier.email|default:'' }}">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Phone</label>
+                <input type="text" name="phone" class="form-control" value="{{ supplier.phone|default:'' }}">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Address</label>
+                <textarea name="address" class="form-control">{{ supplier.address|default:'' }}</textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn">{% if supplier %}Save Changes{% else %}Save Supplier{% endif %}</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:400px;">
+        <h3 style="margin-top:0;">Existing Suppliers</h3>
+        <p style="font-size:14px; color:var(--text-muted); margin-top:-8px; margin-bottom:16px;">
+            For reference while adding or editing.
+        </p>
+        {% for s in existing_suppliers %}
+        <div style="padding:10px 0; border-bottom:1px solid var(--border); font-size:14px;">
+            <strong>{{ s.name }}</strong>
+            {% if s.contact_person %}<div style="color:var(--text-muted); font-size:12px; margin-top:2px;">{{ s.contact_person }}</div>{% endif %}
+        </div>
+        {% empty %}
+        <p class="empty-state">No suppliers yet.</p>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

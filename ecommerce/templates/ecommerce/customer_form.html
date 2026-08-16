@@ -11,38 +11,38 @@
             {% csrf_token %}
             <div style="margin-bottom:16px;">
                 <label class="field-label">Name <span class="required">*</span></label>
-                <input type="text" name="name" required class="form-control">
+                <input type="text" name="name" required class="form-control" value="{{ customer.name|default:'' }}">
             </div>
             <div style="margin-bottom:16px;">
                 <label class="field-label">Email</label>
-                <input type="email" name="email" class="form-control">
+                <input type="email" name="email" class="form-control" value="{{ customer.email|default:'' }}">
             </div>
             <div style="margin-bottom:16px;">
                 <label class="field-label">Phone</label>
-                <input type="text" name="phone" class="form-control">
+                <input type="text" name="phone" class="form-control" value="{{ customer.phone|default:'' }}">
             </div>
             <div style="margin-bottom:16px;">
                 <label class="field-label">Date of Birth</label>
-                <input type="date" name="dob" class="form-control">
+                <input type="date" name="dob" class="form-control" value="{{ customer.dob|date:'Y-m-d'|default:'' }}">
             </div>
             <div style="margin-bottom:16px;">
                 <label class="field-label">Gender</label>
-                <input type="text" name="gender" class="form-control">
+                <input type="text" name="gender" class="form-control" value="{{ customer.gender|default:'' }}">
             </div>
             <div style="margin-bottom:16px;">
                 <label class="field-label">Billing Address</label>
-                <textarea name="billing_address" class="form-control"></textarea>
+                <textarea name="billing_address" class="form-control">{{ customer.billing_address|default:'' }}</textarea>
             </div>
             <div style="margin-bottom:16px;">
                 <label class="field-label">Shipping Address</label>
-                <textarea name="shipping_address" class="form-control"></textarea>
+                <textarea name="shipping_address" class="form-control">{{ customer.shipping_address|default:'' }}</textarea>
             </div>
             <div style="margin-bottom:16px;">
                 <label class="field-label">Tags</label>
-                <input type="text" name="tags" placeholder="VIP, Wholesale, etc." class="form-control">
+                <input type="text" name="tags" placeholder="VIP, Wholesale, etc." class="form-control" value="{{ customer.tags|default:'' }}">
             </div>
             <div class="form-actions">
-                <button type="submit" class="btn">Save Customer</button>
+                <button type="submit" class="btn">{% if customer %}Save Changes{% else %}Save Customer{% endif %}</button>
             </div>
         </form>
     </div>

@@ -1,0 +1,45 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    <a href="{% url 'purchase_order_list' %}" class="btn btn-secondary">Back to Purchase Orders</a>
+</div>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Items</h3>
+        <table>
+            <thead><tr><th>Product</th><th>Qty</th><th>Unit Cost</th></tr></thead>
+            <tbody>
+                {% for item in po.items.all %}
+                <tr>
+                    <td>{{ item.product.name|default:"Deleted product" }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>Rs {{ item.unit_cost }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
+        <h3 style="margin-top:0;">Order Info</h3>
+        <p><strong>Supplier:</strong> {{ po.supplier.name }}</p>
+        <p><strong>Status:</strong> {{ po.get_status_display }}</p>
+        <p><strong>Created:</strong> {{ po.created_at|date:"d M Y, h:i A" }}</p>
+        <p style="font-size:20px; font-weight:700; margin-top:12px;">Total: Rs {{ po.total_cost }}</p>
+
+        {% if po.status != 'received' %}
+        <form method="post" action="{% url 'purchase_order_receive' po.pk %}" style="margin-top:16px;">
+            {% csrf_token %}
+            <button type="submit" class="btn" onclick="return confirm('Mark as received? This will add these items to your product stock.')">Mark as Received</button>
+        </form>
+        {% else %}
+        <span class="pill pill-converted" style="margin-top:16px; display:inline-block;">Received — Stock Updated</span>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

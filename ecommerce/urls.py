@@ -3,14 +3,19 @@ from . import views
 
 urlpatterns = [
     path('dashboard/', views.ecommerce_dashboard, name='ecommerce_dashboard'),
+
     # Customers URLS
     path('customers/', views.customer_list, name='customer_list'),
     path('customers/create/', views.customer_create, name='customer_create'),
     path('customers/bulk-import/', views.bulk_import_customers, name='bulk_import_customers'),
+    path('customers/<int:pk>/edit/', views.customer_edit, name='customer_edit'),
+    path('customers/<int:pk>/delete/', views.customer_delete, name='customer_delete'),
 
     # Product URLS
     path('products/', views.product_list, name='product_list'),
     path('products/create/', views.product_create, name='product_create'),
+    path('products/<int:pk>/edit/', views.product_edit, name='product_edit'),
+    path('products/<int:pk>/delete/', views.product_delete, name='product_delete'),
 
     # Category and Order URLS
     path('categories/', views.category_list, name='category_list'),
@@ -56,9 +61,26 @@ urlpatterns = [
     path('inventory/stock-overview/', views.stock_overview, name='stock_overview'),
     path('orders/status/<str:status>/', views.order_list_filtered, name='order_list_filtered'),
 
-    # ── 3. ADD to ecommerce/urls.py ──
+    # Docs URLS 
     path('documents/', views.document_list, name='document_list'),
     path('documents/upload/', views.document_upload, name='document_upload'),
     path('documents/<int:pk>/delete/', views.document_delete, name='document_delete'),
+
+    # Warehouse URLS
+    path('warehouses/', views.warehouse_list, name='warehouse_list'),
+    path('warehouses/create/', views.warehouse_create, name='warehouse_create'),
+    path('warehouses/<int:pk>/', views.warehouse_detail, name='warehouse_detail'),
+    path('warehouses/transfers/', views.stock_transfer_list, name='stock_transfer_list'),
+    path('warehouses/transfers/create/', views.stock_transfer_create, name='stock_transfer_create'),
+
+    # Supplier and Purchase URLS
+    path('suppliers/', views.supplier_list, name='supplier_list'),
+    path('suppliers/create/', views.supplier_create, name='supplier_create'),
+    path('suppliers/<int:pk>/edit/', views.supplier_edit, name='supplier_edit'),
+    path('suppliers/<int:pk>/delete/', views.supplier_delete, name='supplier_delete'),
+    path('purchase-orders/', views.purchase_order_list, name='purchase_order_list'),
+    path('purchase-orders/create/', views.purchase_order_create, name='purchase_order_create'),
+    path('purchase-orders/<int:pk>/', views.purchase_order_detail, name='purchase_order_detail'),
+    path('purchase-orders/<int:pk>/receive/', views.purchase_order_receive, name='purchase_order_receive'),
 ]
 

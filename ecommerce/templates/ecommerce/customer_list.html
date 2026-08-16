@@ -11,7 +11,7 @@
 
 <div class="card">
     <table>
-        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Tags</th><th>Created</th></tr></thead>
+        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Tags</th><th>Created</th><th>Action</th></tr></thead>
         <tbody>
             {% for c in customers %}
             <tr>
@@ -20,9 +20,17 @@
                 <td>{{ c.phone|default:"-" }}</td>
                 <td>{{ c.tags|default:"-" }}</td>
                 <td>{{ c.created_at|date:"d M Y" }}</td>
+                <td>
+                    <div class="action-links">
+                        {% if request.user|ecom_has_full_access:'customers' %}
+                        <a href="{% url 'customer_edit' c.pk %}">Edit</a>
+                        <a href="{% url 'customer_delete' c.pk %}" onclick="return confirm('Delete {{ c.name }}?')">Delete</a>
+                        {% endif %}
+                    </div>
+                </td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="empty-state">No customers yet.</td></tr>
+            <tr><td colspan="6" class="empty-state">No customers yet.</td></tr>
             {% endfor %}
         </tbody>
     </table>

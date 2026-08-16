@@ -3,7 +3,9 @@ from django.contrib.auth.decorators import login_required as dj_login_required
 from .models import (Customer, Payment, Category, Product,
                     Order, OrderItem, Shipment, ReturnRequest,
                     EcommerceUserPermissions, EcommerceAssistantConversation,
-                    EcommerceDocument, DOCUMENT_TYPE_CHOICES)
+                    EcommerceDocument, Warehouse, StockTransfer, WarehouseStock,
+                    Supplier, PurchaseOrder, PurchaseOrderItem,
+                    DOCUMENT_TYPE_CHOICES)
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -145,10 +147,44 @@ def customer_create(request):
         return redirect('customer_list')
 
     context = {
-        'active': 'customers',
+        'active': 'customer_create',
         'title': 'Add Customer',
     }
     return render(request, 'ecommerce/customer_form.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def customer_edit(request, pk):
+    customer = get_object_or_404(Customer, pk=pk)
+    if request.method == 'POST':
+        customer.name = request.POST.get('name')
+        customer.email = request.POST.get('email') or None
+        customer.phone = request.POST.get('phone', '')
+        customer.dob = request.POST.get('dob') or None
+        customer.gender = request.POST.get('gender', '')
+        customer.billing_address = request.POST.get('billing_address', '')
+        customer.shipping_address = request.POST.get('shipping_address', '')
+        customer.tags = request.POST.get('tags', '')
+        customer.save()
+        messages.success(request, 'Customer updated.')
+        return redirect('customer_list')
+ 
+    context = {
+        'active': 'customers',
+        'title': 'Edit Customer',
+        'customer': customer,
+    }
+    return render(request, 'ecommerce/customer_form.html', context)
+ 
+ 
+@login_required
+@block_ecommerce_view_only
+def customer_delete(request, pk):
+    customer = get_object_or_404(Customer, pk=pk)
+    customer.delete()
+    messages.success(request, 'Customer deleted.')
+    return redirect('customer_list')
 
 
 @login_required
@@ -263,7 +299,7 @@ def product_create(request):
         return redirect('product_list')
 
     context = {
-        'active': 'products',
+        'active': 'product_create',
         'title': 'Add Product',
         'categories': Category.objects.all(),
     }
@@ -280,6 +316,43 @@ def category_list(request):
     }
     return render(request, 'ecommerce/category_list.html', context)
 
+ 
+@login_required
+@block_ecommerce_view_only
+def product_edit(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if request.method == 'POST':
+        category_id = request.POST.get('category')
+        category = Category.objects.filter(id=category_id).first() if category_id else None
+        product.name = request.POST.get('name')
+        product.sku = request.POST.get('sku')
+        product.barcode = request.POST.get('barcode', '')
+        product.category = category
+        product.description = request.POST.get('description', '')
+        product.cost_price = request.POST.get('cost_price') or 0
+        product.sale_price = request.POST.get('sale_price') or 0
+        product.stock_qty = request.POST.get('stock_qty') or 0
+        product.save()
+        messages.success(request, 'Product updated.')
+        return redirect('product_list')
+ 
+    context = {
+        'active': 'products',
+        'title': 'Edit Product',
+        'product': product,
+        'categories': Category.objects.all(),
+    }
+    return render(request, 'ecommerce/product_form.html', context)
+ 
+ 
+@login_required
+@block_ecommerce_view_only
+def product_delete(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    product.delete()
+    messages.success(request, 'Product deleted.')
+    return redirect('product_list')
+
 
 @login_required
 @block_ecommerce_view_only
@@ -295,7 +368,7 @@ def category_create(request):
         return redirect('category_list')
 
     context = {
-        'active': 'categories',
+        'active': 'category_create',
         'title': 'Add Category',
         'categories': Category.objects.all(),
     }
@@ -380,7 +453,7 @@ def low_stock_list(request):
     products = Product.objects.filter(stock_qty__lte=threshold).order_by('stock_qty')
     context = {
         'products': products,
-        'active': 'inventory',
+        'active': 'low_stock',
         'title': 'Low Stock Products',
         'threshold': threshold,
     }
@@ -416,7 +489,7 @@ def payment_create(request, order_id=None):
         return redirect('order_detail', pk=order_obj.pk)
 
     context = {
-        'active': 'payments',
+        'active': 'payment_create',
         'title': 'Record Payment',
         'order': order,
         'orders': Order.objects.all(),
@@ -459,7 +532,7 @@ def shipment_create(request, order_id=None):
         return redirect('order_detail', pk=order_obj.pk)
 
     context = {
-        'active': 'shipping',
+        'active': 'shipment_create',
         'title': 'Create Shipment',
         'order': order,
         'orders': Order.objects.all(),
@@ -749,7 +822,7 @@ def stock_overview(request):
 
     context = {
         'products': products,
-        'active': 'inventory',
+        'active': 'stock_overview',
         'title': 'Stock Overview',
         'total_units': total_units,
         'total_value': total_value,
@@ -809,6 +882,7 @@ def document_upload(request):
         'doc_types': DOCUMENT_TYPE_CHOICES,
         'orders': Order.objects.all(),
         'customers': Customer.objects.all(),
+        'recent_documents': EcommerceDocument.objects.order_by('-created_at')[:5],
     }
     return render(request, 'ecommerce/document_upload.html', context)
 
@@ -837,3 +911,231 @@ def document_delete(request, pk):
     doc.delete()
     messages.success(request, 'Document deleted.')
     return redirect('document_list')
+
+
+@login_required
+def warehouse_list(request):
+    warehouses = Warehouse.objects.all()
+    data = []
+    for w in warehouses:
+        total_units = w.stock.aggregate(t=Sum('quantity'))['t'] or 0
+        data.append({'warehouse': w, 'total_units': total_units, 'product_lines': w.stock.count()})
+    context = {'warehouses': data, 'active': 'warehouses', 'title': 'Warehouses'}
+    return render(request, 'ecommerce/warehouse_list.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def warehouse_create(request):
+    if request.method == 'POST':
+        Warehouse.objects.create(
+            name=request.POST.get('name'),
+            address=request.POST.get('address', ''),
+        )
+        messages.success(request, 'Warehouse created.')
+        return redirect('warehouse_list')
+    return render(request, 'ecommerce/warehouse_form.html', {
+        'active': 'warehouses',
+        'title': 'Add Warehouse',
+        'existing_warehouses': Warehouse.objects.all(),
+    })
+
+
+@login_required
+def warehouse_detail(request, pk):
+    warehouse = get_object_or_404(Warehouse, pk=pk)
+    stock = warehouse.stock.select_related('product').order_by('-quantity')
+    context = {
+        'warehouse': warehouse,
+        'stock': stock,
+        'active': 'warehouses',
+        'title': warehouse.name,
+    }
+    return render(request, 'ecommerce/warehouse_detail.html', context)
+
+
+@login_required
+def stock_transfer_list(request):
+    transfers = StockTransfer.objects.select_related('product', 'from_warehouse', 'to_warehouse').order_by('-created_at')
+    context = {'transfers': transfers, 'active': 'stock_transfers', 'title': 'Stock Transfers'}
+    return render(request, 'ecommerce/stock_transfer_list.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def stock_transfer_create(request):
+    if request.method == 'POST':
+        product_id = request.POST.get('product')
+        from_id = request.POST.get('from_warehouse')
+        to_id = request.POST.get('to_warehouse')
+        quantity = int(request.POST.get('quantity', 0))
+
+        if from_id == to_id:
+            messages.error(request, 'Source and destination warehouses must be different.')
+            return redirect('stock_transfer_create')
+        
+        product = get_object_or_404(Product, pk=product_id)
+        from_wh = get_object_or_404(Warehouse, pk=from_id)
+        to_wh   = get_object_or_404(Warehouse, pk=to_id)
+
+        from_stock, _ = WarehouseStock.objects.get_or_create(warehouse=from_wh, product=product)
+        if from_stock.quantity < quantity:
+            messages.error(request, f'Not enough stock in {from_wh.name} ({from_stock.quantity} available).')
+            return redirect('stock_transfer_create')
+ 
+        from_stock.quantity -= quantity
+        from_stock.save()
+ 
+        to_stock, _ = WarehouseStock.objects.get_or_create(warehouse=to_wh, product=product)
+        to_stock.quantity += quantity
+        to_stock.save()
+
+        StockTransfer.objects.create(
+            product=product, from_warehouse=from_wh, to_warehouse=to_wh,
+            quantity=quantity, status='completed', created_by=request.user,
+        )
+        messages.success(request, f'Transferred {quantity} x {product.name} from {from_wh.name} to {to_wh.name}.')
+        return redirect('stock_transfer_list')
+
+    context = {
+        'active': 'warehouses',
+        'title': 'New Stock Transfer',
+        'products': Product.objects.all(),
+        'warehouses': Warehouse.objects.all(),
+    }
+    return render(request, 'ecommerce/stock_transfer_form.html', context)
+
+
+@login_required
+def supplier_list(request):
+    suppliers = Supplier.objects.all().order_by('name')
+    context = {'suppliers': suppliers, 'active': 'suppliers', 'title': 'Suppliers'}
+    return render(request, 'ecommerce/supplier_list.html', context)
+ 
+ 
+@login_required
+@block_ecommerce_view_only
+def supplier_create(request):
+    if request.method == 'POST':
+        Supplier.objects.create(
+            name=request.POST.get('name'),
+            contact_person=request.POST.get('contact_person', ''),
+            email=request.POST.get('email') or None,
+            phone=request.POST.get('phone', ''),
+            address=request.POST.get('address', ''),
+        )
+        messages.success(request, 'Supplier created.')
+        return redirect('supplier_list')
+    context = {
+        'active': 'supplier_create',
+        'title': 'Add Supplier',
+        'existing_suppliers': Supplier.objects.all(),
+    }
+    return render(request, 'ecommerce/supplier_form.html', context)
+ 
+ 
+@login_required
+@block_ecommerce_view_only
+def supplier_edit(request, pk):
+    supplier = get_object_or_404(Supplier, pk=pk)
+    if request.method == 'POST':
+        supplier.name = request.POST.get('name')
+        supplier.contact_person = request.POST.get('contact_person', '')
+        supplier.email = request.POST.get('email') or None
+        supplier.phone = request.POST.get('phone', '')
+        supplier.address = request.POST.get('address', '')
+        supplier.save()
+        messages.success(request, 'Supplier updated.')
+        return redirect('supplier_list')
+    context = {
+        'active': 'suppliers',
+        'title': 'Edit Supplier',
+        'supplier': supplier,
+        'existing_suppliers': Supplier.objects.exclude(pk=pk),
+    }
+    return render(request, 'ecommerce/supplier_form.html', context)
+ 
+ 
+@login_required
+@block_ecommerce_view_only
+def supplier_delete(request, pk):
+    supplier = get_object_or_404(Supplier, pk=pk)
+    supplier.delete()
+    messages.success(request, 'Supplier deleted.')
+    return redirect('supplier_list')
+ 
+ 
+@login_required
+def purchase_order_list(request):
+    pos = PurchaseOrder.objects.select_related('supplier').order_by('-created_at')
+    context = {'purchase_orders': pos, 'active': 'purchase_orders', 'title': 'Purchase Orders'}
+    return render(request, 'ecommerce/purchase_order_list.html', context)
+ 
+ 
+@login_required
+@block_ecommerce_view_only
+def purchase_order_create(request):
+    if request.method == 'POST':
+        supplier_id = request.POST.get('supplier')
+        supplier = get_object_or_404(Supplier, pk=supplier_id)
+ 
+        po = PurchaseOrder.objects.create(
+            po_number='PO-' + uuid.uuid4().hex[:8].upper(),
+            supplier=supplier,
+            status=request.POST.get('status', 'draft'),
+            created_by=request.user,
+        )
+ 
+        product_ids = request.POST.getlist('product')
+        quantities = request.POST.getlist('quantity')
+        unit_costs = request.POST.getlist('unit_cost')
+ 
+        for product_id, qty, cost in zip(product_ids, quantities, unit_costs):
+            if not product_id or not qty:
+                continue
+            product = Product.objects.filter(id=product_id).first()
+            if product:
+                PurchaseOrderItem.objects.create(
+                    purchase_order=po,
+                    product=product,
+                    quantity=int(qty),
+                    unit_cost=cost or 0,
+                )
+ 
+        messages.success(request, f'Purchase Order {po.po_number} created.')
+        return redirect('purchase_order_detail', pk=po.pk)
+ 
+    context = {
+        'active': 'purchase_order_create',
+        'title': 'Create Purchase Order',
+        'suppliers': Supplier.objects.all(),
+        'products': Product.objects.all(),
+    }
+    return render(request, 'ecommerce/purchase_order_form.html', context)
+ 
+ 
+@login_required
+def purchase_order_detail(request, pk):
+    po = get_object_or_404(PurchaseOrder, pk=pk)
+    context = {'po': po, 'active': 'purchase_orders', 'title': f'Purchase Order {po.po_number}'}
+    return render(request, 'ecommerce/purchase_order_detail.html', context)
+ 
+ 
+@login_required
+@block_ecommerce_view_only
+def purchase_order_receive(request, pk):
+    """Marks a PO as received and adds its items to product stock."""
+    po = get_object_or_404(PurchaseOrder, pk=pk)
+    if po.status == 'received':
+        messages.info(request, 'This purchase order was already marked received.')
+        return redirect('purchase_order_detail', pk=pk)
+ 
+    for item in po.items.all():
+        if item.product:
+            item.product.stock_qty += item.quantity
+            item.product.save()
+ 
+    po.status = 'received'
+    po.save()
+    messages.success(request, f'{po.po_number} received — stock updated.')
+    return redirect('purchase_order_detail', pk=pk)

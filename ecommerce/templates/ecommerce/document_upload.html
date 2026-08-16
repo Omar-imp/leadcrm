@@ -1,53 +1,72 @@
 {% extends 'ecommerce/base.html' %}
-{% load ecommerce_filters %}
 {% block title %}{{ title }} - E-commerce CRM{% endblock %}
 {% block content %}
 <h1 class="page-title">{{ title }}</h1>
 
-<div class="card" style="max-width:600px;">
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div style="margin-bottom:16px;">
-            <label class="field-label">Title <span class="required">*</span></label>
-            <input type="text" name="title" required class="form-control">
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Document Details</h3>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Title <span class="required">*</span></label>
+                <input type="text" name="title" required class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Document Type</label>
+                <select name="doc_type" class="form-control">
+                    {% for value, label in doc_types %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Related Order (optional)</label>
+                <select name="order" class="form-control">
+                    <option value="">-- None --</option>
+                    {% for o in orders %}
+                    <option value="{{ o.id }}">{{ o.order_number }} — {{ o.customer.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Related Customer (optional)</label>
+                <select name="customer" class="form-control">
+                    <option value="">-- None --</option>
+                    {% for c in customers %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">File <span class="required">*</span></label>
+                <input type="file" name="file" required class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Notes</label>
+                <textarea name="notes" class="form-control"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn">Upload</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
+        <h3 style="margin-top:0;">Recent Uploads</h3>
+        <p style="font-size:14px; color:var(--text-muted); margin-top:-8px; margin-bottom:16px;">
+            Last few documents added, for reference.
+        </p>
+        {% for d in recent_documents %}
+        <div style="padding:10px 0; border-bottom:1px solid var(--border); font-size:14px;">
+            <strong>{{ d.title }}</strong>
+            <div style="color:var(--text-muted); font-size:12px; margin-top:2px;">{{ d.get_doc_type_display }} — {{ d.created_at|date:"d M Y" }}</div>
         </div>
-        <div style="margin-bottom:16px;">
-            <label class="field-label">Document Type</label>
-            <select name="doc_type" class="form-control">
-                {% for value, label in doc_types %}
-                <option value="{{ value }}">{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div style="margin-bottom:16px;">
-            <label class="field-label">Related Order (optional)</label>
-            <select name="order" class="form-control">
-                <option value="">-- None --</option>
-                {% for o in orders %}
-                <option value="{{ o.id }}">{{ o.order_number }} — {{ o.customer.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div style="margin-bottom:16px;">
-            <label class="field-label">Related Customer (optional)</label>
-            <select name="customer" class="form-control">
-                <option value="">-- None --</option>
-                {% for c in customers %}
-                <option value="{{ c.id }}">{{ c.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div style="margin-bottom:16px;">
-            <label class="field-label">File <span class="required">*</span></label>
-            <input type="file" name="file" required class="form-control">
-        </div>
-        <div style="margin-bottom:16px;">
-            <label class="field-label">Notes</label>
-            <textarea name="notes" class="form-control"></textarea>
-        </div>
-        <div class="form-actions">
-            <button type="submit" class="btn">Upload</button>
-        </div>
-    </form>
+        {% empty %}
+        <p class="empty-state">No documents uploaded yet.</p>
+        {% endfor %}
+    </div>
+
 </div>
 {% endblock %}

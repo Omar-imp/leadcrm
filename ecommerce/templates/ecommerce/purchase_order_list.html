@@ -1,0 +1,37 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'suppliers' %}
+    <a href="{% url 'purchase_order_create' %}" class="btn">+ Create Purchase Order</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>PO #</th><th>Supplier</th><th>Status</th><th>Total Cost</th><th>Date</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for po in purchase_orders %}
+            <tr>
+                <td>{{ po.po_number }}</td>
+                <td>{{ po.supplier.name }}</td>
+                <td>
+                    {% if po.status == 'received' %}<span class="pill pill-converted">Received</span>
+                    {% elif po.status == 'ordered' %}<span class="pill pill-quotation">Ordered</span>
+                    {% elif po.status == 'closed' %}<span class="pill pill-lost">Closed</span>
+                    {% else %}<span class="pill pill-new">Draft</span>
+                    {% endif %}
+                </td>
+                <td>Rs {{ po.total_cost }}</td>
+                <td>{{ po.created_at|date:"d M Y" }}</td>
+                <td><div class="action-links"><a href="{% url 'purchase_order_detail' po.pk %}">View</a></div></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No purchase orders yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

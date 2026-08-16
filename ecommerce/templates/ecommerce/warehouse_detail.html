@@ -1,0 +1,22 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ warehouse.name }}</h1>
+    <a href="{% url 'warehouse_list' %}" class="btn btn-secondary">Back to Warehouses</a>
+</div>
+{% if warehouse.address %}<p style="color:var(--text-muted); margin-top:-16px;">{{ warehouse.address }}</p>{% endif %}
+
+<div class="card">
+    <table>
+        <thead><tr><th>Product</th><th>SKU</th><th>Quantity</th></tr></thead>
+        <tbody>
+            {% for s in stock %}
+            <tr><td>{{ s.product.name }}</td><td>{{ s.product.sku }}</td><td>{{ s.quantity }}</td></tr>
+            {% empty %}
+            <tr><td colspan="3" class="empty-state">No stock in this warehouse yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

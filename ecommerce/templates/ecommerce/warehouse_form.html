@@ -1,0 +1,40 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Warehouse Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Name <span class="required">*</span></label>
+                <input type="text" name="name" required class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Address</label>
+                <textarea name="address" class="form-control"></textarea>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn">Save Warehouse</button></div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:400px;">
+        <h3 style="margin-top:0;">Existing Warehouses</h3>
+        <p style="font-size:14px; color:var(--text-muted); margin-top:-8px; margin-bottom:16px;">
+            For reference while adding a new one.
+        </p>
+        {% for w in existing_warehouses %}
+        <div style="padding:10px 0; border-bottom:1px solid var(--border); font-size:14px;">
+            <strong>{{ w.name }}</strong>
+            {% if w.address %}<div style="color:var(--text-muted); font-size:12px; margin-top:2px;">{{ w.address }}</div>{% endif %}
+        </div>
+        {% empty %}
+        <p class="empty-state">No warehouses yet — this will be your first.</p>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

@@ -153,7 +153,7 @@ class ReturnRequest(models.Model):
 ECOMMERCE_SECTIONS = [
     'dashboard', 'products', 'categories', 'customers',
     'orders', 'inventory', 'payments', 'shipping', 'returns',
-    'reports', 'chatbot'
+    'reports', 'chatbot', 'suppliers'
 ]
 
 
@@ -172,6 +172,7 @@ class EcommerceUserPermissions(models.Model):
     returns = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
     reports = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
     chatbot = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    suppliers = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
 
     ALL_SECTIONS = ECOMMERCE_SECTIONS
 
@@ -221,21 +222,97 @@ DOCUMENT_TYPE_CHOICES = [
     ('other', 'Other'),
 ]
 
-
 class EcommerceDocument(models.Model):
-    title = models.CharField(max_length=200)
-    doc_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES, default='other')
-    file = models.FileField(upload_to='ecommerce_documents/')
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='documents')
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='documents')
+    title       = models.CharField(max_length=200)
+    doc_type    = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES, default='other')
+    file        = models.FileField(upload_to='ecommerce_documents/')
+    order       = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='documents')
+    customer    = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='documents')
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    notes = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    notes       = models.TextField(blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
 
 
+class Warehouse(models.Model):
+    name       = models.CharField(max_length=150)
+    address    = models.TextField(blank=True)
+    is_active  = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+    
+
+class WarehouseStock(models.Model):
+    """Tracks how many units of each product sit in each warehouse."""
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='stock')
+    product   = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='warehouse_stock')
+    quantity  = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ('warehouse', 'product')
+
+    def __str__(self):
+        return f"{self.product.name} @ {self.warehouse.name}: {self.quantity}"
+
+
+class StockTransfer(models.Model):
+    STATUS_CHOICES = [('pending', 'Pending'), ('in_transit', 'In Transit'), ('completed', 'Completed')]
+
+    product        = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='transfers')
+    from_warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='transfers_out')
+    to_warehouse   = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='transfers_in')
+    quantity       = models.IntegerField()
+    status         = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
+    created_by     = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at     = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.name}: {self.from_warehouse} -> {self.to_warehouse} ({self.quantity})"
+    
+
+class Supplier(models.Model):
+    name = models.CharField(max_length=150)
+    contact_person = models.CharField(max_length=150, blank=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=30, blank=True)
+    address = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+ 
+    def __str__(self):
+        return self.name
+ 
+ 
+class PurchaseOrder(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'), ('ordered', 'Ordered'),
+        ('received', 'Received'), ('closed', 'Closed'),
+    ]
+    po_number = models.CharField(max_length=30, unique=True)
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='purchase_orders')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='draft')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+ 
+    @property
+    def total_cost(self):
+        return sum(item.quantity * item.unit_cost for item in self.items.all())
+ 
+    def __str__(self):
+        return self.po_number
+ 
+ 
+class PurchaseOrderItem(models.Model):
+    purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    quantity = models.IntegerField(default=1)
+    unit_cost = models.DecimalField(max_digits=10, decimal_places=2)
+ 
+    def __str__(self):
+        return f"{self.product} x{self.quantity}"
 
 
 

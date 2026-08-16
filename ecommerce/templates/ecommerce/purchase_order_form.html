@@ -1,0 +1,102 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:500px; max-width:700px;">
+        <h3 style="margin-top:0;">Purchase Order Details</h3>
+        <form method="post" id="po-form">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Supplier <span class="required">*</span></label>
+                <select name="supplier" required class="form-control">
+                    <option value="">-- Select Supplier --</option>
+                    {% for s in suppliers %}
+                    <option value="{{ s.id }}">{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Status</label>
+                <select name="status" class="form-control">
+                    <option value="draft">Draft</option>
+                    <option value="ordered">Ordered</option>
+                </select>
+            </div>
+
+            <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
+
+            <label class="field-label">Items</label>
+            <div id="item-rows"></div>
+            <button type="button" class="btn btn-small" onclick="addItemRow()" style="margin-top:8px;">+ Add Product</button>
+
+            <div class="form-actions" style="margin-top:20px;">
+                <button type="submit" class="btn">Create Purchase Order</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:300px; max-width:360px;">
+        <h3 style="margin-top:0;">Order Total</h3>
+        <div class="stat" style="text-align:left;">
+            <div class="label">Estimated Cost</div>
+            <div class="value" id="summary_total" style="font-size:26px;">Rs 0.00</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const PRODUCTS = [
+    {% for p in products %}
+    { id: {{ p.id }}, name: "{{ p.name|escapejs }}", cost: {{ p.cost_price }} },
+    {% endfor %}
+];
+
+let rowCount = 0;
+
+function addItemRow() {
+    rowCount++;
+    const container = document.getElementById('item-rows');
+    const row = document.createElement('div');
+    row.id = 'row-' + rowCount;
+    row.style = 'display:flex; gap:10px; align-items:center; margin-bottom:10px;';
+
+    let options = '<option value="">-- Select Product --</option>';
+    PRODUCTS.forEach(p => {
+        options += `<option value="${p.id}" data-cost="${p.cost}">${p.name}</option>`;
+    });
+
+    row.innerHTML = `
+        <select name="product" class="form-control" style="flex:2;" onchange="fillCost(this); updateTotal();">${options}</select>
+        <input type="number" name="quantity" value="1" min="1" class="form-control" style="flex:1;" oninput="updateTotal()">
+        <input type="number" name="unit_cost" step="0.01" class="form-control" style="flex:1;" placeholder="Unit cost" oninput="updateTotal()">
+        <button type="button" class="btn btn-small" onclick="document.getElementById('row-${rowCount}').remove(); updateTotal();">Remove</button>
+    `;
+    container.appendChild(row);
+}
+
+function fillCost(select) {
+    const row = select.closest('div');
+    const costInput = row.querySelector('input[name="unit_cost"]');
+    const selected = select.options[select.selectedIndex];
+    if (selected && selected.dataset.cost) {
+        costInput.value = selected.dataset.cost;
+    }
+}
+
+function updateTotal() {
+    let total = 0;
+    document.querySelectorAll('#item-rows > div').forEach(row => {
+        const qty = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
+        const cost = parseFloat(row.querySelector('input[name="unit_cost"]').value) || 0;
+        total += qty * cost;
+    });
+    document.getElementById('summary_total').textContent = 'Rs ' + total.toFixed(2);
+}
+
+addItemRow();
+</script>
+{% endblock %}

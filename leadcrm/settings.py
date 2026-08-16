@@ -217,6 +217,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'leads.middleware.RoleAccessMiddleware',
+    'leadcrm.middleware.OrganizationAccessMiddleware',
 ]
 
 ROOT_URLCONF = 'leadcrm.urls'

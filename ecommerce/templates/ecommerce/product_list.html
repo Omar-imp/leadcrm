@@ -11,7 +11,7 @@
 
 <div class="card">
     <table>
-        <thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Cost</th><th>Sale Price</th><th>Stock</th></tr></thead>
+        <thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Cost</th><th>Sale Price</th><th>Stock</th><th>Action</th></tr></thead>
         <tbody>
             {% for p in products %}
             <tr>
@@ -21,9 +21,17 @@
                 <td>{{ p.cost_price }}</td>
                 <td>{{ p.sale_price }}</td>
                 <td>{{ p.stock_qty }}</td>
+                <td>
+                    <div class="action-links">
+                        {% if request.user|ecom_has_full_access:'products' %}
+                        <a href="{% url 'product_edit' p.pk %}">Edit</a>
+                        <a href="{% url 'product_delete' p.pk %}" onclick="return confirm('Delete {{ p.name }}?')">Delete</a>
+                        {% endif %}
+                    </div>
+                </td>
             </tr>
             {% empty %}
-            <tr><td colspan="6" class="empty-state">No products yet.</td></tr>
+            <tr><td colspan="7" class="empty-state">No products yet.</td></tr>
             {% endfor %}
         </tbody>
     </table>
