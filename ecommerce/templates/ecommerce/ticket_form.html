@@ -1,0 +1,67 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Ticket Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Title <span class="required">*</span></label>
+                <input type="text" name="title" required class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Description</label>
+                <textarea name="description" class="form-control" rows="4"></textarea>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Priority</label>
+                <select name="priority" class="form-control">
+                    {% for value, label in priority_choices %}
+                    <option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Customer (optional)</label>
+                <select name="customer" class="form-control">
+                    <option value="">-- None --</option>
+                    {% for c in customers %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Related Order (optional)</label>
+                <select name="order" class="form-control">
+                    <option value="">-- None --</option>
+                    {% for o in orders %}
+                    <option value="{{ o.id }}">{{ o.order_number }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Assign To</label>
+                <select name="assigned_to" class="form-control">
+                    <option value="">-- Unassigned --</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn">Create Ticket</button></div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
+        <h3 style="margin-top:0;">Tips</h3>
+        <p style="font-size:14px; color:var(--text-muted);">
+            Assigning a ticket immediately notifies that staff member — they'll see it in their Notifications.
+        </p>
+    </div>
+
+</div>
+{% endblock %}

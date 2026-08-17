@@ -1,0 +1,75 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Invoice Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Order <span class="required">*</span></label>
+                <select name="order" id="id_order" required class="form-control" onchange="updatePreview()" {% if order %}disabled{% endif %}>
+                    <option value="">-- Select Order --</option>
+                    {% for o in orders %}
+                    <option value="{{ o.id }}" data-total="{{ o.total }}" data-customer="{{ o.customer.name }}" {% if order and order.id == o.id %}selected{% endif %}>
+                        {{ o.order_number }} — {{ o.customer.name }} (Rs {{ o.total }})
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if order %}<input type="hidden" name="order" value="{{ order.id }}">{% endif %}
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Status</label>
+                <select name="status" class="form-control">
+                    <option value="draft">Draft</option>
+                    <option value="sent">Sent</option>
+                    <option value="paid">Paid</option>
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Due Date</label>
+                <input type="date" name="due_date" class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Notes</label>
+                <textarea name="notes" class="form-control"></textarea>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn">Create Invoice</button></div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
+        <h3 style="margin-top:0;">Order Preview</h3>
+        <div id="preview_empty" style="{% if order %}display:none;{% endif %}">
+            <p class="empty-state">Select an order to see its details here.</p>
+        </div>
+        <div id="preview_content" style="{% if not order %}display:none;{% endif %}">
+            <p><strong>Customer:</strong> <span id="preview_customer">{{ order.customer.name|default:"" }}</span></p>
+            <p><strong>Total:</strong> <span id="preview_total">Rs {{ order.total|default:"0" }}</span></p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function updatePreview() {
+    const select = document.getElementById('id_order');
+    const selected = select.options[select.selectedIndex];
+    const emptyEl = document.getElementById('preview_empty');
+    const contentEl = document.getElementById('preview_content');
+
+    if (selected && selected.value) {
+        document.getElementById('preview_customer').textContent = selected.dataset.customer || '';
+        document.getElementById('preview_total').textContent = 'Rs ' + (selected.dataset.total || '0');
+        emptyEl.style.display = 'none';
+        contentEl.style.display = 'block';
+    } else {
+        emptyEl.style.display = 'block';
+        contentEl.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'support' %}
+    <a href="{% url 'ticket_create' %}" class="btn">+ Create Ticket</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Title</th><th>Customer</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for t in tickets %}
+            <tr>
+                <td>{{ t.title }}</td>
+                <td>{{ t.customer.name|default:"-" }}</td>
+                <td>
+                    {% if t.priority == 'critical' %}<span class="priority-high">Critical</span>
+                    {% elif t.priority == 'high' %}<span class="priority-high">High</span>
+                    {% elif t.priority == 'medium' %}<span class="priority-medium">Medium</span>
+                    {% else %}<span class="priority-low">Low</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if t.status == 'resolved' %}<span class="pill pill-converted">Resolved</span>
+                    {% elif t.status == 'closed' %}<span class="pill pill-lost">Closed</span>
+                    {% elif t.status == 'in_progress' %}<span class="pill pill-quotation">In Progress</span>
+                    {% else %}<span class="pill pill-new">Open</span>
+                    {% endif %}
+                </td>
+                <td>{{ t.assigned_to.username|default:"-" }}</td>
+                <td><div class="action-links"><a href="{% url 'ticket_detail' t.pk %}">View</a></div></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No tickets yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

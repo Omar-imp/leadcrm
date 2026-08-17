@@ -82,5 +82,26 @@ urlpatterns = [
     path('purchase-orders/create/', views.purchase_order_create, name='purchase_order_create'),
     path('purchase-orders/<int:pk>/', views.purchase_order_detail, name='purchase_order_detail'),
     path('purchase-orders/<int:pk>/receive/', views.purchase_order_receive, name='purchase_order_receive'),
+
+    # Invoice and Refund URLS
+    path('invoices/', views.invoice_list, name='invoice_list'),
+    path('invoices/create/', views.invoice_create, name='invoice_create'),
+    path('orders/<int:order_id>/invoice/', views.invoice_create, name='invoice_create_for_order'),
+    path('invoices/<int:pk>/', views.invoice_detail, name='invoice_detail'),
+    path('invoices/<int:pk>/status/<str:status>/', views.invoice_status, name='invoice_status'),
+    path('invoices/<int:pk>/pdf/', views.invoice_pdf, name='invoice_pdf'),
+    path('refunds/', views.refund_list, name='refund_list'),
+    path('refunds/create/', views.refund_create, name='refund_create'),
+    path('returns/<int:return_id>/refund/', views.refund_create, name='refund_create_for_return'),
+    path('refunds/<int:pk>/status/<str:status>/', views.refund_status, name='refund_status'),
+
+    # Tickets and Notification URLS
+    path('tickets/', views.ticket_list, name='ticket_list'),
+    path('tickets/create/', views.ticket_create, name='ticket_create'),
+    path('tickets/<int:pk>/', views.ticket_detail, name='ticket_detail'),
+    path('tickets/<int:pk>/delete/', views.ticket_delete, name='ticket_delete'),
+    path('notifications/', views.notification_list, name='ecom_notification_list'),
+    path('notifications/<int:pk>/read/', views.notification_read, name='ecom_notification_read'),
+    path('notifications/read-all/', views.notification_read_all, name='ecom_notification_read_all'),
 ]
 

@@ -232,7 +232,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'leads.context_processors.sidebar_counts'
+                'leads.context_processors.sidebar_counts',
+                'ecommerce.context_processors.ecommerce_notifications',
             ],
         },
     },

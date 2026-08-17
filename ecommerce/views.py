@@ -4,8 +4,9 @@ from .models import (Customer, Payment, Category, Product,
                     Order, OrderItem, Shipment, ReturnRequest,
                     EcommerceUserPermissions, EcommerceAssistantConversation,
                     EcommerceDocument, Warehouse, StockTransfer, WarehouseStock,
-                    Supplier, PurchaseOrder, PurchaseOrderItem,
-                    DOCUMENT_TYPE_CHOICES)
+                    Supplier, PurchaseOrder, PurchaseOrderItem, Invoice, Refund,
+                    SupportTicket, TicketReply, EcommerceNotification,
+                    DOCUMENT_TYPE_CHOICES, TICKET_STATUS_CHOICES, TICKET_PRIORITY_CHOICES)
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -18,6 +19,9 @@ import csv, json, calendar, io, openpyxl, uuid
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from .assistant.service import EcommerceAssistantService
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 
 
 LOGIN_URL = 'ecommerce_login'
@@ -1139,3 +1143,290 @@ def purchase_order_receive(request, pk):
     po.save()
     messages.success(request, f'{po.po_number} received — stock updated.')
     return redirect('purchase_order_detail', pk=pk)
+
+
+@login_required
+def invoice_list(request):
+    invoices = Invoice.objects.select_related('order', 'order__customer').order_by('-created_at')
+    context = {'invoices': invoices, 'active': 'invoices', 'title': 'Invoices'}
+    return render(request, 'ecommerce/invoice_list.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def invoice_create(request, order_id=None):
+    order = get_object_or_404(Order, id=order_id) if order_id else None
+
+    if request.method == 'POST':
+        order_pk = request.POST.get('order') or order_id
+        order_obj = get_object_or_404(Order, id=order_pk)
+
+        invoice = Invoice.objects.create(
+            invoice_number='INV-' + uuid.uuid4().hex[:8].upper(),
+            order=order_obj,
+            status=request.POST.get('status', 'draft'),
+            due_date=request.POST.get('due_date') or None,
+            notes=request.POST.get('notes', ''),
+            created_by=request.user,
+        )
+        messages.success(request, f'Invoice {invoice.invoice_number} created.')
+        return redirect('invoice_detail', pk=invoice.pk)
+
+    context = {
+        'active': 'invoice_create',
+        'title': 'Create Invoice',
+        'order': order,
+        'orders': Order.objects.all(),
+    }
+    return render(request, 'ecommerce/invoice_form.html', context)
+
+
+@login_required
+def invoice_detail(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    context = {'invoice': invoice, 'active': 'invoices', 'title': f'Invoice {invoice.invoice_number}'}
+    return render(request, 'ecommerce/invoice_detail.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def invoice_status(request, pk, status):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    valid = dict(Invoice.STATUS_CHOICES)
+    if status in valid:
+        invoice.status = status
+        invoice.save()
+        messages.success(request, f'Invoice marked as {valid[status]}.')
+    return redirect('invoice_detail', pk=pk)
+
+
+@login_required
+def invoice_pdf(request, pk):
+    """Generates a simple PDF invoice using reportlab (no external service)."""
+
+    invoice = get_object_or_404(Invoice, pk=pk)
+    order = invoice.order
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{invoice.invoice_number}.pdf"'
+
+    p = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+
+    p.setFont("Helvetica-Bold", 20)
+    p.drawString(50, height - 60, "INVOICE")
+
+    p.setFont("Helvetica", 11)
+    p.drawString(50, height - 100, f"Invoice #: {invoice.invoice_number}")
+    p.drawString(50, height - 118, f"Order #: {order.order_number}")
+    p.drawString(50, height - 136, f"Date: {invoice.created_at.strftime('%d %b %Y')}")
+    if invoice.due_date:
+        p.drawString(50, height - 154, f"Due: {invoice.due_date.strftime('%d %b %Y')}")
+
+    p.drawString(50, height - 190, f"Bill To: {order.customer.name}")
+    p.drawString(50, height - 208, f"{order.customer.email or ''}")
+    p.drawString(50, height - 226, f"{order.customer.phone or ''}")
+
+    y = height - 270
+    p.setFont("Helvetica-Bold", 10)
+    p.drawString(50, y, "Item")
+    p.drawString(300, y, "Qty")
+    p.drawString(360, y, "Unit Price")
+    p.drawString(460, y, "Total")
+    y -= 20
+    p.setFont("Helvetica", 10)
+
+    for item in order.items.all():
+        p.drawString(50, y, item.product.name if item.product else 'Deleted product')
+        p.drawString(300, y, str(item.quantity))
+        p.drawString(360, y, f"Rs {item.unit_price}")
+        p.drawString(460, y, f"Rs {item.quantity * item.unit_price}")
+        y -= 18
+
+    y -= 20
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(360, y, f"Total: Rs {order.total}")
+
+    if invoice.notes:
+        y -= 40
+        p.setFont("Helvetica", 9)
+        p.drawString(50, y, f"Notes: {invoice.notes}")
+
+    p.showPage()
+    p.save()
+    return response
+
+
+@login_required
+def refund_list(request):
+    refunds = Refund.objects.select_related('return_request', 'return_request__order').order_by('-created_at')
+    context = {'refunds': refunds, 'active': 'refunds', 'title': 'Refunds'}
+    return render(request, 'ecommerce/refund_list.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def refund_create(request, return_id=None):
+    return_request = get_object_or_404(ReturnRequest, id=return_id) if return_id else None
+
+    if request.method == 'POST':
+        return_pk = request.POST.get('return_request') or return_id
+        return_obj = get_object_or_404(ReturnRequest, id=return_pk)
+
+        Refund.objects.create(
+            return_request=return_obj,
+            amount=request.POST.get('amount') or 0,
+            method=request.POST.get('method', 'original_payment'),
+            status='pending',
+            processed_by=request.user,
+            notes=request.POST.get('notes', ''),
+        )
+        messages.success(request, 'Refund recorded.')
+        return redirect('refund_list')
+
+    context = {
+        'active': 'refund_create',
+        'title': 'Record Refund',
+        'return_request': return_request,
+        'returns': ReturnRequest.objects.all(),
+    }
+    return render(request, 'ecommerce/refund_form.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def refund_status(request, pk, status):
+    refund = get_object_or_404(Refund, pk=pk)
+    valid = dict(Refund.STATUS_CHOICES)
+    if status in valid:
+        refund.status = status
+        if status == 'completed':
+            refund.return_request.status = 'refunded'
+            refund.return_request.save()
+        refund.save()
+        messages.success(request, f'Refund marked as {valid[status]}.')
+    return redirect('refund_list')
+
+
+def create_ecom_notification(user, notif_type, title, message, link=''):
+    EcommerceNotification.objects.create(
+        user=user, notif_type=notif_type, title=title, message=message, link=link,
+    )
+
+
+@login_required
+def ticket_list(request):
+    tickets = SupportTicket.objects.select_related('customer', 'order', 'assigned_to').order_by('-created_at')
+    status = request.GET.get('status')
+    if status:
+        tickets = tickets.filter(status=status)
+    context = {
+        'tickets': tickets,
+        'active': 'tickets',
+        'title': 'Support Tickets',
+        'status_choices': TICKET_STATUS_CHOICES,
+        'selected_status': status,
+    }
+    return render(request, 'ecommerce/ticket_list.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def ticket_create(request):
+    if request.method == 'POST':
+        ticket = SupportTicket.objects.create(
+            title=request.POST.get('title'),
+            description=request.POST.get('description', ''),
+            priority=request.POST.get('priority', 'medium'),
+            status='open',
+            created_by=request.user,
+        )
+        customer_id = request.POST.get('customer')
+        order_id = request.POST.get('order')
+        assigned_id = request.POST.get('assigned_to')
+        ticket.customer_id = customer_id if customer_id else None
+        ticket.order_id = order_id if order_id else None
+        ticket.assigned_to_id = assigned_id if assigned_id else None
+        ticket.save()
+
+        if ticket.assigned_to:
+            create_ecom_notification(
+                user=ticket.assigned_to,
+                notif_type='ticket_assigned',
+                title=f'New ticket assigned: {ticket.title}',
+                message=f'You have been assigned ticket "{ticket.title}".',
+                link=f'/ecommerce/tickets/{ticket.pk}/',
+            )
+
+        messages.success(request, f'Ticket "{ticket.title}" created.')
+        return redirect('ticket_detail', pk=ticket.pk)
+
+    context = {
+        'active': 'ticket_create',
+        'title': 'Create Ticket',
+        'priority_choices': TICKET_PRIORITY_CHOICES,
+        'customers': Customer.objects.all(),
+        'orders': Order.objects.all(),
+        'users': User.objects.all(),
+    }
+    return render(request, 'ecommerce/ticket_form.html', context)
+
+
+@login_required
+def ticket_detail(request, pk):
+    ticket = get_object_or_404(SupportTicket, pk=pk)
+
+    if request.method == 'POST':
+        body = request.POST.get('body')
+        if body:
+            TicketReply.objects.create(ticket=ticket, author=request.user, body=body)
+            new_status = request.POST.get('status')
+            if new_status:
+                ticket.status = new_status
+                if new_status == 'resolved':
+                    ticket.resolved_at = timezone.now()
+                ticket.save()
+            messages.success(request, 'Reply added.')
+            return redirect('ticket_detail', pk=pk)
+
+    context = {
+        'ticket': ticket,
+        'replies': ticket.replies.all(),
+        'active': 'tickets',
+        'title': ticket.title,
+        'status_choices': TICKET_STATUS_CHOICES,
+    }
+    return render(request, 'ecommerce/ticket_detail.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def ticket_delete(request, pk):
+    ticket = get_object_or_404(SupportTicket, pk=pk)
+    ticket.delete()
+    messages.success(request, 'Ticket deleted.')
+    return redirect('ticket_list')
+
+
+@login_required
+def notification_list(request):
+    notifications = EcommerceNotification.objects.filter(user=request.user)
+    context = {'notifications': notifications, 'active': 'notifications', 'title': 'Notifications'}
+    return render(request, 'ecommerce/notification_list.html', context)
+
+
+@login_required
+def notification_read(request, pk):
+    notif = get_object_or_404(EcommerceNotification, pk=pk, user=request.user)
+    notif.is_read = True
+    notif.save()
+    if notif.link:
+        return redirect(notif.link)
+    return redirect('notification_list')
+
+
+@login_required
+def notification_read_all(request):
+    EcommerceNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    messages.success(request, 'All notifications marked as read.')
+    return redirect('notification_list')

@@ -1,0 +1,41 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn">Download PDF</a>
+</div>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Items</h3>
+        <table>
+            <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th></tr></thead>
+            <tbody>
+                {% for item in invoice.order.items.all %}
+                <tr>
+                    <td>{{ item.product.name|default:"Deleted product" }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>Rs {{ item.unit_price }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
+        <h3 style="margin-top:0;">Invoice Info</h3>
+        <p><strong>Invoice #:</strong> {{ invoice.invoice_number }}</p>
+        <p><strong>Order:</strong> {{ invoice.order.order_number }}</p>
+        <p><strong>Customer:</strong> {{ invoice.order.customer.name }}</p>
+        <p><strong>Status:</strong> {{ invoice.get_status_display }}</p>
+        <p><strong>Due:</strong> {{ invoice.due_date|date:"d M Y"|default:"-" }}</p>
+        <p style="font-size:20px; font-weight:700; margin-top:12px;">Total: Rs {{ invoice.order.total }}</p>
+
+        <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">
+            <a href="{% url 'invoice_status' invoice.pk 'sent' %}" class="btn btn-small">Mark Sent</a>
+            <a href="{% url 'invoice_status' invoice.pk 'paid' %}" class="btn btn-small">Mark Paid</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

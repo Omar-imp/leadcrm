@@ -1,0 +1,37 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'orders' %}
+    <a href="{% url 'invoice_create' %}" class="btn">+ Create Invoice</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Invoice #</th><th>Order</th><th>Customer</th><th>Status</th><th>Due Date</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for inv in invoices %}
+            <tr>
+                <td>{{ inv.invoice_number }}</td>
+                <td>{{ inv.order.order_number }}</td>
+                <td>{{ inv.order.customer.name }}</td>
+                <td>
+                    {% if inv.status == 'paid' %}<span class="pill pill-converted">Paid</span>
+                    {% elif inv.status == 'overdue' %}<span class="pill pill-lost">Overdue</span>
+                    {% elif inv.status == 'sent' %}<span class="pill pill-quotation">Sent</span>
+                    {% else %}<span class="pill pill-new">Draft</span>
+                    {% endif %}
+                </td>
+                <td>{{ inv.due_date|date:"d M Y"|default:"-" }}</td>
+                <td><div class="action-links"><a href="{% url 'invoice_detail' inv.pk %}">View</a></div></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No invoices yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

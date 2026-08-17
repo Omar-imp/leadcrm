@@ -153,7 +153,7 @@ class ReturnRequest(models.Model):
 ECOMMERCE_SECTIONS = [
     'dashboard', 'products', 'categories', 'customers',
     'orders', 'inventory', 'payments', 'shipping', 'returns',
-    'reports', 'chatbot', 'suppliers'
+    'reports', 'chatbot', 'suppliers', 'support'
 ]
 
 
@@ -173,6 +173,7 @@ class EcommerceUserPermissions(models.Model):
     reports = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
     chatbot = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
     suppliers = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    support = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
 
     ALL_SECTIONS = ECOMMERCE_SECTIONS
 
@@ -315,4 +316,94 @@ class PurchaseOrderItem(models.Model):
         return f"{self.product} x{self.quantity}"
 
 
+class Invoice(models.Model):
+    STATUS_CHOICES = [('draft', 'Draft'), ('sent', 'Sent'), ('paid', 'Paid'), ('overdue', 'Overdue')]
 
+    invoice_number = models.CharField(max_length=30, unique=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='invoices')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='draft')
+    due_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.invoice_number
+
+
+class Refund(models.Model):
+    METHOD_CHOICES = [
+        ('original_payment', 'Original Payment Method'), ('cash', 'Cash'),
+        ('bank_transfer', 'Bank Transfer'), ('store_credit', 'Store Credit'),
+    ]
+    STATUS_CHOICES = [('pending', 'Pending'), ('approved', 'Approved'), ('completed', 'Completed'), ('rejected', 'Rejected')]
+
+    return_request = models.ForeignKey(ReturnRequest, on_delete=models.CASCADE, related_name='refunds')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    method = models.CharField(max_length=20, choices=METHOD_CHOICES, default='original_payment')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
+    processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Refund Rs {self.amount} for {self.return_request.order.order_number}"
+
+
+TICKET_STATUS_CHOICES = [
+    ('open', 'Open'), ('in_progress', 'In Progress'),
+    ('resolved', 'Resolved'), ('closed', 'Closed'),
+]
+TICKET_PRIORITY_CHOICES = [
+    ('low', 'Low'), ('medium', 'Medium'), ('high', 'High'), ('critical', 'Critical'),
+]
+
+
+class SupportTicket(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=15, choices=TICKET_STATUS_CHOICES, default='open')
+    priority = models.CharField(max_length=10, choices=TICKET_PRIORITY_CHOICES, default='medium')
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='tickets')
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='tickets')
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_ecom_tickets')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_ecom_tickets')
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+class TicketReply(models.Model):
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name='replies')
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Reply on {self.ticket.title}"
+
+
+class EcommerceNotification(models.Model):
+    NOTIF_TYPE_CHOICES = [
+        ('ticket_assigned', 'Ticket Assigned'),
+        ('order_pending', 'Order Pending'),
+        ('low_stock', 'Low Stock'),
+        ('payment_received', 'Payment Received'),
+        ('return_requested', 'Return Requested'),
+        ('other', 'Other'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ecommerce_notifications')
+    notif_type = models.CharField(max_length=30, choices=NOTIF_TYPE_CHOICES, default='other')
+    title = models.CharField(max_length=200)
+    message = models.TextField(blank=True)
+    link = models.CharField(max_length=255, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title

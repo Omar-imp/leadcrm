@@ -1,0 +1,78 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Refund Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Return Request <span class="required">*</span></label>
+                <select name="return_request" id="id_return" required class="form-control" onchange="updatePreview()" {% if return_request %}disabled{% endif %}>
+                    <option value="">-- Select Return --</option>
+                    {% for ret in returns %}
+                    <option value="{{ ret.id }}" data-order="{{ ret.order.order_number }}" data-customer="{{ ret.order.customer.name }}" data-reason="{{ ret.reason|escapejs }}" {% if return_request and return_request.id == ret.id %}selected{% endif %}>
+                        {{ ret.order.order_number }} — {{ ret.order.customer.name }} ({{ ret.get_status_display }})
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if return_request %}<input type="hidden" name="return_request" value="{{ return_request.id }}">{% endif %}
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Amount <span class="required">*</span></label>
+                <input type="number" step="0.01" name="amount" required class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Method</label>
+                <select name="method" class="form-control">
+                    <option value="original_payment">Original Payment Method</option>
+                    <option value="cash">Cash</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="store_credit">Store Credit</option>
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Notes</label>
+                <textarea name="notes" class="form-control"></textarea>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn">Record Refund</button></div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
+        <h3 style="margin-top:0;">Return Reference</h3>
+        <div id="preview_empty" style="{% if return_request %}display:none;{% endif %}">
+            <p class="empty-state">Select a return request to see its details here.</p>
+        </div>
+        <div id="preview_content" style="{% if not return_request %}display:none;{% endif %}">
+            <p><strong>Order:</strong> <span id="preview_order">{{ return_request.order.order_number|default:"" }}</span></p>
+            <p><strong>Customer:</strong> <span id="preview_customer">{{ return_request.order.customer.name|default:"" }}</span></p>
+            <p><strong>Reason:</strong> <span id="preview_reason">{{ return_request.reason|default:"" }}</span></p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function updatePreview() {
+    const select = document.getElementById('id_return');
+    const selected = select.options[select.selectedIndex];
+    const emptyEl = document.getElementById('preview_empty');
+    const contentEl = document.getElementById('preview_content');
+
+    if (selected && selected.value) {
+        document.getElementById('preview_order').textContent = selected.dataset.order || '';
+        document.getElementById('preview_customer').textContent = selected.dataset.customer || '';
+        document.getElementById('preview_reason').textContent = selected.dataset.reason || '';
+        emptyEl.style.display = 'none';
+        contentEl.style.display = 'block';
+    } else {
+        emptyEl.style.display = 'block';
+        contentEl.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

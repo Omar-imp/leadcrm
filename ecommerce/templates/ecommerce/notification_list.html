@@ -1,0 +1,38 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    <a href="{% url 'ecom_notification_read_all' %}" class="btn btn-secondary">Mark All Read</a>
+</div>
+
+<div class="card">
+    {% for n in notifications %}
+    <div class="notif-item {% if not n.is_read %}unread{% endif %}">
+        <div class="notif-icon">
+            {% if n.notif_type == 'ticket_assigned' %}&#127917;
+            {% elif n.notif_type == 'low_stock' %}&#9888;
+            {% elif n.notif_type == 'payment_received' %}&#128176;
+            {% elif n.notif_type == 'return_requested' %}&#8617;
+            {% elif n.notif_type == 'order_pending' %}&#128230;
+            {% else %}&#128276;
+            {% endif %}
+        </div>
+        <div class="notif-body">
+            <div class="notif-title">{{ n.title }}</div>
+            {% if n.message %}<div class="notif-message">{{ n.message }}</div>{% endif %}
+            <div class="notif-time">{{ n.created_at|date:"d M Y, h:i A" }}</div>
+        </div>
+        <div class="notif-actions">
+            {% if not n.is_read %}
+            <a href="{% url 'ecom_notification_read' n.pk %}" class="btn btn-small">{% if n.link %}View{% else %}Mark Read{% endif %}</a>
+            {% elif n.link %}
+            <a href="{{ n.link }}" class="btn btn-small">View</a>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <p class="empty-state">No notifications yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

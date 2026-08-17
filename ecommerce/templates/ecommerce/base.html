@@ -34,6 +34,26 @@
             </a>
         </nav>
 
+        <!-- SUPPLIERS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('suppliers')">
+            SUPPLIERS
+            <span class="arrow" id="arrow-suppliers">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-suppliers">
+            <a href="{% url 'supplier_list' %}" class="{% if active == 'suppliers' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128100;</span> All Suppliers</span>
+            </a>
+            <a href="{% url 'supplier_create' %}" class="{% if active == 'supplier_create' %}active{% endif %}">
+                <span class="left"><span class="icon">&#43;</span> Add Supplier</span>
+            </a>
+            <a href="{% url 'purchase_order_list' %}" class="{% if active == 'purchase_orders' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128230;</span> Purchase Orders</span>
+            </a>
+            <a href="{% url 'purchase_order_create' %}" class="{% if active == 'purchase_order_create' %}active{% endif %}">
+                <span class="left"><span class="icon">&#43;</span> New Purchase Order</span>
+            </a>
+        </nav>
+
         <!-- PRODUCTS -->
         <div class="section-label dropdown-toggle" onclick="toggleSection('products')">
             PRODUCTS
@@ -156,6 +176,33 @@
                 <span class="left"><span class="icon">&#8617;</span> Returns</span>
             </a>
         </nav>
+        
+        <!-- INVOICES AND REFUNDS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('invoices')">
+            INVOICES
+            <span class="arrow" id="arrow-invoices">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-invoices">
+            <a href="{% url 'invoice_list' %}" class="{% if active == 'invoices' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128196;</span> All Invoices</span>
+            </a>
+            <a href="{% url 'invoice_create' %}" class="{% if active == 'invoice_create' %}active{% endif %}">
+                <span class="left"><span class="icon">&#43;</span> Create Invoice</span>
+            </a>
+        </nav>
+
+        <div class="section-label dropdown-toggle" onclick="toggleSection('refunds')">
+            REFUNDS
+            <span class="arrow" id="arrow-refunds">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-refunds">
+            <a href="{% url 'refund_list' %}" class="{% if active == 'refunds' %}active{% endif %}">
+                <span class="left"><span class="icon">&#128176;</span> All Refunds</span>
+            </a>
+            <a href="{% url 'refund_create' %}" class="{% if active == 'refund_create' %}active{% endif %}">
+                <span class="left"><span class="icon">&#43;</span> Record Refund</span>
+            </a>
+        </nav>
 
         <!-- REPORTS -->
         <div class="section-label dropdown-toggle" onclick="toggleSection('reports')">
@@ -182,6 +229,26 @@
             </a>
         </nav>
 
+        <!-- SUPPORT -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('support')">
+            SUPPORT
+            <span class="arrow" id="arrow-support">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-support">
+            <a href="{% url 'return_list' %}" class="{% if active == 'support' %}active{% endif %}">
+                <span class="left"><span class="icon">&#8617;</span> Returns</span>
+            </a>
+            <a href="{% url 'return_list' %}" class="{% if active == 'support' %}active{% endif %}">
+                <span class="left"><span class="icon">&#8617;</span> Returns</span>
+            </a>
+            <a href="{% url 'ticket_list' %}" class="{% if active == 'tickets' %}active{% endif %}">
+                <span class="left"><span class="icon">&#127917;</span> Tickets</span>
+            </a>
+            <a href="{% url 'ticket_create' %}" class="{% if active == 'ticket_create' %}active{% endif %}">
+                <span class="left"><span class="icon">&#43;</span> Create Ticket</span>
+            </a>
+        </nav>
+
         <!-- USERS -->
         <div class="section-label dropdown-toggle" onclick="toggleSection('users')">
             USERS
@@ -190,26 +257,6 @@
         <nav class="dropdown-section" id="section-users">
             <a href="{% url 'ecommerce_user_list' %}" class="{% if active == 'users' %}active{% endif %}">
                 <span class="left"><span class="icon">&#128100;</span> Manage Users</span>
-            </a>
-        </nav>
-        
-        <!-- SUPPLIERS -->
-        <div class="section-label dropdown-toggle" onclick="toggleSection('suppliers')">
-            SUPPLIERS
-            <span class="arrow" id="arrow-suppliers">&#9658;</span>
-        </div>
-        <nav class="dropdown-section" id="section-suppliers">
-            <a href="{% url 'supplier_list' %}" class="{% if active == 'suppliers' %}active{% endif %}">
-                <span class="left"><span class="icon">&#128100;</span> All Suppliers</span>
-            </a>
-            <a href="{% url 'supplier_create' %}" class="{% if active == 'supplier_create' %}active{% endif %}">
-                <span class="left"><span class="icon">&#43;</span> Add Supplier</span>
-            </a>
-            <a href="{% url 'purchase_order_list' %}" class="{% if active == 'purchase_orders' %}active{% endif %}">
-                <span class="left"><span class="icon">&#128230;</span> Purchase Orders</span>
-            </a>
-            <a href="{% url 'purchase_order_create' %}" class="{% if active == 'purchase_order_create' %}active{% endif %}">
-                <span class="left"><span class="icon">&#43;</span> New Purchase Order</span>
             </a>
         </nav>
 
@@ -227,10 +274,10 @@
     <main class="main">
         <div class="topbar">
             <div style="flex:1;"></div>
-            <a href="{% url 'notification_list' %}" class="notif-bell">
+            <a href="{% url 'ecom_notification_list' %}" class="notif-bell">
                 &#128276;
-                {% if sidebar_counts.unread_notifications > 0 %}
-                <span class="notif-count">{{ sidebar_counts.unread_notifications }}</span>
+                {% if unread_notif_count > 0 %}
+                <span class="notif-count">{{ unread_notif_count }}</span>
                 {% endif %}
             </a>
         </div>
@@ -270,7 +317,7 @@ function toggleSection(name) {
 const sections = [
     'products', 'categories', 'customers', 'orders',
     'inventory', 'payments', 'shipping', 'support', 'reports',
-    'users', 'documents', 'warehouses', 'suppliers'
+    'users', 'documents', 'warehouses', 'suppliers', 'invoices', 'refunds'
 ];
 
 sections.forEach(name => {

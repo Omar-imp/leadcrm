@@ -1,0 +1,46 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'returns' %}
+    <a href="{% url 'refund_create' %}" class="btn">+ Record Refund</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Method</th><th>Status</th><th>Update</th></tr></thead>
+        <tbody>
+            {% for r in refunds %}
+            <tr>
+                <td>{{ r.return_request.order.order_number }}</td>
+                <td>{{ r.return_request.order.customer.name }}</td>
+                <td>Rs {{ r.amount }}</td>
+                <td>{{ r.get_method_display }}</td>
+                <td>
+                    {% if r.status == 'completed' %}<span class="pill pill-converted">Completed</span>
+                    {% elif r.status == 'approved' %}<span class="pill pill-info">Approved</span>
+                    {% elif r.status == 'rejected' %}<span class="pill pill-lost">Rejected</span>
+                    {% else %}<span class="pill pill-quotation">Pending</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-links">
+                        {% if r.status == 'pending' %}
+                        <a href="{% url 'refund_status' r.pk 'approved' %}">Approve</a>
+                        <a href="{% url 'refund_status' r.pk 'rejected' %}">Reject</a>
+                        {% elif r.status == 'approved' %}
+                        <a href="{% url 'refund_status' r.pk 'completed' %}">Mark Completed</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No refunds yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

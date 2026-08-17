@@ -1,0 +1,58 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ ticket.title }}</h1>
+    <a href="{% url 'ticket_list' %}" class="btn btn-secondary">Back to Tickets</a>
+</div>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:650px;">
+        <p>{{ ticket.description|default:"No description." }}</p>
+
+        <div class="ticket-thread">
+            {% for reply in replies %}
+            <div class="ticket-reply">
+                <div class="ticket-reply-avatar">{{ reply.author.username|slice:":1"|upper }}</div>
+                <div class="ticket-reply-bubble staff">
+                    <div class="ticket-reply-meta">{{ reply.author.username }} — {{ reply.created_at|date:"d M Y, h:i A" }}</div>
+                    <div class="ticket-reply-body">{{ reply.body }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="empty-state">No replies yet.</p>
+            {% endfor %}
+        </div>
+
+        <form method="post" style="margin-top:20px;">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Add Reply</label>
+                <textarea name="body" class="form-control" rows="3" required></textarea>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Update Status</label>
+                <select name="status" class="form-control">
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if ticket.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn">Send Reply</button></div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:300px; max-width:340px;">
+        <h3 style="margin-top:0;">Ticket Info</h3>
+        <p><strong>Status:</strong> {{ ticket.get_status_display }}</p>
+        <p><strong>Priority:</strong> {{ ticket.get_priority_display }}</p>
+        <p><strong>Customer:</strong> {{ ticket.customer.name|default:"-" }}</p>
+        <p><strong>Order:</strong> {{ ticket.order.order_number|default:"-" }}</p>
+        <p><strong>Assigned To:</strong> {{ ticket.assigned_to.username|default:"Unassigned" }}</p>
+        <p><strong>Created:</strong> {{ ticket.created_at|date:"d M Y, h:i A" }}</p>
+        {% if ticket.resolved_at %}<p><strong>Resolved:</strong> {{ ticket.resolved_at|date:"d M Y, h:i A" }}</p>{% endif %}
+    </div>
+
+</div>
+{% endblock %}
