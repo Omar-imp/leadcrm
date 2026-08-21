@@ -1,0 +1,81 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Coupon Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Code <span class="required">*</span></label>
+                <input type="text" name="code" required class="form-control" style="text-transform:uppercase;" placeholder="e.g. SAVE10">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Type</label>
+                <select name="coupon_type" id="id_type" class="form-control" onchange="updatePreview()">
+                    <option value="percentage">Percentage</option>
+                    <option value="fixed">Fixed Amount</option>
+                    <option value="free_shipping">Free Shipping</option>
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Value</label>
+                <input type="number" step="0.01" name="value" id="id_value" class="form-control" oninput="updatePreview()" placeholder="10 for 10%, or 500 for Rs 500">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Minimum Order Value</label>
+                <input type="number" step="0.01" name="min_order_value" class="form-control" value="0">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Max Uses (blank = unlimited)</label>
+                <input type="number" name="max_uses" class="form-control">
+            </div>
+            <div class="form-row" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div>
+                    <label class="field-label">Valid From</label>
+                    <input type="date" name="valid_from" class="form-control">
+                </div>
+                <div>
+                    <label class="field-label">Valid Until</label>
+                    <input type="date" name="valid_until" class="form-control">
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top:16px;"><button type="submit" class="btn">Create Coupon</button></div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
+        <h3 style="margin-top:0;">Example on Rs 5,000 Order</h3>
+        <div class="stat" style="text-align:left;">
+            <div class="label">Discount Applied</div>
+            <div class="value" id="preview_discount" style="font-size:26px;">Rs 0.00</div>
+        </div>
+        <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
+        <h3 style="margin-top:0;">Active Coupons</h3>
+        {% for c in existing_coupons %}
+        <div style="padding:8px 0; border-bottom:1px solid var(--border); font-size:14px;">
+            <strong>{{ c.code }}</strong> — {% if c.coupon_type == 'percentage' %}{{ c.value }}%{% elif c.coupon_type == 'fixed' %}Rs {{ c.value }}{% else %}Free Shipping{% endif %}
+        </div>
+        {% empty %}
+        <p class="empty-state">No active coupons yet.</p>
+        {% endfor %}
+    </div>
+
+</div>
+
+<script>
+function updatePreview() {
+    const type = document.getElementById('id_type').value;
+    const value = parseFloat(document.getElementById('id_value').value) || 0;
+    const sample = 5000;
+    let discount = 0;
+    if (type === 'percentage') discount = sample * (value / 100);
+    else if (type === 'fixed') discount = Math.min(value, sample);
+    document.getElementById('preview_discount').textContent = 'Rs ' + discount.toFixed(2);
+}
+updatePreview();
+</script>
+{% endblock %}

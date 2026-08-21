@@ -103,5 +103,15 @@ urlpatterns = [
     path('notifications/', views.notification_list, name='ecom_notification_list'),
     path('notifications/<int:pk>/read/', views.notification_read, name='ecom_notification_read'),
     path('notifications/read-all/', views.notification_read_all, name='ecom_notification_read_all'),
+
+    # Coupons and Loyalty URLS
+    path('coupons/', views.coupon_list, name='coupon_list'),
+    path('coupons/create/', views.coupon_create, name='coupon_create'),
+    path('coupons/<int:pk>/toggle/', views.coupon_toggle, name='coupon_toggle'),
+    path('coupons/<int:pk>/delete/', views.coupon_delete, name='coupon_delete'),
+    path('loyalty/', views.loyalty_list, name='loyalty_list'),
+    path('loyalty/<int:pk>/', views.loyalty_detail, name='loyalty_detail'),
+    path('loyalty/<int:pk>/adjust/', views.loyalty_adjust, name='loyalty_adjust'),
+    path('loyalty/create/<int:customer_id>/', views.loyalty_create_for_customer, name='loyalty_create_for_customer'),
 ]
 

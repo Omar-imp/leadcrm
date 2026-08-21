@@ -1,0 +1,44 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'orders' %}
+    <a href="{% url 'coupon_create' %}" class="btn">+ Create Coupon</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Min Order</th><th>Used</th><th>Valid Until</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for c in coupons %}
+            <tr>
+                <td><strong>{{ c.code }}</strong></td>
+                <td>{{ c.get_coupon_type_display }}</td>
+                <td>{% if c.coupon_type == 'percentage' %}{{ c.value }}%{% elif c.coupon_type == 'fixed' %}Rs {{ c.value }}{% else %}-{% endif %}</td>
+                <td>Rs {{ c.min_order_value }}</td>
+                <td>{{ c.times_used }}{% if c.max_uses %} / {{ c.max_uses }}{% endif %}</td>
+                <td>{{ c.valid_until|date:"d M Y"|default:"No expiry" }}</td>
+                <td>
+                    {% if c.is_valid %}<span class="pill pill-converted">Active</span>
+                    {% else %}<span class="pill pill-lost">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-links">
+                        {% if request.user|ecom_has_full_access:'orders' %}
+                        <a href="{% url 'coupon_toggle' c.pk %}">{% if c.is_active %}Deactivate{% else %}Activate{% endif %}</a>
+                        <a href="{% url 'coupon_delete' c.pk %}" onclick="return confirm('Delete {{ c.code }}?')">Delete</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="empty-state">No coupons yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    <a href="{% url 'loyalty_list' %}" class="btn btn-secondary">Back to Loyalty Program</a>
+</div>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Transaction History</h3>
+        <table>
+            <thead><tr><th>Type</th><th>Points</th><th>Notes</th><th>Date</th></tr></thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td>{{ t.get_transaction_type_display }}</td>
+                    <td style="color:{% if t.points > 0 %}var(--green){% else %}var(--red){% endif %}; font-weight:700;">{{ t.points|stringformat:"+d" }}</td>
+                    <td>{{ t.notes|default:"-" }}</td>
+                    <td>{{ t.created_at|date:"d M Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="empty-state">No transactions yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
+        <h3 style="margin-top:0;">Account Summary</h3>
+        <div class="stat" style="text-align:left; margin-bottom:16px;">
+            <div class="label">Current Balance</div>
+            <div class="value" style="font-size:32px;">{{ account.points_balance }} pts</div>
+        </div>
+        <p><strong>Customer:</strong> {{ account.customer.name }}</p>
+        <p><strong>Lifetime Earned:</strong> {{ account.lifetime_points_earned }}</p>
+
+        <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
+        <h4 style="margin-bottom:10px;">Manual Adjustment</h4>
+        <form method="post" action="{% url 'loyalty_adjust' account.pk %}">
+            {% csrf_token %}
+            <div style="margin-bottom:12px;">
+                <input type="number" name="points" placeholder="e.g. 100 or -50" required class="form-control">
+            </div>
+            <div style="margin-bottom:12px;">
+                <input type="text" name="notes" placeholder="Reason (optional)" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-small">Apply Adjustment</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

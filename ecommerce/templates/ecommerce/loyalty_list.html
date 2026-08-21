@@ -1,0 +1,23 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Customer</th><th>Points Balance</th><th>Lifetime Earned</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for a in accounts %}
+            <tr>
+                <td>{{ a.customer.name }}</td>
+                <td><strong>{{ a.points_balance }}</strong></td>
+                <td>{{ a.lifetime_points_earned }}</td>
+                <td><div class="action-links"><a href="{% url 'loyalty_detail' a.pk %}">View</a></div></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="empty-state">No loyalty accounts yet. Create one from a customer's page.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

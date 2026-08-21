@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
 class Organization(models.Model):
@@ -407,3 +408,80 @@ class EcommerceNotification(models.Model):
 
     def __str__(self):
         return self.title
+
+
+COUPON_TYPE_CHOICES = [
+    ('percentage', 'Percentage'), ('fixed', 'Fixed Amount'), ('free_shipping', 'Free Shipping'),
+]
+
+
+class Coupon(models.Model):
+    code = models.CharField(max_length=30, unique=True)
+    coupon_type = models.CharField(max_length=15, choices=COUPON_TYPE_CHOICES, default='percentage')
+    value = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Percentage (e.g. 10) or fixed amount (e.g. 500)")
+    min_order_value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    max_uses = models.IntegerField(null=True, blank=True, help_text="Leave blank for unlimited")
+    times_used = models.IntegerField(default=0)
+    valid_from = models.DateField(null=True, blank=True)
+    valid_until = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_valid(self):
+        today = timezone.localdate()
+        if not self.is_active:
+            return False
+        if self.valid_from and today < self.valid_from:
+            return False
+        if self.valid_until and today > self.valid_until:
+            return False
+        if self.max_uses and self.times_used >= self.max_uses:
+            return False
+        return True
+
+    def calculate_discount(self, order_total):
+        if not self.is_valid() or order_total < self.min_order_value:
+            return 0
+        if self.coupon_type == 'percentage':
+            return order_total * (self.value / 100)
+        elif self.coupon_type == 'fixed':
+            return min(self.value, order_total)
+        return 0
+
+    def __str__(self):
+        return self.code
+
+
+class CouponRedemption(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name='redemptions')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='coupon_redemptions')
+    discount_applied = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.coupon.code} on {self.order.order_number}"
+
+
+class LoyaltyAccount(models.Model):
+    customer = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name='loyalty_account')
+    points_balance = models.IntegerField(default=0)
+    lifetime_points_earned = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.customer.name}: {self.points_balance} pts"
+
+
+class LoyaltyTransaction(models.Model):
+    TRANSACTION_TYPE_CHOICES = [('earn', 'Earned'), ('redeem', 'Redeemed'), ('adjustment', 'Manual Adjustment')]
+
+    account = models.ForeignKey(LoyaltyAccount, on_delete=models.CASCADE, related_name='transactions')
+    transaction_type = models.CharField(max_length=15, choices=TRANSACTION_TYPE_CHOICES)
+    points = models.IntegerField(help_text="Positive for earn, negative for redeem")
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.CharField(max_length=255, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.account.customer.name}: {self.points:+d} pts"

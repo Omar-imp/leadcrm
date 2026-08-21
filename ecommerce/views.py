@@ -5,7 +5,8 @@ from .models import (Customer, Payment, Category, Product,
                     EcommerceUserPermissions, EcommerceAssistantConversation,
                     EcommerceDocument, Warehouse, StockTransfer, WarehouseStock,
                     Supplier, PurchaseOrder, PurchaseOrderItem, Invoice, Refund,
-                    SupportTicket, TicketReply, EcommerceNotification,
+                    SupportTicket, TicketReply, EcommerceNotification, Coupon, 
+                    CouponRedemption, LoyaltyAccount, LoyaltyTransaction,
                     DOCUMENT_TYPE_CHOICES, TICKET_STATUS_CHOICES, TICKET_PRIORITY_CHOICES)
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -1430,3 +1431,117 @@ def notification_read_all(request):
     EcommerceNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
     messages.success(request, 'All notifications marked as read.')
     return redirect('notification_list')
+
+
+@login_required
+def coupon_list(request):
+    coupons = Coupon.objects.all().order_by('-created_at')
+    context = {'coupons': coupons, 'active': 'coupons', 'title': 'Coupons & Promotions'}
+    return render(request, 'ecommerce/coupon_list.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def coupon_create(request):
+    if request.method == 'POST':
+        Coupon.objects.create(
+            code=request.POST.get('code', '').upper(),
+            coupon_type=request.POST.get('coupon_type', 'percentage'),
+            value=request.POST.get('value') or 0,
+            min_order_value=request.POST.get('min_order_value') or 0,
+            max_uses=request.POST.get('max_uses') or None,
+            valid_from=request.POST.get('valid_from') or None,
+            valid_until=request.POST.get('valid_until') or None,
+            is_active=True,
+        )
+        messages.success(request, 'Coupon created.')
+        return redirect('coupon_list')
+    context = {
+        'active': 'coupon_create',
+        'title': 'Create Coupon',
+        'existing_coupons': Coupon.objects.filter(is_active=True)[:8],
+    }
+    return render(request, 'ecommerce/coupon_form.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def coupon_toggle(request, pk):
+    coupon = get_object_or_404(Coupon, pk=pk)
+    coupon.is_active = not coupon.is_active
+    coupon.save()
+    messages.success(request, f'Coupon {coupon.code} {"activated" if coupon.is_active else "deactivated"}.')
+    return redirect('coupon_list')
+
+
+@login_required
+@block_ecommerce_view_only
+def coupon_delete(request, pk):
+    coupon = get_object_or_404(Coupon, pk=pk)
+    coupon.delete()
+    messages.success(request, 'Coupon deleted.')
+    return redirect('coupon_list')
+
+
+@login_required
+def loyalty_list(request):
+    accounts = LoyaltyAccount.objects.select_related('customer').order_by('-points_balance')
+    context = {'accounts': accounts, 'active': 'loyalty', 'title': 'Loyalty Program'}
+    return render(request, 'ecommerce/loyalty_list.html', context)
+
+
+@login_required
+def loyalty_detail(request, pk):
+    account = get_object_or_404(LoyaltyAccount, pk=pk)
+    transactions = account.transactions.order_by('-created_at')
+    context = {
+        'account': account,
+        'transactions': transactions,
+        'active': 'loyalty',
+        'title': f'Loyalty — {account.customer.name}',
+    }
+    return render(request, 'ecommerce/loyalty_detail.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def loyalty_adjust(request, pk):
+    account = get_object_or_404(LoyaltyAccount, pk=pk)
+    if request.method == 'POST':
+        points = int(request.POST.get('points', 0))
+        notes = request.POST.get('notes', '')
+        LoyaltyTransaction.objects.create(
+            account=account,
+            transaction_type='adjustment',
+            points=points,
+            notes=notes,
+            created_by=request.user,
+        )
+        account.points_balance += points
+        if points > 0:
+            account.lifetime_points_earned += points
+        account.save()
+        messages.success(request, f'{points:+d} points applied to {account.customer.name}.')
+    return redirect('loyalty_detail', pk=pk)
+
+
+@login_required
+@block_ecommerce_view_only
+def loyalty_create_for_customer(request, customer_id):
+    """Creates a loyalty account for a customer who doesn't have one yet."""
+    customer = get_object_or_404(Customer, id=customer_id)
+    account, created = LoyaltyAccount.objects.get_or_create(customer=customer)
+    if created:
+        messages.success(request, f'Loyalty account created for {customer.name}.')
+    return redirect('loyalty_detail', pk=account.pk)
+
+
+# ── ADD to ecommerce/urls.py ──
+# path('coupons/', views.coupon_list, name='coupon_list'),
+# path('coupons/create/', views.coupon_create, name='coupon_create'),
+# path('coupons/<int:pk>/toggle/', views.coupon_toggle, name='coupon_toggle'),
+# path('coupons/<int:pk>/delete/', views.coupon_delete, name='coupon_delete'),
+# path('loyalty/', views.loyalty_list, name='loyalty_list'),
+# path('loyalty/<int:pk>/', views.loyalty_detail, name='loyalty_detail'),
+# path('loyalty/<int:pk>/adjust/', views.loyalty_adjust, name='loyalty_adjust'),
+# path('loyalty/create/<int:customer_id>/', views.loyalty_create_for_customer, name='loyalty_create_for_customer'),

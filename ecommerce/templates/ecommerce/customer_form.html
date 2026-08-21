@@ -45,6 +45,14 @@
                 <button type="submit" class="btn">{% if customer %}Save Changes{% else %}Save Customer{% endif %}</button>
             </div>
         </form>
+        {% if customer %}
+        <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
+        {% if customer.loyalty_account %}
+        <a href="{% url 'loyalty_detail' customer.loyalty_account.pk %}" class="btn btn-secondary">View Loyalty Account</a>
+        {% else %}
+        <a href="{% url 'loyalty_create_for_customer' customer.pk %}" class="btn btn-secondary">Create Loyalty Account</a>
+        {% endif %}
+        {% endif %}
     </div>
 
     <div class="card" style="flex:1; min-width:400px; max-width:600px;">

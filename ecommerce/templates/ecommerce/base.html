@@ -204,6 +204,31 @@
             </a>
         </nav>
 
+        <!-- COUPONS -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('coupons')">
+            COUPONS
+            <span class="arrow" id="arrow-coupons">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-coupons">
+            <a href="{% url 'coupon_list' %}" class="{% if active == 'coupons' %}active{% endif %}">
+                <span class="left"><span class="icon">&#127991;</span> All Coupons</span>
+            </a>
+            <a href="{% url 'coupon_create' %}" class="{% if active == 'coupon_create' %}active{% endif %}">
+                <span class="left"><span class="icon">&#43;</span> Create Coupon</span>
+            </a>
+        </nav>
+
+        <!-- LOYALTY -->
+        <div class="section-label dropdown-toggle" onclick="toggleSection('loyalty')">
+            LOYALTY
+            <span class="arrow" id="arrow-loyalty">&#9658;</span>
+        </div>
+        <nav class="dropdown-section" id="section-loyalty">
+            <a href="{% url 'loyalty_list' %}" class="{% if active == 'loyalty' %}active{% endif %}">
+                <span class="left"><span class="icon">&#11088;</span> Loyalty Accounts</span>
+            </a>
+        </nav>
+
         <!-- REPORTS -->
         <div class="section-label dropdown-toggle" onclick="toggleSection('reports')">
             REPORTS
@@ -317,7 +342,8 @@ function toggleSection(name) {
 const sections = [
     'products', 'categories', 'customers', 'orders',
     'inventory', 'payments', 'shipping', 'support', 'reports',
-    'users', 'documents', 'warehouses', 'suppliers', 'invoices', 'refunds'
+    'users', 'documents', 'warehouses', 'suppliers', 'invoices',
+    'refunds', 'coupons', 'loyalty'
 ];
 
 sections.forEach(name => {
