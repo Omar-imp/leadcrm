@@ -6,7 +6,8 @@ from .models import (Customer, Payment, Category, Product,
                     EcommerceDocument, Warehouse, StockTransfer, WarehouseStock,
                     Supplier, PurchaseOrder, PurchaseOrderItem, Invoice, Refund,
                     SupportTicket, TicketReply, EcommerceNotification, Coupon, 
-                    CouponRedemption, LoyaltyAccount, LoyaltyTransaction,
+                    CouponRedemption, LoyaltyAccount, LoyaltyTransaction, AbandonedCart,
+                    AbandonedCartItem, ProductReview,
                     DOCUMENT_TYPE_CHOICES, TICKET_STATUS_CHOICES, TICKET_PRIORITY_CHOICES)
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -601,15 +602,19 @@ def return_update_status(request, pk):
 
 SECTION_LABELS = {
     'dashboard': 'Dashboard',
-    'products': 'Products',
+    'products': 'Products (+ Reviews)',
     'categories': 'Categories',
-    'customers': 'Customers',
-    'orders': 'Orders',
-    'inventory': 'Inventory',
+    'customers': 'Customers (+ Loyalty)',
+    'orders': 'Orders (+ Invoices, Coupons, Abandoned Carts)',
+    'inventory': 'Inventory (+ Warehouses)',
+    'suppliers': 'Suppliers (+ Purchase Orders)',
     'payments': 'Payments',
     'shipping': 'Shipping',
-    'returns': 'Returns',
-    'reports': 'Reports',
+    'returns': 'Returns (+ Refunds)',
+    'support': 'Support (Tickets)',
+    'documents': 'Documents',
+    'reports': 'Reports & Analytics',
+    'chatbot': 'AI Assistant',
 }
 
 
@@ -845,9 +850,10 @@ def stock_overview(request):
 def order_list_filtered(request, status):
     orders = Order.objects.filter(status=status).select_related('customer').order_by('-created_at')
     title_map = {'pending': 'Pending Orders', 'shipped': 'Shipped Orders'}
+    active_map = {'pending': 'orders_pending', 'shipped': 'orders_shipped'}
     context = {
         'orders': orders,
-        'active': 'orders',
+        'active': active_map.get(status, 'orders'),
         'title': title_map.get(status, 'Orders'),
     }
     return render(request, 'ecommerce/order_list.html', context)
@@ -1536,12 +1542,121 @@ def loyalty_create_for_customer(request, customer_id):
     return redirect('loyalty_detail', pk=account.pk)
 
 
-# ── ADD to ecommerce/urls.py ──
-# path('coupons/', views.coupon_list, name='coupon_list'),
-# path('coupons/create/', views.coupon_create, name='coupon_create'),
-# path('coupons/<int:pk>/toggle/', views.coupon_toggle, name='coupon_toggle'),
-# path('coupons/<int:pk>/delete/', views.coupon_delete, name='coupon_delete'),
-# path('loyalty/', views.loyalty_list, name='loyalty_list'),
-# path('loyalty/<int:pk>/', views.loyalty_detail, name='loyalty_detail'),
-# path('loyalty/<int:pk>/adjust/', views.loyalty_adjust, name='loyalty_adjust'),
-# path('loyalty/create/<int:customer_id>/', views.loyalty_create_for_customer, name='loyalty_create_for_customer'),
+@login_required
+def abandoned_cart_list(request):
+    carts = AbandonedCart.objects.select_related('customer').prefetch_related('items').filter(status='active').order_by('-abandoned_at')
+    context = {'carts': carts, 'active': 'abandoned_carts', 'title': 'Abandoned Carts'}
+    return render(request, 'ecommerce/abandoned_cart_list.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def abandoned_cart_create(request):
+    if request.method == 'POST':
+        customer_id = request.POST.get('customer')
+        customer = Customer.objects.filter(id=customer_id).first() if customer_id else None
+
+        cart = AbandonedCart.objects.create(
+            customer=customer,
+            session_identifier=request.POST.get('session_identifier', ''),
+            notes=request.POST.get('notes', ''),
+            status='active',
+        )
+
+        product_ids = request.POST.getlist('product')
+        quantities = request.POST.getlist('quantity')
+        total = 0
+        for product_id, qty in zip(product_ids, quantities):
+            if not product_id or not qty:
+                continue
+            product = Product.objects.filter(id=product_id).first()
+            if product:
+                AbandonedCartItem.objects.create(cart=cart, product=product, quantity=int(qty))
+                total += product.sale_price * int(qty)
+
+        cart.cart_value = total
+        cart.save()
+        messages.success(request, 'Abandoned cart logged.')
+        return redirect('abandoned_cart_list')
+
+    context = {
+        'active': 'abandoned_cart_create',
+        'title': 'Log Abandoned Cart',
+        'customers': Customer.objects.all(),
+        'products': Product.objects.all(),
+    }
+    return render(request, 'ecommerce/abandoned_cart_form.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def abandoned_cart_status(request, pk, status):
+    cart = get_object_or_404(AbandonedCart, pk=pk)
+    valid = dict(AbandonedCart.STATUS_CHOICES)
+    if status in valid:
+        cart.status = status
+        if status == 'recovered':
+            cart.recovered_at = timezone.now()
+        cart.save()
+        messages.success(request, f'Cart marked as {valid[status]}.')
+    return redirect('abandoned_cart_list')
+
+
+@login_required
+def review_list(request):
+    reviews = ProductReview.objects.select_related('product', 'customer').order_by('-created_at')
+    status = request.GET.get('status')
+    if status == 'pending':
+        reviews = reviews.filter(is_approved=False)
+    elif status == 'approved':
+        reviews = reviews.filter(is_approved=True)
+    context = {'reviews': reviews, 'active': 'reviews', 'title': 'Product Reviews', 'selected_status': status}
+    return render(request, 'ecommerce/review_list.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def review_create(request):
+    if request.method == 'POST':
+        product_id = request.POST.get('product')
+        customer_id = request.POST.get('customer')
+        product = get_object_or_404(Product, id=product_id)
+        customer = Customer.objects.filter(id=customer_id).first() if customer_id else None
+
+        ProductReview.objects.create(
+            product=product,
+            customer=customer,
+            rating=request.POST.get('rating', 5),
+            comment=request.POST.get('comment', ''),
+            is_approved=False,
+        )
+        messages.success(request, 'Review logged — pending approval.')
+        return redirect('review_list')
+
+    context = {
+        'active': 'review_create',
+        'title': 'Add Review',
+        'products': Product.objects.all(),
+        'customers': Customer.objects.all(),
+    }
+    return render(request, 'ecommerce/review_form.html', context)
+
+
+@login_required
+@block_ecommerce_view_only
+def review_approve(request, pk):
+    review = get_object_or_404(ProductReview, pk=pk)
+    review.is_approved = True
+    review.save()
+    messages.success(request, 'Review approved.')
+    return redirect('review_list')
+
+
+@login_required
+@block_ecommerce_view_only
+def review_delete(request, pk):
+    review = get_object_or_404(ProductReview, pk=pk)
+    review.delete()
+    messages.success(request, 'Review deleted.')
+    return redirect('review_list')
+

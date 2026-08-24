@@ -1,0 +1,44 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'products' %}
+    <a href="{% url 'review_create' %}" class="btn">+ Add Review</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Product</th><th>Customer</th><th>Rating</th><th>Comment</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for r in reviews %}
+            <tr>
+                <td>{{ r.product.name }}</td>
+                <td>{{ r.customer.name|default:"Anonymous" }}</td>
+                <td>{% for i in "12345" %}{% if forloop.counter <= r.rating %}★{% else %}☆{% endif %}{% endfor %}</td>
+                <td>{{ r.comment|truncatewords:12|default:"-" }}</td>
+                <td>
+                    {% if r.is_approved %}<span class="pill pill-converted">Approved</span>
+                    {% else %}<span class="pill pill-quotation">Pending</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-links">
+                        {% if request.user|ecom_has_full_access:'products' %}
+                        {% if not r.is_approved %}
+                        <a href="{% url 'review_approve' r.pk %}">Approve</a>
+                        {% endif %}
+                        <a href="{% url 'review_delete' r.pk %}" onclick="return confirm('Delete this review?')">Delete</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No reviews yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

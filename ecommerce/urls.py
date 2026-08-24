@@ -113,5 +113,14 @@ urlpatterns = [
     path('loyalty/<int:pk>/', views.loyalty_detail, name='loyalty_detail'),
     path('loyalty/<int:pk>/adjust/', views.loyalty_adjust, name='loyalty_adjust'),
     path('loyalty/create/<int:customer_id>/', views.loyalty_create_for_customer, name='loyalty_create_for_customer'),
+
+    #  Abondoned Cart and Reviews URLS
+    path('abandoned-carts/', views.abandoned_cart_list, name='abandoned_cart_list'),
+    path('abandoned-carts/create/', views.abandoned_cart_create, name='abandoned_cart_create'),
+    path('abandoned-carts/<int:pk>/status/<str:status>/', views.abandoned_cart_status, name='abandoned_cart_status'),
+    path('reviews/', views.review_list, name='review_list'),
+    path('reviews/create/', views.review_create, name='review_create'),
+    path('reviews/<int:pk>/approve/', views.review_approve, name='review_approve'),
+    path('reviews/<int:pk>/delete/', views.review_delete, name='review_delete'),
 ]
 

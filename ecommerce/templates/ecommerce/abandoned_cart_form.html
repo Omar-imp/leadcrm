@@ -1,0 +1,93 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:500px; max-width:700px;">
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Customer (optional)</label>
+                <select name="customer" class="form-control">
+                    <option value="">-- Unknown / Guest --</option>
+                    {% for c in customers %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Email or Phone (if customer unknown)</label>
+                <input type="text" name="session_identifier" class="form-control">
+            </div>
+
+            <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
+            <label class="field-label">Cart Items</label>
+            <div id="item-rows"></div>
+            <button type="button" class="btn btn-small" onclick="addItemRow()" style="margin-top:8px;">+ Add Product</button>
+
+            <div style="margin-top:16px;">
+                <label class="field-label">Notes</label>
+                <textarea name="notes" class="form-control"></textarea>
+            </div>
+
+            <div class="form-actions" style="margin-top:20px;">
+                <button type="submit" class="btn">Log Cart</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:300px; max-width:360px;">
+        <h3 style="margin-top:0;">Cart Value</h3>
+        <div class="stat" style="text-align:left;">
+            <div class="label">Estimated Total</div>
+            <div class="value" id="summary_total" style="font-size:26px;">Rs 0.00</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const PRODUCTS = [
+    {% for p in products %}
+    { id: {{ p.id }}, name: "{{ p.name|escapejs }}", price: {{ p.sale_price }} },
+    {% endfor %}
+];
+let rowCount = 0;
+
+function addItemRow() {
+    rowCount++;
+    const container = document.getElementById('item-rows');
+    const row = document.createElement('div');
+    row.id = 'row-' + rowCount;
+    row.style = 'display:flex; gap:10px; align-items:center; margin-bottom:10px;';
+
+    let options = '<option value="">-- Select Product --</option>';
+    PRODUCTS.forEach(p => {
+        options += `<option value="${p.id}" data-price="${p.price}">${p.name} (Rs ${p.price})</option>`;
+    });
+
+    row.innerHTML = `
+        <select name="product" class="form-control" style="flex:2;" onchange="updateTotal()">${options}</select>
+        <input type="number" name="quantity" value="1" min="1" class="form-control" style="flex:1;" oninput="updateTotal()">
+        <button type="button" class="btn btn-small" onclick="document.getElementById('row-${rowCount}').remove(); updateTotal();">Remove</button>
+    `;
+    container.appendChild(row);
+}
+
+function updateTotal() {
+    let total = 0;
+    document.querySelectorAll('#item-rows > div').forEach(row => {
+        const select = row.querySelector('select[name="product"]');
+        const qty = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
+        const selected = select.options[select.selectedIndex];
+        const price = selected ? parseFloat(selected.dataset.price || 0) : 0;
+        total += price * qty;
+    });
+    document.getElementById('summary_total').textContent = 'Rs ' + total.toFixed(2);
+}
+
+addItemRow();
+</script>
+{% endblock %}

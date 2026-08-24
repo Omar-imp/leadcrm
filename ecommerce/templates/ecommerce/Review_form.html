@@ -1,0 +1,56 @@
+{% extends 'ecommerce/base.html' %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
+        <h3 style="margin-top:0;">Review Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Product <span class="required">*</span></label>
+                <select name="product" required class="form-control">
+                    <option value="">-- Select Product --</option>
+                    {% for p in products %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Customer (optional)</label>
+                <select name="customer" class="form-control">
+                    <option value="">-- Anonymous --</option>
+                    {% for c in customers %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Rating <span class="required">*</span></label>
+                <select name="rating" required class="form-control">
+                    <option value="5">5 — Excellent</option>
+                    <option value="4">4 — Good</option>
+                    <option value="3">3 — Average</option>
+                    <option value="2">2 — Poor</option>
+                    <option value="1">1 — Terrible</option>
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="field-label">Comment</label>
+                <textarea name="comment" class="form-control" rows="4"></textarea>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn">Submit Review</button></div>
+        </form>
+    </div>
+
+    <div class="card" style="flex:1; min-width:300px; max-width:360px;">
+        <h3 style="margin-top:0;">Note</h3>
+        <p style="font-size:14px; color:var(--text-muted);">
+            New reviews start as <strong>Pending</strong> and won't show as approved until someone with product access reviews and approves them from the Reviews list.
+        </p>
+    </div>
+
+</div>
+{% endblock %}

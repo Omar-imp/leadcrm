@@ -1,0 +1,37 @@
+{% extends 'ecommerce/base.html' %}
+{% load ecommerce_filters %}
+{% block title %}{{ title }} - E-commerce CRM{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
+    {% if request.user|ecom_has_full_access:'orders' %}
+    <a href="{% url 'abandoned_cart_create' %}" class="btn">+ Log Abandoned Cart</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <table>
+        <thead><tr><th>Customer</th><th>Items</th><th>Cart Value</th><th>Abandoned</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for cart in carts %}
+            <tr>
+                <td>{{ cart.customer.name|default:cart.session_identifier|default:"Unknown" }}</td>
+                <td>{{ cart.items.count }} item{{ cart.items.count|pluralize }}</td>
+                <td>Rs {{ cart.cart_value }}</td>
+                <td>{{ cart.abandoned_at|date:"d M Y" }}</td>
+                <td>
+                    <div class="action-links">
+                        {% if request.user|ecom_has_full_access:'orders' %}
+                        <a href="{% url 'abandoned_cart_status' cart.pk 'recovered' %}">Mark Recovered</a>
+                        <a href="{% url 'abandoned_cart_status' cart.pk 'lost' %}">Mark Lost</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="empty-state">No abandoned carts logged.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

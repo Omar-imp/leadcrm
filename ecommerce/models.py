@@ -154,7 +154,7 @@ class ReturnRequest(models.Model):
 ECOMMERCE_SECTIONS = [
     'dashboard', 'products', 'categories', 'customers',
     'orders', 'inventory', 'payments', 'shipping', 'returns',
-    'reports', 'chatbot', 'suppliers', 'support'
+    'reports', 'chatbot', 'suppliers', 'support' ,'documents'
 ]
 
 
@@ -175,6 +175,7 @@ class EcommerceUserPermissions(models.Model):
     chatbot = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
     suppliers = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
     support = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
+    documents = models.CharField(max_length=10, choices=ACCESS_CHOICES, default='none')
 
     ALL_SECTIONS = ECOMMERCE_SECTIONS
 
@@ -485,3 +486,42 @@ class LoyaltyTransaction(models.Model):
 
     def __str__(self):
         return f"{self.account.customer.name}: {self.points:+d} pts"
+
+
+class AbandonedCart(models.Model):
+    STATUS_CHOICES = [('active', 'Active'), ('recovered', 'Recovered'), ('lost', 'Lost')]
+
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='abandoned_carts')
+    session_identifier = models.CharField(max_length=100, blank=True, help_text="Email or phone if customer unknown")
+    cart_value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='active')
+    notes = models.TextField(blank=True)
+    abandoned_at = models.DateTimeField(auto_now_add=True)
+    recovered_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        who = self.customer.name if self.customer else self.session_identifier
+        return f"Cart ({who}) — Rs {self.cart_value}"
+
+
+class AbandonedCartItem(models.Model):
+    cart = models.ForeignKey(AbandonedCart, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    quantity = models.IntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.product} x{self.quantity}"
+
+
+class ProductReview(models.Model):
+    RATING_CHOICES = [(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')]
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviews')
+    rating = models.IntegerField(choices=RATING_CHOICES)
+    comment = models.TextField(blank=True)
+    is_approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.name} — {self.rating}★"
