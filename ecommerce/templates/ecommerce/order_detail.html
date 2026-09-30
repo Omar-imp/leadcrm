@@ -1,5 +1,7 @@
 {% extends 'ecommerce/base.html' %}
+
 {% block title %}{{ title }} - E-commerce CRM{% endblock %}
+
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <h1 class="page-title" style="margin:0;">{{ title }}</h1>
@@ -8,10 +10,18 @@
 
 <div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
 
+    <!-- Items Section -->
     <div class="card" style="flex:1; min-width:400px; max-width:600px;">
         <h3 style="margin-top:0;">Items</h3>
         <table>
-            <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Line Total</th>
+                </tr>
+            </thead>
             <tbody>
                 {% for item in order.items.all %}
                 <tr>
@@ -25,6 +35,7 @@
         </table>
     </div>
 
+    <!-- Order Info Section -->
     <div class="card" style="flex:1; min-width:320px; max-width:380px;">
         <h3 style="margin-top:0;">Order Info</h3>
         <p><strong>Customer:</strong> {{ order.customer.name }}</p>
@@ -36,47 +47,8 @@
         <p><strong>Tax:</strong> Rs {{ order.tax }}</p>
         <p><strong>Shipping:</strong> Rs {{ order.shipping_cost }}</p>
         <p style="font-size:20px; font-weight:700; margin-top:12px;">Total: Rs {{ order.total }}</p>
-    </div>
-
-</div>
-{% endblock %}{% extends 'ecommerce/base.html' %}
-{% block title %}{{ title }} - E-commerce CRM{% endblock %}
-{% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-    <h1 class="page-title" style="margin:0;">{{ title }}</h1>
-    <a href="{% url 'order_list' %}" class="btn btn-secondary">Back to Orders</a>
-</div>
-
-<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
-
-    <div class="card" style="flex:1; min-width:400px; max-width:600px;">
-        <h3 style="margin-top:0;">Items</h3>
-        <table>
-            <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr></thead>
-            <tbody>
-                {% for item in order.items.all %}
-                <tr>
-                    <td>{{ item.product.name|default:"Deleted product" }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>Rs {{ item.unit_price }}</td>
-                    <td>Rs {{ item.quantity|floatformat:0 }} x {{ item.unit_price }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="card" style="flex:1; min-width:320px; max-width:380px;">
-        <h3 style="margin-top:0;">Order Info</h3>
-        <p><strong>Customer:</strong> {{ order.customer.name }}</p>
-        <p><strong>Status:</strong> {{ order.get_status_display }}</p>
-        <p><strong>Created:</strong> {{ order.created_at|date:"d M Y, h:i A" }}</p>
-        <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
-        <p><strong>Subtotal:</strong> Rs {{ order.subtotal }}</p>
-        <p><strong>Discount:</strong> Rs {{ order.discount }}</p>
-        <p><strong>Tax:</strong> Rs {{ order.tax }}</p>
-        <p><strong>Shipping:</strong> Rs {{ order.shipping_cost }}</p>
-        <p style="font-size:20px; font-weight:700; margin-top:12px;">Total: Rs {{ order.total }}</p>
+        
+        <!-- Action Buttons -->
         <a href="{% url 'payment_create_for_order' order.pk %}" class="btn" style="margin-top:16px; display:inline-block;">Record Payment</a>
         <a href="{% url 'shipment_create_for_order' order.pk %}" class="btn" style="margin-top:8px; display:inline-block;">Create Shipment</a>
         <a href="{% url 'return_create_for_order' order.pk %}" class="btn btn-secondary" style="margin-top:8px; display:inline-block;">Request Return</a>
