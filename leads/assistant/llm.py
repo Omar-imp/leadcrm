@@ -21,7 +21,7 @@ def call_llm_for_content(intent, user, assistant_type):
     prompt = prompts.get(task, intent.get('raw_text', ''))
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         max_tokens=500,
         messages=[{"role": "user", "content": prompt}]
     )

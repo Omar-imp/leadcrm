@@ -95,7 +95,7 @@ class EcommerceAssistantService:
         for _ in range(max_iterations):
             try:
                 response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model="openai/gpt-oss-120b",
                     max_tokens=600,
                     messages=messages,
                     tools=tool_schemas,
@@ -107,7 +107,7 @@ class EcommerceAssistantService:
                 if 'tool_use_failed' in error_str:
                     try:
                         response = client.chat.completions.create(
-                            model="llama-3.3-70b-versatile",
+                            model="openai/gpt-oss-120b",
                             max_tokens=600,
                             messages=messages,
                         )

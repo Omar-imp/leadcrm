@@ -61,7 +61,7 @@ Generate ONLY the message, nothing else. No explanations.
 """
 
         response = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
+            model='openai/gpt-oss-120b',
             messages=[{'role': 'user', 'content': prompt}],
             max_tokens=200,
             temperature=0.7,

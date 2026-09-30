@@ -85,7 +85,7 @@ REASON: [one sentence explaining why]
 """
 
         response = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
+            model='openai/gpt-oss-120b',
             messages=[{'role': 'user', 'content': prompt}],
             max_tokens=100,
             temperature=0.2,

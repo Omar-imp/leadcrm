@@ -58,7 +58,7 @@ RISK: [main risk factor in 5 words or less]
 """
 
         response = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
+            model='openai/gpt-oss-120b',
             messages=[{'role': 'user', 'content': prompt}],
             max_tokens=120,
             temperature=0.2,
