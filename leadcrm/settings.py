@@ -73,31 +73,6 @@
 
 
 # # Email (SMTP)
-# # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# # EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-# # EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-# # EMAIL_USE_TLS = True
-# # EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-# # EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-# # DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-
-
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_USE_SSL = False
-
-# EMAIL_HOST_USER = 'your-email@example.com'
-
-# # Gmail App Password
-# EMAIL_HOST_PASSWORD = 'REMOVED-SECRET' 
-
-# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-# # Debug
-# EMAIL_TIMEOUT = 30
-
 # # Database
 # # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
@@ -247,7 +222,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 
-EMAIL_HOST_USER = 'your-email@example.com'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 
 # Gmail App Password
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
